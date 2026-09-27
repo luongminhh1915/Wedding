@@ -21,6 +21,7 @@ export default function AppRoutes() {
       {/* Customer Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={['Customer']} />}>
         <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+        <Route path="/customer/contracts" element={<CustomerDashboard />} />
       </Route>
 
       {/* Vendor Protected Routes (BR-001) */}

@@ -9,3 +9,4 @@ D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.dll
 D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\refint\Wedding.Domain.dll
 D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.pdb
 D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\ref\Wedding.Domain.dll
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.sourcelink.json

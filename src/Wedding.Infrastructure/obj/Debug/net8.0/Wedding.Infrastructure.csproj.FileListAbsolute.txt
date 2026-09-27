@@ -17,3 +17,4 @@ D:\EXE201\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\refint\Wedding.Inf
 D:\EXE201\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.pdb
 D:\EXE201\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.genruntimeconfig.cache
 D:\EXE201\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\ref\Wedding.Infrastructure.dll
+D:\EXE201\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.sourcelink.json

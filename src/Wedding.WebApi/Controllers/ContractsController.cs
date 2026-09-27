@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Wedding.Application.Features.Contracts.Commands.CompleteContract;
 using Wedding.Application.Features.Contracts.Commands.ConfirmContract;
 using Wedding.Application.Features.Contracts.Commands.CreateContractDraft;
 using Wedding.Application.Features.Contracts.Commands.RejectContract;
@@ -84,6 +85,17 @@ public class ContractsController : ControllerBase
     {
         await _mediator.Send(new RejectContractCommand(id, request.Reason));
         return Ok(new { message = "Đã gửi thông báo sai lệch tới Nhà cung cấp để điều chỉnh lại hợp đồng." });
+    }
+
+    /// <summary>
+    /// [VendorOwner/Admin] Hoàn tất đám cưới sau ngày cưới.
+    /// Hợp đồng chuyển sang 'Completed' và tự động sinh bản ghi Commission Kỳ 2 (50% còn lại theo FM-004 & BR-006).
+    /// </summary>
+    [HttpPost("{id:guid}/complete")]
+    public async Task<IActionResult> CompleteContract(Guid id)
+    {
+        var result = await _mediator.Send(new CompleteContractCommand(id));
+        return Ok(new { message = "Hoàn tất hợp đồng thành công. Đã sinh hoa hồng Kỳ 2 cho kỳ đối soát tiếp theo.", contract = result });
     }
 }
 

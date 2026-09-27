@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../auth/hooks/useAuth';
 import {
   Building2, MessageSquare, FileText, QrCode,
-  LogOut, LayoutList, ChevronRight
+  LogOut, LayoutList
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ListingTable from './components/ListingTable';
 import { LeadInbox } from './components/LeadInbox';
 import { ContractList } from './components/ContractList';
+import { SettlementDashboard } from './components/SettlementDashboard';
 
 // Danh mục 7 ngành hàng dịch vụ cưới (seed data từ backend)
 // TODO: Thay bằng API call GET /api/categories khi có
@@ -27,7 +28,7 @@ const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: string }[] 
   { id: 'listings', label: 'Quản Lý Bài Đăng', icon: <LayoutList className="w-4 h-4" /> },
   { id: 'leads', label: 'Hộp Thư Lead', icon: <MessageSquare className="w-4 h-4" /> },
   { id: 'contracts', label: 'Hợp Đồng 2 Chiều', icon: <FileText className="w-4 h-4" /> },
-  { id: 'settlement', label: 'Đối Soát VietQR', icon: <QrCode className="w-4 h-4" />, badge: 'AI-11' },
+  { id: 'settlement', label: 'Đối Soát VietQR', icon: <QrCode className="w-4 h-4" /> },
 ];
 
 export default function VendorDashboard() {
@@ -102,23 +103,8 @@ export default function VendorDashboard() {
 
         {activeTab === 'leads' && <LeadInbox />}
         {activeTab === 'contracts' && <ContractList />}
-        {activeTab === 'settlement' && <ComingSoon title="Đối Soát Hoa Hồng VietQR" taskLabel="Task AI-11" />}
+        {activeTab === 'settlement' && <SettlementDashboard />}
       </main>
-    </div>
-  );
-}
-
-function ComingSoon({ title, taskLabel }: { title: string; taskLabel: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-64 text-center bg-white rounded-2xl border border-dashed border-slate-300">
-      <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-4">
-        <ChevronRight className="w-6 h-6 text-rose-400" />
-      </div>
-      <h3 className="text-lg font-bold text-slate-700">{title}</h3>
-      <p className="text-sm text-slate-500 mt-1">
-        Tính năng đang phát triển —{' '}
-        <span className="font-semibold text-rose-500">{taskLabel}</span>
-      </p>
     </div>
   );
 }

@@ -13,3 +13,4 @@ D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.d
 D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\refint\Wedding.Application.dll
 D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.pdb
 D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\ref\Wedding.Application.dll
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.sourcelink.json

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Wedding.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+03799e687878e1d3d358a5b754d760d85900ae89")]
 [assembly: System.Reflection.AssemblyProductAttribute("Wedding.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Wedding.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

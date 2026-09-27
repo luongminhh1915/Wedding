@@ -21,9 +21,10 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(provider => 
             provider.GetRequiredService<ApplicationDbContext>());
 
-        // Đăng ký dịch vụ mật khẩu và JWT
+        // Đăng ký dịch vụ mật khẩu, JWT và VietQR
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtProvider, JwtProvider>();
+        services.AddSingleton<IVietQrService, VietQrService>();
 
         // Đăng ký CurrentUserService — đọc UserId từ JWT claims
         services.AddHttpContextAccessor();
@@ -34,6 +35,9 @@ public static class DependencyInjection
 
         // Đăng ký Background Worker quét HĐ quá hạn 72h (BR-005)
         services.AddHostedService<ContractVerificationBackgroundService>();
+
+        // Đăng ký Background Worker đối soát hoa hồng và xử lý trễ hạn (BR-007)
+        services.AddHostedService<MonthlySettlementBackgroundService>();
 
         return services;
     }

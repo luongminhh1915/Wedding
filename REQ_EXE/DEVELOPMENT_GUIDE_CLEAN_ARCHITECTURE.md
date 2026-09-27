@@ -212,12 +212,12 @@ client/ (hoặc wedding-client/)
   * [x] Viết Command `CreateContractDraftCommand`: NCC nhập mã Voucher + giá trị HĐ + ảnh phiếu cọc.
   * [x] Viết Command `ConfirmContractCommand` (**`BR-005` - Xác thực 2 chiều**): Khách hàng bấm xác nhận duyệt trong 72h $\rightarrow$ HĐ chuyển `Confirmed` $\rightarrow$ Tự động sinh bản ghi `Commission` Kỳ 1 (50%).
   * [x] Viết Background Job Quét HĐ `PendingVerification` quá 72h không được duyệt tự động chuyển `Cancelled` (`BR-005`).
-  * [ ] Viết Background Job Đối soát định kỳ (**`BR-007`**): Đúng 00:00 ngày 25 hàng tháng, tự động quét gom toàn bộ hoa hồng cần thanh toán thành bảng kê tháng.
-  * [ ] Viết API sinh mã VietQR động theo chuẩn Napas247 (chứa nội dung chuyển khoản định danh: `HH <VendorId> T<Thang>`).
-  * [ ] Viết Webhook tiếp nhận biến động số dư ngân hàng $\rightarrow$ Tự động gạch nợ `Commission` sang `Paid`.
+  * [x] Viết Background Job Đối soát định kỳ (**`BR-007`**): Quét gom toàn bộ hoa hồng cần thanh toán thành bảng kê tháng & xử lý phạt trễ hạn.
+  * [x] Viết API sinh mã VietQR động theo chuẩn Napas247 (chứa nội dung chuyển khoản định danh: `HH <VendorId> T<Thang>`).
+  * [x] Viết Webhook tiếp nhận biến động số dư ngân hàng $\rightarrow$ Tự động gạch nợ `Commission` sang `Paid`.
 * **Frontend:**
   * [x] **Vendor Portal:** Màn hình nhập hợp đồng chốt khách (nhập Voucher, upload hóa đơn cọc) & Quản lý danh sách HĐ 2 chiều. Màn hình "Hoa hồng & Đối soát": Hiển thị bảng kê ngày 25, nút [Thanh Toán VietQR] mở popup mã QR để quét app ngân hàng.
-  * [ ] **Customer Portal:** Trang "Hợp đồng của tôi": Hiển thị chi tiết HĐ NCC đã gửi, 2 nút lựa chọn: [Xác Nhận Hợp Đồng] hoặc [Báo Sai Lệch].
+  * [x] **Customer Portal:** Trang "Hợp đồng của tôi": Hiển thị chi tiết HĐ NCC đã gửi, 2 nút lựa chọn: [Xác Nhận Hợp Đồng] hoặc [Báo Sai Lệch].
   * [ ] **Finance Admin Portal:** Màn hình quản lý bảng kê hoa hồng toàn sàn, xem trạng thái gạch nợ tự động, nút xuất hóa đơn VAT.
 
 ---
@@ -741,7 +741,7 @@ graph TD
 
 ---
 
-#### 📌 Task AI-11: Giao Diện Xác Thực Hợp Đồng & Thanh Toán Hoa Hồng VietQR (Frontend)
+#### 📌 Task AI-11: Giao Diện Xác Thực Hợp Đồng & Thanh Toán Hoa Hồng VietQR (Frontend) [ĐÃ HOÀN THÀNH]
 * **Mục tiêu:** Màn hình khách duyệt hợp đồng và màn hình Vendor xem bảng kê hoa hồng quét VietQR.
 * **Context cần đọc:** [4.Prototype/SCR-05-06-Commission-And-Review.html](file:///d:/EXE201/Wedding/REQ_EXE/4.Prototype/SCR-05-06-Commission-And-Review.html).
 * **Prompt mẫu cho AI:**
@@ -750,7 +750,7 @@ graph TD
   1. Trong Customer Portal: Trang MyContracts.tsx hiển thị danh sách HĐ đang chờ duyệt, thông tin tiền cọc, ảnh phiếu thu và nút [Xác Nhận Hợp Đồng (Nhận Quà Sàn)] (kết nối hook useConfirmContract).
   2. Trong Vendor Portal: Trang SettlementDashboard.tsx hiển thị bảng kê hoa hồng ngày 25 (kỳ 1, kỳ 2), trạng thái (Chờ thanh toán, Đã thanh toán) và nút [Thanh Toán VietQR] mở Modal hiển thị mã QR và nút tải ảnh QR."
   ```
-* **Định nghĩa hoàn thành (DoD):** Khách bấm xác nhận HĐ trực quan trên giao diện; Vendor mở được popup VietQR có thông tin thanh toán chính xác.
+* **Định nghĩa hoàn thành (DoD):** Khách bấm xác nhận HĐ trực quan trên giao diện; Vendor mở được popup VietQR có thông tin thanh toán chính xác. Đã test build sạch 100%.
 
 ---
 
