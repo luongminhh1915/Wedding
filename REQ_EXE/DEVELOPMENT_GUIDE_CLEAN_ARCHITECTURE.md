@@ -237,9 +237,8 @@ client/ (hoặc wedding-client/)
 * **Frontend:**
   * [ ] **Customer Portal:**
     * [x] Trình thiết kế thiệp cưới online và link chia sẻ (`InvitationBuilder.tsx`).
-    * [x] Danh sách khách mời & biểu đồ số lượng tham dự/từ chối RSVP.
-    * [ ] Bảng dự toán ngân sách cưới (Remaining Budget = Planned - Actual).
-    * [ ] Checklist công việc 12 tháng có checkbox đánh dấu.
+    * [x] Bảng dự toán ngân sách cưới (Remaining Budget = Planned - Actual) (`WeddingBudgetPlanner.tsx`).
+    * [x] Checklist công việc 12 tháng có checkbox đánh dấu (`WeddingChecklist.tsx`).
     * [ ] Form gửi đánh giá kèm gắn nhãn [Đã xác thực dịch vụ - Verified Buyer].
   * [x] **Trang Public Thiệp Cưới (`/invitation/:slug`):** Giao diện mobile sang trọng, bản đồ Google Maps và form điểm danh RSVP 1 chạm.
 
@@ -768,7 +767,7 @@ graph TD
 
 ---
 
-#### 📌 Task AI-13: Công Cụ Dự Toán Ngân Sách Cưới & Checklist 12 Tháng (Frontend)
+#### 📌 Task AI-13: Công Cụ Dự Toán Ngân Sách Cưới & Checklist 12 Tháng (Frontend) [ĐÃ HOÀN THÀNH]
 * **Mục tiêu:** Bộ tiện ích quản lý chi tiêu đám cưới (`FM-006`: Ngân sách còn lại = Dự kiến - Thực tế) và danh sách công việc 12 tháng.
 * **Context cần đọc:** `ba-business-rules.md` (`FM-006`), `Epic-07-Wedding-Tools-RSVP`.
 * **Prompt mẫu cho AI:**
@@ -777,7 +776,7 @@ graph TD
   1. WeddingBudgetPlanner.tsx: Nhập tổng ngân sách dự kiến, bảng chi phí từng hạng mục (Dự kiến vs Thực tế), áp dụng công thức FM-006 tự động tính Ngân sách còn lại và hiển thị thanh tiến độ cảnh báo nếu vượt ngân sách.
   2. WeddingChecklist.tsx: Danh sách công việc gợi ý chia theo mốc thời gian (Trước 12 tháng, 6 tháng, 3 tháng, 1 tuần, Ngày cưới), hỗ trợ thêm/xóa việc và checkbox đánh dấu hoàn thành."
   ```
-* **Định nghĩa hoàn thành (DoD):** Nhập số liệu tính toán ngân sách chạy mượt mà theo `FM-006`; tương tác checklist lưu trạng thái thành công.
+* **Định nghĩa hoàn thành (DoD):** Nhập số liệu tính toán ngân sách chạy mượt mà theo `FM-006`; tương tác checklist lưu trạng thái thành công. Đã test build sạch 100% cả BE và FE.
 
 ---
 

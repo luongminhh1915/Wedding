@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../auth/hooks/useAuth';
 import {
   Heart, Calendar, CheckSquare, Wallet, LogOut,
-  FileCheck2, Compass, ChevronRight
+  FileCheck2, Compass
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MyContracts } from './components/MyContracts';
 import { InvitationBuilder } from './components/invitation/InvitationBuilder';
+import { WeddingBudgetPlanner } from './components/tools/WeddingBudgetPlanner';
+import { WeddingChecklist } from './components/tools/WeddingChecklist';
 
 type CustomerTab = 'contracts' | 'invitations' | 'budget' | 'checklist';
 
@@ -141,40 +143,9 @@ export default function CustomerDashboard() {
         {/* Tab Content Display */}
         {activeTab === 'contracts' && <MyContracts />}
         {activeTab === 'invitations' && <InvitationBuilder />}
-
-        {activeTab === 'budget' && (
-          <FeatureComingSoon
-            title="Công Cụ Dự Toán Ngân Sách Cưới Thông Minh"
-            phase="Task AI-13 (Phase 5: Growth Hook)"
-            description="Tự động tính toán ngân sách còn lại (Remaining Budget = Planned - Actual) theo quy tắc FM-006 giúp kiểm soát bội chi."
-          />
-        )}
-
-        {activeTab === 'checklist' && (
-          <FeatureComingSoon
-            title="Checklist 12 Tháng Chuẩn Bị Ngày Cưới"
-            phase="Task AI-13 (Phase 5: Growth Hook)"
-            description="Lộ trình từng bước chi tiết từ 12 tháng, 6 tháng, 3 tháng đến tuần lễ cưới có checkbox đánh dấu hoàn thành."
-          />
-        )}
+        {activeTab === 'budget' && <WeddingBudgetPlanner />}
+        {activeTab === 'checklist' && <WeddingChecklist />}
       </main>
-    </div>
-  );
-}
-
-function FeatureComingSoon({ title, phase, description }: { title: string; phase: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-white rounded-3xl border border-dashed border-slate-300">
-      <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-4">
-        <ChevronRight className="w-6 h-6 text-rose-400" />
-      </div>
-      <span className="text-xs px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-bold uppercase tracking-wider mb-2">
-        {phase}
-      </span>
-      <h3 className="text-lg font-bold text-slate-800">{title}</h3>
-      <p className="text-xs text-slate-500 mt-1.5 max-w-md leading-relaxed">
-        {description}
-      </p>
     </div>
   );
 }

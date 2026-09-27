@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { usePublicListingDetail } from './hooks/useBrowse';
 import { SendLeadModal } from './components/SendLeadModal';
+import { ReviewModal } from './components/reviews/ReviewModal';
+import { ReviewList } from './components/reviews/ReviewList';
+import { useListingReviews } from './hooks/useReviews';
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +16,8 @@ export default function ListingDetailPage() {
   const { data: listing, isLoading, isError } = usePublicListingDetail(id ?? '');
   const [activeImg, setActiveImg] = useState(0);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const { data: reviews = [], refetch: refetchReviews } = useListingReviews(id ?? '');
 
   if (isLoading) return <LoadingState />;
   if (isError || !listing) return <ErrorState onBack={() => navigate('/browse')} />;
@@ -157,6 +162,30 @@ export default function ListingDetailPage() {
                   {listing.description || 'Nhà cung cấp chưa cập nhật mô tả chi tiết.'}
                 </p>
               </div>
+
+              {/* ── Reviews Section (Verified Buyer - BR-009 & FM-005) ──────── */}
+              <div className="pt-6 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Star className="w-5 h-5 text-amber-400 fill-current" />
+                      Đánh Giá & Uy Tín Đối Tác ({reviews.length})
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Chỉ những khách hàng có hợp đồng hoàn tất mới được gắn nhãn [Verified Buyer]
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setIsReviewModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold text-xs hover:from-amber-600 hover:to-rose-600 transition shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                  >
+                    <span>✍️ Viết Đánh Giá</span>
+                  </button>
+                </div>
+
+                <ReviewList reviews={reviews} onRefresh={refetchReviews} />
+              </div>
             </div>
           </div>
 
@@ -248,6 +277,16 @@ export default function ListingDetailPage() {
         vendorId={listing.vendorId}
         vendorName={listing.vendorBrandName}
         listingTitle={listing.title}
+      />
+
+      {/* Modal đánh giá & chấm điểm Verified Buyer */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        listingId={listing.id}
+        listingTitle={listing.title}
+        vendorBrandName={listing.vendorBrandName}
+        onSuccess={refetchReviews}
       />
     </div>
   );
