@@ -7,6 +7,7 @@ import BrowsePage from '../features/customer/BrowsePage';
 import ListingDetailPage from '../features/customer/ListingDetailPage';
 import VendorDashboard from '../features/vendor-portal/VendorDashboard';
 import AdminDashboard from '../features/admin/AdminDashboard';
+import PublicInvitationPage from '../features/customer/components/invitation/PublicInvitationPage';
 
 export default function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ export default function AppRoutes() {
       <Route path="/" element={<BrowsePage />} />
       <Route path="/browse" element={<BrowsePage />} />
       <Route path="/listings/:id" element={<ListingDetailPage />} />
+      <Route path="/invitation/:slug" element={<PublicInvitationPage />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/register" element={<RegisterForm />} />
 

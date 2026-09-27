@@ -226,22 +226,22 @@ client/ (hoặc wedding-client/)
 *Mục tiêu: Thu hút người dùng qua bộ công cụ thiệp cưới miễn phí, tạo vòng lặp đánh giá uy tín chất lượng.*
 
 * **Backend:**
-  * [ ] Tạo Entities:
+  * [x] Tạo Entities:
     * `WeddingInvitation`: `Slug`, `CoupleNames`, `EventDate`, `VenueName`, `VenueAddress`, `MapUrl`, `Story`, `CoverImageUrl`.
     * `GuestRSVP`: `InvitationId`, `GuestName`, `AttendingStatus` (`Attending`, `NotAttending`), `CompanionCount`, `Wishes`.
     * `BudgetItem`: Hạng mục, số tiền dự toán, số tiền thực tế (`FM-006`).
     * `ChecklistTask`: Tên việc (12 tháng đến ngày cưới), hạn chót, hoàn thành.
     * `Review`: `BookingContractId`, `ListingId`, `CustomerId`, `Rating` (1-5), `Content`, `Photos`, `IsVerifiedBuyer` (`BR-009`), `Status` (`Pending`, `Approved`, `Rejected`).
-  * [ ] Viết API Public RSVP: Cho phép khách mời bấm phản hồi không cần Token xác thực.
+  * [x] Viết API Public RSVP: Cho phép khách mời bấm phản hồi không cần Token xác thực.
   * [ ] Viết logic tính điểm uy tín NCC (`FM-005`): Tự động tính lại điểm `RatingAvg` khi có review được duyệt.
 * **Frontend:**
   * [ ] **Customer Portal:**
-    * Trình thiết kế thiệp cưới online và link chia sẻ.
-    * Danh sách khách mời & biểu đồ số lượng tham dự/từ chối RSVP.
-    * Bảng dự toán ngân sách cưới (Remaining Budget = Planned - Actual).
-    * Checklist công việc 12 tháng có checkbox đánh dấu.
-    * Form gửi đánh giá kèm gắn nhãn [Đã xác thực dịch vụ - Verified Buyer].
-  * [ ] **Trang Public Thiệp Cưới (`/invitation/:slug`):** Giao diện mobile sang trọng, nhạc nền, bản đồ Google Maps và form điểm danh RSVP 1 chạm.
+    * [x] Trình thiết kế thiệp cưới online và link chia sẻ (`InvitationBuilder.tsx`).
+    * [x] Danh sách khách mời & biểu đồ số lượng tham dự/từ chối RSVP.
+    * [ ] Bảng dự toán ngân sách cưới (Remaining Budget = Planned - Actual).
+    * [ ] Checklist công việc 12 tháng có checkbox đánh dấu.
+    * [ ] Form gửi đánh giá kèm gắn nhãn [Đã xác thực dịch vụ - Verified Buyer].
+  * [x] **Trang Public Thiệp Cưới (`/invitation/:slug`):** Giao diện mobile sang trọng, bản đồ Google Maps và form điểm danh RSVP 1 chạm.
 
 ---
 
@@ -754,7 +754,7 @@ graph TD
 
 ---
 
-#### 📌 Task AI-12: Trình Tạo Thiệp Cưới Online & Trang Điểm Danh RSVP 1 Chạm (End-to-End)
+#### 📌 Task AI-12: Trình Tạo Thiệp Cưới Online & Trang Điểm Danh RSVP 1 Chạm (End-to-End) [ĐÃ HOÀN THÀNH]
 * **Mục tiêu:** Cho phép dâu rể tạo thiệp online; khách mời mở link `/invitation/:slug` xem bản đồ và điểm danh RSVP 1 chạm không cần đăng nhập.
 * **Context cần đọc:** [4.Prototype/SCR-07-Wedding-Invitation-RSVP.html](file:///d:/EXE201/Wedding/REQ_EXE/4.Prototype/SCR-07-Wedding-Invitation-RSVP.html), `Epic-07-Wedding-Tools-RSVP`.
 * **Prompt mẫu cho AI:**
@@ -764,7 +764,7 @@ graph TD
   2. Customer Portal: InvitationBuilder.tsx (chọn template, nhập tên CD-CR, ngày giờ, địa điểm sảnh tiệc, tải ảnh cưới) và GuestRsvpList.tsx (thống kê tổng khách tham dự).
   3. Public RSVP Page (/invitation/:slug): Giao diện mobile-first sang trọng, nhạc nền, định vị Google Maps và form điểm danh RSVP 1 chạm."
   ```
-* **Định nghĩa hoàn thành (DoD):** Dâu rể tạo thiệp thành công; mở tab ẩn danh truy cập link thiệp bấm RSVP gửi lời chúc thành công.
+* **Định nghĩa hoàn thành (DoD):** Dâu rể tạo thiệp thành công; mở tab ẩn danh truy cập link thiệp bấm RSVP gửi lời chúc thành công. Đã test build xanh 100% cả BE và FE.
 
 ---
 

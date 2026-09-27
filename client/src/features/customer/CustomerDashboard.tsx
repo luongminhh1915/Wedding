@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MyContracts } from './components/MyContracts';
+import { InvitationBuilder } from './components/invitation/InvitationBuilder';
 
 type CustomerTab = 'contracts' | 'invitations' | 'budget' | 'checklist';
 
@@ -139,14 +140,7 @@ export default function CustomerDashboard() {
 
         {/* Tab Content Display */}
         {activeTab === 'contracts' && <MyContracts />}
-
-        {activeTab === 'invitations' && (
-          <FeatureComingSoon
-            title="Trình Tạo Thiệp Cưới Online & Điểm Danh RSVP 1 Chạm"
-            phase="Task AI-12 (Phase 5: Growth Hook)"
-            description="Cho phép dâu rể chọn template thiệp, tạo link public /invitation/:slug có nhạc nền, định vị bàn tiệc và khách mời RSVP 1 chạm."
-          />
-        )}
+        {activeTab === 'invitations' && <InvitationBuilder />}
 
         {activeTab === 'budget' && (
           <FeatureComingSoon

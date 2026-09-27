@@ -17,6 +17,7 @@ public class WeddingInvitation : BaseEntity
     public string? CoverImageUrl { get; private set; }
     public string? MusicUrl { get; private set; }
     public string TemplateStyle { get; private set; } = "ClassicRose";
+    public string? BankInfo { get; private set; } // Thông tin mừng cưới online / STK
     public bool IsPublished { get; private set; } = true;
 
     // Navigation Properties
@@ -27,7 +28,7 @@ public class WeddingInvitation : BaseEntity
 
     public static WeddingInvitation Create(Guid customerId, string slug, string groomName, 
         string brideName, DateTime eventDate, string venueName, string venueAddress, 
-        string? mapUrl, string? coverImageUrl, string templateStyle = "ClassicRose")
+        string? mapUrl, string? coverImageUrl, string templateStyle = "ClassicRose", string? bankInfo = null, string? loveStory = null)
     {
         if (string.IsNullOrWhiteSpace(groomName) || string.IsNullOrWhiteSpace(brideName))
             throw new DomainException("Tên cô dâu và chú rể là bắt buộc.");
@@ -47,13 +48,15 @@ public class WeddingInvitation : BaseEntity
             MapUrl = mapUrl,
             CoverImageUrl = coverImageUrl,
             TemplateStyle = templateStyle,
+            BankInfo = bankInfo,
+            LoveStory = loveStory,
             IsPublished = true,
             CreatedAt = DateTime.UtcNow
         };
     }
 
     public void Update(string groomName, string brideName, DateTime eventDate, string venueName, 
-        string venueAddress, string? mapUrl, string? loveStory, string? coverImageUrl, string? musicUrl, string templateStyle)
+        string venueAddress, string? mapUrl, string? loveStory, string? coverImageUrl, string? musicUrl, string templateStyle, string? bankInfo = null)
     {
         GroomName = groomName.Trim();
         BrideName = brideName.Trim();
@@ -65,6 +68,7 @@ public class WeddingInvitation : BaseEntity
         CoverImageUrl = coverImageUrl;
         MusicUrl = musicUrl;
         TemplateStyle = templateStyle;
+        BankInfo = bankInfo;
         SetUpdated();
     }
 }

@@ -23,6 +23,7 @@ public class WeddingInvitationConfiguration : IEntityTypeConfiguration<WeddingIn
         builder.Property(w => w.MusicUrl).HasMaxLength(500);
         builder.Property(w => w.TemplateStyle).HasMaxLength(50).IsRequired();
         builder.Property(w => w.LoveStory).HasMaxLength(3000);
+        builder.Property(w => w.BankInfo).HasMaxLength(300);
 
         builder.HasOne(w => w.Customer)
                .WithMany(u => u.WeddingInvitations)
