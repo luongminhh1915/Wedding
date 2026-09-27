@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Service Platform - Quản Lý Bài Đăng & Hợp Đồng 2 Chiều</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #c97a7e;
+            --primary-dark: #a8585c;
+            --accent: #2a9d8f;
+            --warning: #e76f51;
+            --bg: #f8f9fa;
+            --surface: #ffffff;
+            --text-main: #2b2323;
+            --text-muted: #6c757d;
+            --border: #dee2e6;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        header {
+            background: #241c1c;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tab-bar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            padding: 0 24px;
+        }
+        .tab-btn {
+            padding: 14px 10px;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text-muted);
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+        .card { background: white; border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 24px; }
+
+        .btn {
+            padding: 9px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+
+        .table-data { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .table-data th, .table-data td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .table-data th { background: #fdfdfd; color: var(--text-muted); font-weight: 700; }
+
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+        .status-active { background: #e6fcf5; color: #0ca678; }
+        .status-pending { background: #fff9db; color: #f59f00; }
+        .status-hidden { background: #f1f3f5; color: #868e96; }
+
+        /* Modal Verification */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; padding: 32px; border-radius: var(--radius-lg); width: 100%; max-width: 580px; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: var(--text-muted); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">💍</span>
+            <strong>The Reverie Saigon - Portal Đối Tác</strong>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="openCreateListingModal()">+ Đăng Gói Dịch Vụ Mới (UC 3.2)</button>
+            <button class="btn btn-accent" onclick="openCreateContractModal()">📝 Tạo Hợp Đồng & Nhập Voucher (UC 4.1)</button>
+        </div>
+    </header>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchView('listings', this)">Quản Lý Gói Dịch Vụ (Epic 3)</button>
+        <button class="tab-btn" onclick="switchView('contracts', this)">Giao Dịch Hợp Đồng 2 Chiều (Epic 4)</button>
+        <button class="tab-btn" onclick="switchView('clientView', this)">Giao Diện Dâu Rể Xác Thực (UC 4.3)</button>
+        <button class="tab-btn" onclick="switchView('adminMod', this)">Kiểm Duyệt Viên Admin (UC 3.4)</button>
+    </div>
+
+    <div class="container">
+        <!-- View 1: Quản lý bài đăng (Epic 3) -->
+        <section id="viewListings" class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2>Danh Sách Bài Đăng & Portfolio (5 Gói Dịch Vụ)</h2>
+                <span style="font-size: 13px; color: var(--text-muted);">SLA Kiểm duyệt: &le; 24h</span>
+            </div>
+
+            <table class="table-data">
+                <thead>
+                    <tr>
+                        <th>Gói Dịch Vụ</th>
+                        <th>Ngành</th>
+                        <th>Khoảng Giá</th>
+                        <th>Trạng Thái</th>
+                        <th>Portfolio</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Sảnh Tiệc Pha Lê Hoàng Gia (Crystal Grand)</strong></td>
+                        <td>Trung tâm Tiệc cưới</td>
+                        <td>12.5M - 25M / bàn</td>
+                        <td><span class="status-badge status-active">Active (Đang hiển thị)</span></td>
+                        <td>8 Ảnh HD + 1 Video 4K</td>
+                        <td><button class="btn btn-outline" onclick="toggleStatus(this)">Tạm Ẩn</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gói Tiệc Cưới Vườn Cổ Điển Ngoài Trời</strong></td>
+                        <td>Trung tâm Tiệc cưới</td>
+                        <td>15M - 28M / bàn</td>
+                        <td><span class="status-badge status-pending">Chờ Duyệt (Pending)</span></td>
+                        <td>6 Ảnh HD</td>
+                        <td><button class="btn btn-outline" disabled>Đang thẩm định</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- View 2: Giao dịch hợp đồng (Epic 4) -->
+        <section id="viewContracts" class="card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2>Hợp Đồng & Xác Thực Giao Dịch 2 Chiều</h2>
+                <span style="font-size: 13px; color: var(--text-muted);">Cơ chế bảo vệ hoa hồng & quà cưới</span>
+            </div>
+
+            <table class="table-data">
+                <thead>
+                    <tr>
+                        <th>Mã HĐ</th>
+                        <th>Khách Hàng</th>
+                        <th>Mã Voucher</th>
+                        <th>Tổng Giá Trị</th>
+                        <th>Tiền Cọc (Kỳ 1)</th>
+                        <th>Trạng Thái</th>
+                        <th>Hạn Xác Nhận</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>HDC-2026-001</strong></td>
+                        <td>Tuấn Kiệt & Thùy Trang</td>
+                        <td><span style="font-family: monospace; font-weight: 800; color: var(--primary-dark);">WVIP8899</span></td>
+                        <td>180.000.000đ</td>
+                        <td>50.000.000đ</td>
+                        <td><span class="status-badge status-pending">Chờ Khách Duyệt (Pending)</span></td>
+                        <td>⏱️ Còn 54 giờ (SLA 72h)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HDC-2026-002</strong></td>
+                        <td>Quốc Bảo & Mai Anh</td>
+                        <td><span style="font-family: monospace; font-weight: 800; color: var(--primary-dark);">WVIP7722</span></td>
+                        <td>220.000.000đ</td>
+                        <td>60.000.000đ</td>
+                        <td><span class="status-badge status-active">Đã Xác Nhận (Confirmed)</span></td>
+                        <td>Đã chốt ngày 25/09</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- View 3: Màn hình Dâu Rể nhận thông báo xác nhận 2 chiều (UC 4.3) -->
+        <section id="viewClientView" class="card" style="display: none; max-width: 600px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span style="font-size: 40px;">💌</span>
+                <h3 style="font-size: 20px;">Xác Nhận Hợp Đồng Dịch Vụ Cưới</h3>
+                <p style="font-size: 13px; color: var(--text-muted);">Nhà cung cấp <strong>The Reverie Saigon</strong> vừa gửi thông tin hợp đồng để kích hoạt quà mừng cưới từ Sàn.</p>
+            </div>
+
+            <div style="background: #fdfaf7; border: 1.5px dashed var(--primary); padding: 18px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Gói dịch vụ:</span>
+                    <strong>Sảnh Pha Lê Hoàng Gia (350 Khách)</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Tổng giá trị hợp đồng:</span>
+                    <strong style="color: var(--primary-dark); font-size: 16px;">180.000.000đ</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Số tiền đã đặt cọc:</span>
+                    <strong>50.000.000đ</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Mã ưu đãi áp dụng:</span>
+                    <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800;">WVIP8899</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Quà mừng cưới từ Sàn:</span>
+                    <span style="color: #2b8a3e; font-weight: 700;">🎁 Voucher 500.000đ + Bộ Thiệp Online VIP</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="alert('UC 4.4: Bạn đã từ chối xác nhận do sai lệch thông tin! Hợp đồng trả về cho NCC sửa.')">Sai thông tin? Từ chối</button>
+                <button class="btn btn-primary" style="flex: 2; padding: 12px;" onclick="alert('🎉 UC 4.3: Xác nhận thành công! Hợp đồng chuyển Confirmed. Bạn đã nhận được quà cưới!')">✓ Bấm Xác Nhận Hợp Đồng</button>
+            </div>
+        </section>
+
+        <!-- View 4: Moderator Duyệt bài đăng (UC 3.4) -->
+        <section id="viewAdminMod" class="card" style="display: none;">
+            <h2>Admin Back-office: Hàng Đợi Kiểm Duyệt Bài Đăng (SLA 24h)</h2>
+            <div style="margin-top: 16px; border: 1px solid var(--border); padding: 18px; border-radius: 10px;">
+                <h4>Bài đăng: Gói Tiệc Cưới Vườn Cổ Điển Ngoài Trời</h4>
+                <p style="font-size: 13px; color: var(--text-muted);">NCC: The Reverie Saigon · Nộp lúc: 27/09/2026 10:15</p>
+                <div style="margin: 12px 0; font-size: 14px;">
+                    <strong>Giá:</strong> 15.000.000đ - 28.000.000đ / bàn · <strong>Hình ảnh:</strong> 6 ảnh (Đã kiểm tra không watermark vi phạm).
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-accent" onclick="alert('UC 3.4: Đã phê duyệt! Bài đăng chuyển sang trạng thái Active.')">✓ Phê Duyệt Bài Đăng</button>
+                    <button class="btn btn-outline" style="color: red;" onclick="alert('UC 3.4: Đã từ chối! Gửi thông báo lý do về cho NCC.')">Từ Chối</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal Tạo Hợp Đồng & Nhập Mã Voucher (UC 4.1) -->
+    <div class="modal-overlay" id="modalContract">
+        <div class="modal-box">
+            <h3 style="margin-bottom: 8px;">Tạo Giao Dịch Hợp Đồng Dịch Vụ Cưới (UC 4.1)</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Nhập đúng mã Voucher của khách hàng để kích hoạt đối soát hoa hồng và bảo vệ quyền lợi 2 bên.</p>
+
+            <div class="form-group">
+                <label>MÃ VOUCHER ĐỊNH DANH (8 KÝ TỰ):</label>
+                <input type="text" id="inputVoucher" value="WVIP8899" style="font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
+            </div>
+
+            <div class="form-group">
+                <label>TÊN CẶP ĐÔI KHÁCH HÀNG:</label>
+                <input type="text" value="Tuấn Kiệt & Thùy Trang">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label>TỔNG GIÁ TRỊ HỢP ĐỒNG (VNĐ):</label>
+                    <input type="number" value="180000000">
+                </div>
+                <div class="form-group">
+                    <label>SỐ TIỀN ĐẶT CỌC THỰC TẾ (VNĐ):</label>
+                    <input type="number" value="50000000">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ẢNH CHỤP HỢP ĐỒNG / BIÊN LAI CỌC (BẮT BUỘC):</label>
+                <input type="file">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="closeCreateContractModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="submitContract()">Gửi Yêu Cầu Xác Thực Cho Khách</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchView(viewName, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('viewListings').style.display = viewName === 'listings' ? 'block' : 'none';
+            document.getElementById('viewContracts').style.display = viewName === 'contracts' ? 'block' : 'none';
+            document.getElementById('viewClientView').style.display = viewName === 'clientView' ? 'block' : 'none';
+            document.getElementById('viewAdminMod').style.display = viewName === 'adminMod' ? 'block' : 'none';
+        }
+
+        function openCreateContractModal() { document.getElementById('modalContract').classList.add('active'); }
+        function closeCreateContractModal() { document.getElementById('modalContract').classList.remove('active'); }
+
+        function submitContract() {
+            closeCreateContractModal();
+            alert('🎉 UC 4.1 Thành công!\n\n• Hợp đồng HDC-2026-001 đã tạo ở trạng thái PendingVerification.\n• Hệ thống vừa bắn thông báo xác thực tới Khách hàng qua Zalo/App (SLA 72h)!\n• Chờ khách bấm xác nhận.');
+        }
+
+        function toggleStatus(btn) {
+            if (btn.innerText === 'Tạm Ẩn') {
+                btn.innerText = 'Bật Lại';
+                btn.closest('tr').querySelector('.status-badge').className = 'status-badge status-hidden';
+                btn.closest('tr').querySelector('.status-badge').innerText = 'Hidden (Đã ẩn)';
+            } else {
+                btn.innerText = 'Tạm Ẩn';
+                btn.closest('tr').querySelector('.status-badge').className = 'status-badge status-active';
+                btn.closest('tr').querySelector('.status-badge').innerText = 'Active (Đang hiển thị)';
+            }
+        }
+
+        function openCreateListingModal() {
+            alert('Mở form Đăng gói dịch vụ mới (UC 3.2): Nhập tiêu đề, giá, tải ảnh portfolio lên Cloudinary và nộp duyệt SLA 24h!');
+        }
+    </script>
+</body>
+</html>

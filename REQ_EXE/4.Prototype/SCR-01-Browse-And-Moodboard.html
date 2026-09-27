@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Service Platform - Khám Phá & AI Stylist Matching</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #c97a7e;
+            --primary-dark: #a8585c;
+            --primary-light: #fbeeed;
+            --accent: #d4af37;
+            --bg: #fcfbf9;
+            --surface: #ffffff;
+            --text-main: #2b2323;
+            --text-muted: #736b6b;
+            --border: #f0e6e6;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 10px 30px rgba(201, 122, 126, 0.08);
+            --shadow-hover: 0 15px 40px rgba(201, 122, 126, 0.16);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Top Bar & Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #a8585c, #c97a7e);
+            color: white;
+            box-shadow: 0 4px 15px rgba(201, 122, 126, 0.35);
+        }
+
+        .btn-ai:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(201, 122, 126, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Hero & Search Banner */
+        .hero {
+            max-width: 1280px;
+            margin: 24px auto 40px;
+            padding: 0 24px;
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 50%, #fdf8f5 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .hero-card h1 {
+            font-size: 42px;
+            line-height: 1.25;
+            margin-bottom: 16px;
+            color: #241c1c;
+        }
+
+        .hero-card p {
+            color: var(--text-muted);
+            font-size: 17px;
+            max-width: 680px;
+            margin: 0 auto 32px;
+        }
+
+        /* Search Bar */
+        .search-box {
+            max-width: 860px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 10px;
+            border-radius: 50px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 12px;
+            border: 1px solid rgba(201, 122, 126, 0.2);
+        }
+
+        .search-field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 6px 18px;
+            border-right: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .search-field:last-of-type {
+            border-right: none;
+        }
+
+        .search-field label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .search-field select, .search-field input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-top: 2px;
+        }
+
+        .btn-search {
+            background: var(--primary);
+            color: white;
+            padding: 0 32px;
+            border-radius: 40px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-search:hover {
+            background: var(--primary-dark);
+        }
+
+        /* 7 Category Pills */
+        .category-nav {
+            max-width: 1280px;
+            margin: 0 auto 36px;
+            padding: 0 24px;
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .category-pill {
+            padding: 12px 22px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .category-pill:hover, .category-pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(201, 122, 126, 0.25);
+        }
+
+        /* Main Content Layout */
+        .content-container {
+            max-width: 1280px;
+            margin: 0 auto 60px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 32px;
+        }
+
+        /* Filter Sidebar */
+        .filter-sidebar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            height: fit-content;
+            box-shadow: var(--shadow);
+        }
+
+        .filter-group {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .filter-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .filter-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--text-main);
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Listings Grid */
+        .listings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .listings-count {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .listings-count strong {
+            color: var(--text-main);
+        }
+
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 24px;
+        }
+
+        .listing-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .listing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .listing-img-box {
+            position: relative;
+            height: 200px;
+            background: #f0e6e6;
+            overflow: hidden;
+        }
+
+        .listing-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .listing-card:hover .listing-img-box img {
+            transform: scale(1.05);
+        }
+
+        .tag-category {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(4px);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .tag-voucher {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, #e63946, #c97a7e);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .listing-body {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .vendor-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .vendor-name {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .verified-badge {
+            color: #2a9d8f;
+            font-size: 13px;
+        }
+
+        .listing-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.35;
+            color: var(--text-main);
+        }
+
+        .listing-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .rating-box {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .listing-price {
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .btn-view-lead {
+            padding: 8px 14px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .btn-view-lead:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Modal Visual Moodboard Quiz */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 760px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 36px;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+            animation: modalPop 0.3s ease-out;
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f0f0f0;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .quiz-step {
+            display: none;
+        }
+
+        .quiz-step.active {
+            display: block;
+        }
+
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin: 20px 0;
+        }
+
+        .mood-item {
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            height: 140px;
+            transition: var(--transition);
+        }
+
+        .mood-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .mood-item.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        .mood-title {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 10px;
+            text-align: center;
+        }
+
+        .check-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+
+        .mood-item.selected .check-badge {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="header-container">
+            <a href="#" class="logo">
+                <div class="logo-icon">💍</div>
+                <div class="logo-text">WeddingPlat</div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#" class="active">Khám Phá Dịch Vụ</a></li>
+                <li><a href="#moodboard" onclick="openMoodboardQuiz()">AI Stylist Matching</a></li>
+                <li><a href="#">Tiện Ích Cưới (Thiệp & RSVP)</a></li>
+                <li><a href="#">Cẩm Nang SEO</a></li>
+            </ul>
+            <div class="header-actions">
+                <button class="btn btn-ai" onclick="openMoodboardQuiz()">
+                    <span>✨ AI Stylist Quiz</span>
+                </button>
+                <a href="#" class="btn btn-outline">Dành Cho NCC</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner with Semantic Filter -->
+    <section class="hero">
+        <div class="hero-card">
+            <span class="hero-badge">AI-Powered Wedding Marketplace</span>
+            <h1>Khám Phá & Khớp Nối Nhà Cung Cấp Cưới Chuẩn Gu</h1>
+            <p>Khám phá hơn 200+ dịch vụ cưới hàng đầu tại Việt Nam. Sử dụng trợ lý AI Stylist để bóc tách gu thẩm mỹ và nhận gợi ý 3-5 đối tác hoàn hảo cho ngày trọng đại.</p>
+
+            <!-- Quick Search Bar -->
+            <div class="search-box">
+                <div class="search-field">
+                    <label>Danh mục dịch vụ</label>
+                    <select id="searchCategory">
+                        <option value="all">Tất cả 7 ngành cưới</option>
+                        <option value="venue">Trung tâm Tiệc cưới (Venue)</option>
+                        <option value="decor">Trang trí Tiệc cưới (Decor)</option>
+                        <option value="photo">Quay phim & Chụp ảnh</option>
+                        <option value="bridal">Váy cưới & Vest</option>
+                        <option value="makeup">Trang điểm Cô dâu</option>
+                        <option value="planner">Wedding Planner trọn gói</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label>Khu vực</label>
+                    <select id="searchProvince">
+                        <option value="all">Toàn quốc</option>
+                        <option value="hcm">TP. Hồ Chí Minh</option>
+                        <option value="hn">Hà Nội</option>
+                        <option value="dn">Đà Nẵng</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label>Ngân sách dự kiến</label>
+                    <select id="searchBudget">
+                        <option value="all">Mọi mức giá</option>
+                        <option value="under50">Dưới 50 triệu</option>
+                        <option value="50-100">50 - 100 triệu</option>
+                        <option value="100-200">100 - 200 triệu</option>
+                        <option value="above200">Trên 200 triệu</option>
+                    </select>
+                </div>
+                <button class="btn-search" onclick="filterListings()">Tìm Kiếm</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7 Category Quick Pills -->
+    <div class="category-nav">
+        <div class="category-pill active" onclick="setCategoryFilter('all', this)">✨ Tất cả dịch vụ</div>
+        <div class="category-pill" onclick="setCategoryFilter('venue', this)">🏰 Trung tâm Tiệc cưới (Venue)</div>
+        <div class="category-pill" onclick="setCategoryFilter('decor', this)">🌸 Trang trí Concept (Decor)</div>
+        <div class="category-pill" onclick="setCategoryFilter('photo', this)">📷 Quay chụp Phóng sự</div>
+        <div class="category-pill" onclick="setCategoryFilter('bridal', this)">👗 Váy cưới & Vest cao cấp</div>
+        <div class="category-pill" onclick="setCategoryFilter('makeup', this)">💄 Makeup Cô dâu</div>
+        <div class="category-pill" onclick="setCategoryFilter('planner', this)">📋 Wedding Planner trọn gói</div>
+    </div>
+
+    <!-- Main Content Layout -->
+    <main class="content-container">
+        <!-- Sidebar Filters -->
+        <aside class="filter-sidebar">
+            <div class="filter-group">
+                <div class="filter-title">
+                    <span>Bộ lọc nâng cao</span>
+                    <a href="#" style="font-size: 12px; color: var(--primary); text-decoration: none;">Đặt lại</a>
+                </div>
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text-muted);">PHONG CÁCH CƯỚI</div>
+                <label class="checkbox-label"><input type="checkbox" checked> Minimalist / Tinh tế</label>
+                <label class="checkbox-label"><input type="checkbox"> Cổ điển / Vintage Luxury</label>
+                <label class="checkbox-label"><input type="checkbox"> Rustic / Thiên nhiên ngoài trời</label>
+                <label class="checkbox-label"><input type="checkbox"> Modern Floral / Sang trọng</label>
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-title">ĐÁNH GIÁ TỪ DÂU RỂ</div>
+                <label class="checkbox-label"><input type="radio" name="rating" checked> 4.8 sao trở lên (Top Rated)</label>
+                <label class="checkbox-label"><input type="radio" name="rating"> 4.5 sao trở lên</label>
+                <label class="checkbox-label"><input type="radio" name="rating"> Có huy hiệu Verified Buyer</label>
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-title">CHÍNH SÁCH ƯU ĐÃI</div>
+                <label class="checkbox-label"><input type="checkbox" checked> Có mã giảm giá độc quyền (Voucher)</label>
+                <label class="checkbox-label"><input type="checkbox"> Hỗ trợ chia cọc 2 kỳ (50/50)</label>
+            </div>
+        </aside>
+
+        <!-- Listings Content -->
+        <section>
+            <div class="listings-header">
+                <div class="listings-count">Hiển thị <strong id="totalCount">6</strong> gói dịch vụ cưới chất lượng cao</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span style="font-size: 13px; color: var(--text-muted);">Sắp xếp:</span>
+                    <select style="border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; font-size: 13px; outline: none;">
+                        <option>Được gợi ý nhiều nhất (AI Match)</option>
+                        <option>Giá: Thấp đến Cao</option>
+                        <option>Giá: Cao đến Thấp</option>
+                        <option>Đánh giá cao nhất</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="listings-grid" id="listingsContainer">
+                <!-- Card 1 -->
+                <article class="listing-card" data-category="venue">
+                    <div class="listing-img-box">
+                        <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=600&q=80" alt="Venue Wedding">
+                        <span class="tag-category">Tiệc cưới</span>
+                        <span class="tag-voucher">🎁 Giảm 5% + Tặng Bàn Gallery</span>
+                    </div>
+                    <div class="listing-body">
+                        <div class="vendor-info">
+                            <span class="vendor-name">The Reverie Saigon Hall</span>
+                            <span class="verified-badge" title="Đối tác xác thực">✓</span>
+                        </div>
+                        <h3 class="listing-title">Gói Sảnh Tiệc Pha Lê Hoàng Gia (Crystal Grand Ballroom)</h3>
+                        <div class="listing-meta">
+                            <span>📍 Quận 1, TP.HCM</span>
+                            <div class="rating-box">★ 4.9 (48)</div>
+                        </div>
+                        <div class="listing-price">
+                            <div>
+                                <span style="font-size: 11px; color: var(--text-muted); display: block;">Giá từ</span>
+                                <span class="price-value">12.500.000đ / bàn</span>
+                            </div>
+                            <a href="#" class="btn-view-lead" onclick="alert('Mở Modal UC 2.1: Gửi yêu cầu tư vấn & Cấp mã ưu đãi WVIP8899')">Nhận Voucher</a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 2 -->
+                <article class="listing-card" data-category="decor">
+                    <div class="listing-img-box">
+                        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80" alt="Decor Concept">
+                        <span class="tag-category">Trang trí</span>
+                        <span class="tag-voucher">🎁 Voucher 2.000.000đ</span>
+                    </div>
+                    <div class="listing-body">
+                        <div class="vendor-info">
+                            <span class="vendor-name">Bliss Wedding Decor</span>
+                            <span class="verified-badge">✓</span>
+                        </div>
+                        <h3 class="listing-title">Gói Trang Trí Concept Vườn Cổ Tích (Secret Garden Floral)</h3>
+                        <div class="listing-meta">
+                            <span>📍 Bình Thạnh, TP.HCM</span>
+                            <div class="rating-box">★ 4.8 (62)</div>
+                        </div>
+                        <div class="listing-price">
+                            <div>
+                                <span style="font-size: 11px; color: var(--text-muted); display: block;">Trọn gói từ</span>
+                                <span class="price-value">45.000.000đ</span>
+                            </div>
+                            <a href="#" class="btn-view-lead" onclick="alert('Mở Modal UC 2.1: Gửi yêu cầu tư vấn & Cấp mã ưu đãi WVIP7722')">Nhận Voucher</a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 3 -->
+                <article class="listing-card" data-category="photo">
+                    <div class="listing-img-box">
+                        <img src="https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=600&q=80" alt="Photography">
+                        <span class="tag-category">Quay chụp</span>
+                        <span class="tag-voucher">🎁 Tặng Flycam 4K</span>
+                    </div>
+                    <div class="listing-body">
+                        <div class="vendor-info">
+                            <span class="vendor-name">Khoa Nguyen Wedding Photo</span>
+                            <span class="verified-badge">✓</span>
+                        </div>
+                        <h3 class="listing-title">Gói Phóng Sự Cưới Cảm Xúc (Cinematic Storytelling)</h3>
+                        <div class="listing-meta">
+                            <span>📍 Cầu Giấy, Hà Nội</span>
+                            <div class="rating-box">★ 5.0 (94)</div>
+                        </div>
+                        <div class="listing-price">
+                            <div>
+                                <span style="font-size: 11px; color: var(--text-muted); display: block;">Trọn gói</span>
+                                <span class="price-value">18.000.000đ</span>
+                            </div>
+                            <a href="#" class="btn-view-lead" onclick="alert('Mở Modal UC 2.1: Gửi yêu cầu tư vấn & Cấp mã ưu đãi WVIP5511')">Nhận Voucher</a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 4 -->
+                <article class="listing-card" data-category="bridal">
+                    <div class="listing-img-box">
+                        <img src="https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=600&q=80" alt="Bridal Gown">
+                        <span class="tag-category">Váy cưới</span>
+                        <span class="tag-voucher">🎁 Giảm 10% Thuê Nước Đầu</span>
+                    </div>
+                    <div class="listing-body">
+                        <div class="vendor-info">
+                            <span class="vendor-name">Cinderella Bridal Atelier</span>
+                            <span class="verified-badge">✓</span>
+                        </div>
+                        <h3 class="listing-title">Bộ Sưu Tập Váy Cưới Công Chúa Đính Đá Pha Lê Swarovski</h3>
+                        <div class="listing-meta">
+                            <span>📍 Quận 3, TP.HCM</span>
+                            <div class="rating-box">★ 4.9 (35)</div>
+                        </div>
+                        <div class="listing-price">
+                            <div>
+                                <span style="font-size: 11px; color: var(--text-muted); display: block;">Thuê từ</span>
+                                <span class="price-value">22.000.000đ</span>
+                            </div>
+                            <a href="#" class="btn-view-lead" onclick="alert('Mở Modal UC 2.1: Gửi yêu cầu tư vấn & Cấp mã ưu đãi WVIP3399')">Nhận Voucher</a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 5 -->
+                <article class="listing-card" data-category="makeup">
+                    <div class="listing-img-box">
+                        <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80" alt="Bridal Makeup">
+                        <span class="tag-category">Makeup</span>
+                        <span class="tag-voucher">🎁 Tặng Makeup Mẹ Cô Dâu</span>
+                    </div>
+                    <div class="listing-body">
+                        <div class="vendor-info">
+                            <span class="vendor-name">Quynh Anh Bridal Beauty</span>
+                            <span class="verified-badge">✓</span>
+                        </div>
+                        <h3 class="listing-title">Gói Trang Điểm Cô Dâu Phong Cách Trong Trẻo Hàn Quốc</h3>
+                        <div class="listing-meta">
+                            <span>📍 Đống Đa, Hà Nội</span>
+                            <div class="rating-box">★ 4.8 (51)</div>
+                        </div>
+                        <div class="listing-price">
+                            <div>
+                                <span style="font-size: 11px; color: var(--text-muted); display: block;">Giá từ</span>
+                                <span class="price-value">4.500.000đ / ngày</span>
+                            </div>
+                            <a href="#" class="btn-view-lead" onclick="alert('Mở Modal UC 2.1: Gửi yêu cầu tư vấn & Cấp mã ưu đãi WVIP1188')">Nhận Voucher</a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 6 -->
+                <article class="listing-card" data-category="planner">
+                    <div class="listing-img-box">
+                        <img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=600&q=80" alt="Wedding Planner">
+                        <span class="tag-category">Wedding Planner</span>
+                        <span class="tag-voucher">🎁 Tặng Kịch Bản Độc Quyền</span>
+                    </div>
+                    <div class="listing-body">
+                        <div class="vendor-info">
+                            <span class="vendor-name">The Dreamers Wedding Plan</span>
+                            <span class="verified-badge">✓</span>
+                        </div>
+                        <h3 class="listing-title">Dịch Vụ Điều Phối & Lên Kế Hoạch Cưới Trọn Gói A-Z</h3>
+                        <div class="listing-meta">
+                            <span>📍 Toàn quốc (HCM, HN, Đà Nẵng)</span>
+                            <div class="rating-box">★ 5.0 (29)</div>
+                        </div>
+                        <div class="listing-price">
+                            <div>
+                                <span style="font-size: 11px; color: var(--text-muted); display: block;">Phí dịch vụ</span>
+                                <span class="price-value">35.000.000đ</span>
+                            </div>
+                            <a href="#" class="btn-view-lead" onclick="alert('Mở Modal UC 2.1: Gửi yêu cầu tư vấn & Cấp mã ưu đãi WVIP9900')">Nhận Voucher</a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: AI Visual Moodboard Quiz (UC 1.3) -->
+    <div class="modal-overlay" id="moodboardModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeMoodboardQuiz()">×</button>
+            
+            <!-- Step 1: Chọn Moodboard -->
+            <div class="quiz-step active" id="quizStep1">
+                <span class="hero-badge">Bước 1/2 · Bóc Tách Phong Cách</span>
+                <h2 style="font-size: 26px; margin: 8px 0 12px;">Chọn 3 bức ảnh chạm đến cảm xúc của bạn</h2>
+                <p style="color: var(--text-muted); font-size: 14px;">Hệ thống AI Stylist sẽ phân tích tông màu, mức độ cầu kỳ và concept không gian để khớp nối NCC phù hợp nhất.</p>
+
+                <div class="mood-grid">
+                    <div class="mood-item selected" onclick="toggleMood(this)">
+                        <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=400&q=80">
+                        <div class="check-badge">✓</div>
+                        <div class="mood-title">Cổ Điển Hoàng Gia</div>
+                    </div>
+                    <div class="mood-item selected" onclick="toggleMood(this)">
+                        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=400&q=80">
+                        <div class="check-badge">✓</div>
+                        <div class="mood-title">Khu Vườn Cổ Tích</div>
+                    </div>
+                    <div class="mood-item selected" onclick="toggleMood(this)">
+                        <img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=400&q=80">
+                        <div class="check-badge">✓</div>
+                        <div class="mood-title">Thiên Nhiên Ngoài Trời</div>
+                    </div>
+                    <div class="mood-item" onclick="toggleMood(this)">
+                        <img src="https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=400&q=80">
+                        <div class="check-badge">✓</div>
+                        <div class="mood-title">Minimalist Tinh Tế</div>
+                    </div>
+                    <div class="mood-item" onclick="toggleMood(this)">
+                        <img src="https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=400&q=80">
+                        <div class="check-badge">✓</div>
+                        <div class="mood-title">Hiện Đại Sang Trọng</div>
+                    </div>
+                    <div class="mood-item" onclick="toggleMood(this)">
+                        <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=400&q=80">
+                        <div class="check-badge">✓</div>
+                        <div class="mood-title">Vintage Mộng Mơ</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+                    <span style="font-size: 13px; color: var(--text-muted);">Đã chọn: <strong id="selectedCount" style="color: var(--primary);">3</strong>/3 phong cách</span>
+                    <button class="btn btn-ai" onclick="nextQuizStep(2)">Tiếp Tục: Chọn Ngân Sách →</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Chọn Ngân Sách & Nhận Gợi Ý AI -->
+            <div class="quiz-step" id="quizStep2">
+                <span class="hero-badge">Bước 2/2 · Dự Toán Ngân Sách</span>
+                <h2 style="font-size: 26px; margin: 8px 0 12px;">Ngân sách dự kiến cho các hạng mục cưới?</h2>
+                <p style="color: var(--text-muted); font-size: 14px;">Trợ lý AI Stylist sẽ kết hợp phong cách đã chọn với ngân sách để lọc chính xác các NCC trong tầm tay.</p>
+
+                <div style="margin: 28px 0;">
+                    <label style="font-size: 14px; font-weight: 700; display: block; margin-bottom: 8px;">Tổng ngân sách dự kiến (Triệu VNĐ):</label>
+                    <input type="range" min="50" max="600" value="150" step="10" style="width: 100%; accent-color: var(--primary);" oninput="document.getElementById('budgetValue').innerText = this.value + ' Triệu VNĐ'">
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-weight: 800; color: var(--primary-dark);">
+                        <span>50 Triệu</span>
+                        <span id="budgetValue" style="font-size: 20px; background: var(--primary-light); padding: 4px 14px; border-radius: 12px;">150 Triệu VNĐ</span>
+                        <span>600+ Triệu</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="font-size: 14px; font-weight: 700; display: block; margin-bottom: 8px;">Địa điểm tổ chức tiệc:</label>
+                    <select style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;">
+                        <option>TP. Hồ Chí Minh (Trung tâm & lân cận)</option>
+                        <option>Hà Nội</option>
+                        <option>Đà Nẵng / Hội An</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="btn btn-outline" onclick="nextQuizStep(1)">← Quay Lại</button>
+                    <button class="btn btn-ai" onclick="submitAIQuiz()">✨ Bắt Đầu Phân Tích & Gợi Ý AI</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openMoodboardQuiz() {
+            document.getElementById('moodboardModal').classList.add('active');
+        }
+
+        function closeMoodboardQuiz() {
+            document.getElementById('moodboardModal').classList.remove('active');
+        }
+
+        function toggleMood(element) {
+            element.classList.toggle('selected');
+            const count = document.querySelectorAll('.mood-item.selected').length;
+            document.getElementById('selectedCount').innerText = count;
+        }
+
+        function nextQuizStep(step) {
+            document.getElementById('quizStep1').classList.remove('active');
+            document.getElementById('quizStep2').classList.remove('active');
+            document.getElementById('quizStep' + step).classList.add('active');
+        }
+
+        function submitAIQuiz() {
+            closeMoodboardQuiz();
+            alert('🎉 AI Stylist Engine đang thực hiện Vector Search (Qdrant) theo gu thẩm mỹ và ngân sách 150 Triệu...\n\nĐã tìm thấy 3 Nhà cung cấp khớp nối 98%: \n1. The Reverie Saigon Hall\n2. Bliss Wedding Decor\n3. Cinderella Bridal Atelier');
+        }
+
+        function setCategoryFilter(cat, pill) {
+            document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            
+            const cards = document.querySelectorAll('.listing-card');
+            let count = 0;
+            cards.forEach(card => {
+                if (cat === 'all' || card.getAttribute('data-category') === cat) {
+                    card.style.display = 'flex';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            document.getElementById('totalCount').innerText = count;
+        }
+
+        function filterListings() {
+            const cat = document.getElementById('searchCategory').value;
+            if (cat === 'all') {
+                setCategoryFilter('all', document.querySelectorAll('.category-pill')[0]);
+            } else {
+                const targetPill = Array.from(document.querySelectorAll('.category-pill')).find(p => p.textContent.toLowerCase().includes(cat));
+                if (targetPill) targetPill.click();
+            }
+        }
+    </script>
+</body>
+</html>

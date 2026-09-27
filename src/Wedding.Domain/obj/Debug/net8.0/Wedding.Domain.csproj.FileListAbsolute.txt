@@ -1,0 +1,11 @@
+D:\EXE201\Wedding\src\Wedding.Domain\bin\Debug\net8.0\Wedding.Domain.deps.json
+D:\EXE201\Wedding\src\Wedding.Domain\bin\Debug\net8.0\Wedding.Domain.dll
+D:\EXE201\Wedding\src\Wedding.Domain\bin\Debug\net8.0\Wedding.Domain.pdb
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.AssemblyInfoInputs.cache
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.AssemblyInfo.cs
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.csproj.CoreCompileInputs.cache
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.dll
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\refint\Wedding.Domain.dll
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.pdb
+D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\ref\Wedding.Domain.dll

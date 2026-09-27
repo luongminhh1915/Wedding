@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Service Platform - Đối Soát Hoa Hồng 2 Kỳ & Đánh Giá Uy Tín (Epic 5 & 6)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #c97a7e;
+            --primary-dark: #a8585c;
+            --primary-light: #fbeeed;
+            --accent: #2a9d8f;
+            --warning: #e76f51;
+            --success: #2ec4b6;
+            --bg: #f8f9fa;
+            --surface: #ffffff;
+            --text-main: #2b2323;
+            --text-muted: #6c757d;
+            --border: #e9ecef;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --transition: all 0.25s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        header {
+            background: #241c1c;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-box { display: flex; align-items: center; gap: 12px; }
+        .brand-icon { background: var(--primary); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .brand-name { font-weight: 700; font-size: 17px; }
+        .role-switch { display: flex; gap: 8px; background: #382d2d; padding: 4px; border-radius: 8px; }
+        .role-btn {
+            background: transparent;
+            color: #ddd;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .role-btn.active { background: var(--primary); color: white; }
+
+        .container { max-width: 1280px; margin: 24px auto; padding: 0 20px; }
+
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .tab-item {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: var(--transition);
+        }
+        .tab-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .stat-title { font-size: 13px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+        .stat-val { font-size: 24px; font-weight: 800; color: var(--text-main); }
+        .stat-note { font-size: 12px; color: var(--accent); margin-top: 4px; font-weight: 600; }
+
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title { font-size: 17px; font-weight: 700; }
+        .card-body { padding: 24px; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: #fdf8f8; padding: 12px 16px; font-weight: 700; color: #555; border-bottom: 1px solid var(--border); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover td { background: #fafafa; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-paid { background: #d4edda; color: #155724; }
+        .badge-escrow { background: #e2e3e5; color: #383d41; }
+        .badge-verified { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: #555; }
+        .btn-outline:hover { background: #f1f1f1; }
+
+        /* Modal VietQR */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: white;
+            border-radius: var(--radius-lg);
+            width: 520px;
+            max-width: 95%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
+        .modal-head {
+            background: linear-gradient(135deg, #241c1c, #3d3232);
+            color: white;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body { padding: 24px; }
+
+        .qr-frame {
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            background: #fffafa;
+            margin-bottom: 20px;
+        }
+        .qr-img { width: 220px; height: 220px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px; }
+
+        .qr-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .qr-label { color: var(--text-muted); font-weight: 500; }
+        .qr-val { font-weight: 700; color: var(--text-main); font-family: monospace, sans-serif; }
+
+        /* Review components */
+        .rating-stars { color: #f59e0b; font-size: 18px; }
+        .criteria-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .criteria-label { font-size: 14px; font-weight: 600; color: #444; }
+        .star-picker { display: flex; gap: 4px; cursor: pointer; color: #e2e8f0; font-size: 20px; }
+        .star-picker .active { color: #f59e0b; }
+        .review-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+            background: #ffffff;
+        }
+        .review-user-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .review-photos { display: flex; gap: 8px; margin-top: 12px; }
+        .review-photo-item { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; }
+        .vendor-reply-box {
+            background: #f8f9fa;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-box">
+            <div class="brand-icon">💍</div>
+            <div>
+                <div class="brand-name">Wedding Service Platform</div>
+                <div style="font-size: 11px; color: #bbb;">Epic 5: Đối Soát Hoa Hồng 2 Kỳ & Epic 6: Đánh Giá Uy Tín</div>
+            </div>
+        </div>
+        <div class="role-switch">
+            <button class="role-btn active" onclick="switchRole('vendor')">Vendor Portal (NCC)</button>
+            <button class="role-btn" onclick="switchRole('admin')">Admin Back-office (Kế toán & Kiểm duyệt)</button>
+            <button class="role-btn" onclick="openReviewModal()">+ Khách Đánh Giá (Client)</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- TABS NAVIGATION -->
+        <div class="nav-tabs">
+            <div class="tab-item active" onclick="switchTab('tab-settlement')">📊 Đối Soát Hoa Hồng 2 Kỳ (Epic 5)</div>
+            <div class="tab-item" onclick="switchTab('tab-reviews')">⭐ Đánh Giá & Uy Tín Đối Tác (Epic 6)</div>
+        </div>
+
+        <!-- TAB 1: COMMISSION SETTLEMENT -->
+        <div id="tab-settlement">
+            <div class="grid-stats">
+                <div class="stat-card">
+                    <div class="stat-title">Kỳ Đối Soát Tháng 09/2026</div>
+                    <div class="stat-val" style="color: var(--primary);">12.500.000 đ</div>
+                    <div class="stat-note">Chốt ngày 25/09 - Hạn TT: 30/09</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Hoa Hồng Kỳ 1 (50% Hợp Đồng)</div>
+                    <div class="stat-val">7.500.000 đ</div>
+                    <div class="stat-note">3 Hợp đồng mới xác thực 2 chiều</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Hoa Hồng Kỳ 2 (50% Sau Cưới)</div>
+                    <div class="stat-val">5.000.000 đ</div>
+                    <div class="stat-note">2 Đám cưới đã hoàn tất trong tháng</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Trạng Thái Kỳ Hiện Tại</div>
+                    <div class="stat-val" style="font-size: 20px;" id="currentSettleStatus"><span class="badge badge-pending">Chờ Thanh Toán (5 ngày)</span></div>
+                    <div class="stat-note" style="color: #666;">Mã: SETTLE-202609-V001</div>
+                </div>
+            </div>
+
+            <!-- VENDOR VIEW: BẢNG KÊ & NÚT THANH TOÁN VIETQR -->
+            <div class="card" id="vendorSettlementView">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Bảng Kê Chi Tiết Giao Dịch Đối Soát - Tháng 09/2026</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Công thức hoa hồng chuẩn: 10% Giá trị Hợp đồng (Chia 50% Kỳ 1 xác nhận, 50% Kỳ 2 sau lễ cưới)</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="openVietQRModal()" id="btnPayVietQR">
+                            <span>📲 Thanh Toán VietQR (12.500.000 đ)</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã Hợp Đồng</th>
+                                <th>Cặp Đôi</th>
+                                <th>Gói Dịch Vụ</th>
+                                <th>Ngày Cưới</th>
+                                <th>Giá Trị HĐ</th>
+                                <th>Tỷ Lệ HH</th>
+                                <th>Kỳ Đối Soát</th>
+                                <th>Số Tiền Phải Nộp</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>CTR-2026-0081</strong></td>
+                                <td>Hoàng Long & Minh Thư</td>
+                                <td>Trọn gói Wedding Decor Rustic</td>
+                                <td>15/11/2026</td>
+                                <td>50.000.000 đ</td>
+                                <td>10% (5.000.000 đ)</td>
+                                <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">Kỳ 1 (50%)</span></td>
+                                <td style="font-weight: 700; color: var(--primary);">2.500.000 đ</td>
+                                <td><span class="badge badge-pending">Pending Settlement</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>CTR-2026-0082</strong></td>
+                                <td>Quang Khải & Thuỳ Tiên</td>
+                                <td>Chụp Ảnh Pre-Wedding Đà Lạt</td>
+                                <td>20/12/2026</td>
+                                <td>30.000.000 đ</td>
+                                <td>10% (3.000.000 đ)</td>
+                                <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">Kỳ 1 (50%)</span></td>
+                                <td style="font-weight: 700; color: var(--primary);">1.500.000 đ</td>
+                                <td><span class="badge badge-pending">Pending Settlement</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>CTR-2026-0085</strong></td>
+                                <td>Đức Anh & Mai Phương</td>
+                                <td>Thuê Váy Cưới Luxury Elie Saab</td>
+                                <td>10/10/2026</td>
+                                <td>70.000.000 đ</td>
+                                <td>10% (7.000.000 đ)</td>
+                                <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">Kỳ 1 (50%)</span></td>
+                                <td style="font-weight: 700; color: var(--primary);">3.500.000 đ</td>
+                                <td><span class="badge badge-pending">Pending Settlement</span></td>
+                            </tr>
+                            <tr style="background: #fbfbfc;">
+                                <td><strong>CTR-2026-0043</strong></td>
+                                <td>Tuấn Kiệt & Lan Anh</td>
+                                <td>Trang Trí Gia Tiên Tư Gia</td>
+                                <td><strong>12/09/2026 (Đã cưới)</strong></td>
+                                <td>40.000.000 đ</td>
+                                <td>10% (4.000.000 đ)</td>
+                                <td><span class="badge" style="background: #fef3c7; color: #92400e;">Kỳ 2 (50% sau cưới)</span></td>
+                                <td style="font-weight: 700; color: var(--accent);">2.000.000 đ</td>
+                                <td><span class="badge badge-pending">Service Completed</span></td>
+                            </tr>
+                            <tr style="background: #fbfbfc;">
+                                <td><strong>CTR-2026-0047</strong></td>
+                                <td>Bảo Nam & Trúc Diễm</td>
+                                <td>Phóng Sự Cưới 2 Máy 4K</td>
+                                <td><strong>18/09/2026 (Đã cưới)</strong></td>
+                                <td>60.000.000 đ</td>
+                                <td>10% (6.000.000 đ)</td>
+                                <td><span class="badge" style="background: #fef3c7; color: #92400e;">Kỳ 2 (50% sau cưới)</span></td>
+                                <td style="font-weight: 700; color: var(--accent);">3.000.000 đ</td>
+                                <td><span class="badge badge-pending">Service Completed</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADMIN FINANCE VIEW (TOGGLED BY ROLE SWITCHER) -->
+            <div class="card" id="adminFinanceView" style="display: none;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Kế Toán Sàn - Đối Soát Thủ Công & Quản Lý Xuất Hóa Đơn VAT (UC 5.5)</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Dành cho Kế toán viên kiểm duyệt đối soát và phát hành e-Invoice</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline" onclick="alert('Đã xuất file bảng kê Excel đối soát tháng 09/2026!')">📥 Xuất Bảng Kê Excel</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="background: #fdf2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px;">
+                        ⚠️ <strong>1 Giao dịch cần đối soát thủ công:</strong> NCC <em>"White Peony Wedding Studio"</em> chuyển khoản 12.500.000đ nhưng nội dung chuyển khoản ghi <em>"White Peony nop tien thang 9"</em> (Sai cú pháp quy chuẩn <code>EXEHOAHONG SETTLE-202609-V001</code>).
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-success" onclick="manualReconcile()">✅ Xác Nhận Thanh Toán Thủ Công & Khớp Bảng Kê</button>
+                        <button class="btn btn-primary" onclick="issueVATInvoice()">🧾 Xuất Hóa Đơn Điện Tử VAT (e-Invoice)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: REVIEWS & REPUTATION -->
+        <div id="tab-reviews" style="display: none;">
+            <div class="grid-stats">
+                <div class="stat-card">
+                    <div class="stat-title">Điểm Đánh Giá Trung Bình</div>
+                    <div class="stat-val" style="color: #f59e0b;">⭐ 4.9 <span style="font-size: 14px; color: #888;">/ 5.0</span></div>
+                    <div class="stat-note">Top 5% Studio Uy Tín Nhất Sàn</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Tổng Lượt Đánh Giá</div>
+                    <div class="stat-val">128 Lượt</div>
+                    <div class="stat-note">100% Đã xác thực giao dịch</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Tỷ Lệ Phản Hồi Của NCC</div>
+                    <div class="stat-val" style="color: var(--accent);">98.4%</div>
+                    <div class="stat-note">Thời gian phản hồi TB: 1.5 giờ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Hàng Đợi Kiểm Duyệt</div>
+                    <div class="stat-val" style="color: var(--warning);" id="modQueueCount">2 Đang chờ</div>
+                    <div class="stat-note">SLA Kiểm duyệt &lt; 24h</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Danh Sách Đánh Giá Khách Hàng (Verified Client Reviews)</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Chỉ cho phép cặp đôi đã ký hợp đồng và hoàn tất lễ cưới gửi đánh giá thực tế</div>
+                    </div>
+                    <div id="moderatorTools" style="display: none;">
+                        <span class="badge" style="background: #fee2e2; color: #b91c1c;">Chế độ Moderator: Xem hàng đợi duyệt</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- REVIEW 1 (APPROVED) -->
+                    <div class="review-card">
+                        <div class="review-user-row">
+                            <div>
+                                <strong style="font-size: 15px;">Hoàng Long & Minh Thư</strong>
+                                <span class="badge badge-verified" style="margin-left: 8px;">✓ Đã xác thực dịch vụ Sàn</span>
+                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Hợp đồng: CTR-2026-0043 (Trang Trí Gia Tiên & Tiệc Rustic) • Cưới ngày 12/09/2026</div>
+                            </div>
+                            <div class="rating-stars">★★★★★ <span style="font-size: 13px; color: #444; font-weight: 700;">5.0</span></div>
+                        </div>
+                        <p style="font-size: 14px; color: #333; line-height: 1.6; margin-top: 8px;">
+                            "Team White Peony làm việc trên cả tuyệt vời! Hoa tươi 100% nhập khẩu cực thơm và chuẩn moodboard rustic tụi mình chọn trên sàn. Các bạn hỗ trợ setup từ 4h sáng đúng hẹn. Khách mời hai họ ai cũng khen decor sang trọng. Cảm ơn sàn EXE đã kết nối giúp mình tìm được NCC ưng ý và tặng voucher 5 triệu!"
+                        </p>
+                        <div class="review-photos">
+                            <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=150" class="review-photo-item" alt="Wedding 1">
+                            <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=150" class="review-photo-item" alt="Wedding 2">
+                            <img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=150" class="review-photo-item" alt="Wedding 3">
+                        </div>
+                        <div class="vendor-reply-box">
+                            <strong>💬 Phản hồi từ White Peony Studio (14/09/2026):</strong>
+                            <p style="margin-top: 4px; color: #555;">"Dạ cảm ơn anh Long và chị Thư rất nhiều ạ! Chúc hai anh chị trăm năm hạnh phúc, vạn sự viên mãn. Đội ngũ White Peony rất hân hạnh được đồng hành cùng ngày trọng đại của anh chị!"</p>
+                        </div>
+                    </div>
+
+                    <!-- REVIEW 2 (PENDING MODERATION - SHOWN IN MODERATOR VIEW) -->
+                    <div class="review-card" id="pendingReviewCard" style="border-left: 4px solid var(--warning);">
+                        <div class="review-user-row">
+                            <div>
+                                <strong style="font-size: 15px;">Quang Khải & Thuỳ Tiên</strong>
+                                <span class="badge badge-verified" style="margin-left: 8px;">✓ Đã xác thực dịch vụ Sàn</span>
+                                <span class="badge badge-pending" style="margin-left: 4px;" id="pendingBadge">Chờ duyệt (Pending Mod)</span>
+                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Hợp đồng: CTR-2026-0047 • Cưới ngày 18/09/2026</div>
+                            </div>
+                            <div class="rating-stars">★★★★☆ <span style="font-size: 13px; color: #444; font-weight: 700;">4.5</span></div>
+                        </div>
+                        <p style="font-size: 14px; color: #333; line-height: 1.6; margin-top: 8px;">
+                            "Hình ảnh chụp phóng sự cưới rất tự nhiên, bắt trọn từng khoảnh khắc xúc động của ba mẹ lúc dắt tay vào lễ đường. Tuy nhiên video trả hơi trễ hơn hợp đồng 2 ngày nhưng bù lại màu sắc rất điện ảnh!"
+                        </p>
+                        <div style="margin-top: 14px; display: flex; gap: 8px;" id="modActionBtns">
+                            <button class="btn btn-success" onclick="approveReview()">✅ Phê Duyệt & Công Khai</button>
+                            <button class="btn btn-outline" style="color: #b91c1c; border-color: #fca5a5;" onclick="rejectReview()">❌ Từ Chối Đăng</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VIETQR THANH TOÁN (UC 5.3) -->
+    <div class="modal-overlay" id="vietqrModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <div style="font-weight: 700; font-size: 16px;">📲 Thanh Toán Hoa Hồng Đối Soát Qua VietQR</div>
+                <button onclick="closeVietQRModal()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-frame">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px;">Quét Mã Bằng Ứng Dụng Ngân Hàng Hoặc Ví Điện Tử</div>
+                    <!-- MÃ QR MẪU VIETQR CHUẨN NAPAS 24/7 -->
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020101021238540010A00000072701240006970422011009876543210208QRIBFTTA53037045408125000005802VN62250821EXEHOAHONG%20SETTLE-202609-V0016304E19F" class="qr-img" alt="VietQR Settlement">
+                    <div style="font-size: 11px; color: #888; margin-top: 8px;">Hỗ trợ 40+ Ngân hàng: Vietcombank, MBBank, Techcombank, VPBank, MoMo...</div>
+                </div>
+
+                <div class="qr-info-row">
+                    <span class="qr-label">Ngân Hàng Thụ Hưởng:</span>
+                    <span class="qr-val">MBBank (Ngân hàng Quân Đội)</span>
+                </div>
+                <div class="qr-info-row">
+                    <span class="qr-label">Số Tài Khoản:</span>
+                    <span class="qr-val" style="color: var(--primary); font-size: 15px;">0987 654 321</span>
+                </div>
+                <div class="qr-info-row">
+                    <span class="qr-label">Tên Chủ Tài Khoản:</span>
+                    <span class="qr-val">CONG TY CO PHAN WEDDING EXE</span>
+                </div>
+                <div class="qr-info-row">
+                    <span class="qr-label">Số Tiền Cần Thanh Toán:</span>
+                    <span class="qr-val" style="color: #b91c1c; font-size: 16px;">12.500.000 đ</span>
+                </div>
+                <div class="qr-info-row">
+                    <span class="qr-label">Nội Dung Chuyển Khoản:</span>
+                    <span class="qr-val" style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">EXEHOAHONG SETTLE-202609-V001</span>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-success" style="width: 100%; justify-content: center; padding: 12px;" onclick="simulateWebhookPayment()">
+                        ⚡ Giả Lập Webhook Ngân Hàng Báo Thành Công (UC 5.4)
+                    </button>
+                    <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="closeVietQRModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KHÁCH ĐÁNH GIÁ (UC 6.1) -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <div style="font-weight: 700; font-size: 16px;">✍️ Gửi Đánh Giá Dịch Vụ Cưới (Verified Buyer)</div>
+                <button onclick="closeReviewModal()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 13px; font-weight: 600; color: #444;">Chọn Hợp Đồng Dịch Vụ Đã Hoàn Tất:</label>
+                    <select style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 4px;">
+                        <option>CTR-2026-0043 - Trang Trí Gia Tiên Rustic (White Peony Studio)</option>
+                    </select>
+                </div>
+
+                <div style="background: #fafafa; padding: 14px; border-radius: 8px; margin-bottom: 16px;">
+                    <div class="criteria-row">
+                        <span class="criteria-label">1. Chất lượng thẩm mỹ & sản phẩm:</span>
+                        <div class="star-picker">
+                            <span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span>
+                        </div>
+                    </div>
+                    <div class="criteria-row">
+                        <span class="criteria-label">2. Thái độ tư vấn & phục vụ:</span>
+                        <div class="star-picker">
+                            <span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span>
+                        </div>
+                    </div>
+                    <div class="criteria-row">
+                        <span class="criteria-label">3. Đúng hẹn & cam kết hợp đồng:</span>
+                        <div class="star-picker">
+                            <span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span>
+                        </div>
+                    </div>
+                    <div class="criteria-row">
+                        <span class="criteria-label">4. Xứng đáng với chi phí bỏ ra:</span>
+                        <div class="star-picker">
+                            <span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span><span class="active">★</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 13px; font-weight: 600; color: #444;">Lời nhận xét chi tiết:</label>
+                    <textarea style="width: 100%; height: 90px; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-top: 4px; font-size: 13px;" placeholder="Chia sẻ trải nghiệm chân thực của bạn trong ngày cưới để các cặp đôi khác tham khảo..."></textarea>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 13px; font-weight: 600; color: #444;">Tải lên ảnh thực tế ngày cưới (Tối đa 5 ảnh minh chứng):</label>
+                    <div style="border: 2px dashed var(--border); padding: 16px; text-align: center; border-radius: 8px; margin-top: 4px; cursor: pointer; background: #fafafa;">
+                        📸 Kéo thả hoặc bấm để chọn ảnh cưới (JPG, PNG)
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-primary" style="flex: 1; justify-content: center; padding: 12px;" onclick="submitClientReview()">
+                        🚀 Gửi Đánh Giá Ngay
+                    </button>
+                    <button class="btn btn-outline" onclick="closeReviewModal()">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchRole(role) {
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            if(role === 'vendor') {
+                event.target.classList.add('active');
+                document.getElementById('vendorSettlementView').style.display = 'block';
+                document.getElementById('adminFinanceView').style.display = 'none';
+                document.getElementById('moderatorTools').style.display = 'none';
+                document.getElementById('modActionBtns').style.display = 'none';
+            } else if(role === 'admin') {
+                event.target.classList.add('active');
+                document.getElementById('vendorSettlementView').style.display = 'none';
+                document.getElementById('adminFinanceView').style.display = 'block';
+                document.getElementById('moderatorTools').style.display = 'block';
+                document.getElementById('modActionBtns').style.display = 'flex';
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-tabs .tab-item').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            if(tabId === 'tab-settlement') {
+                document.getElementById('tab-settlement').style.display = 'block';
+                document.getElementById('tab-reviews').style.display = 'none';
+            } else {
+                document.getElementById('tab-settlement').style.display = 'none';
+                document.getElementById('tab-reviews').style.display = 'block';
+            }
+        }
+
+        function openVietQRModal() {
+            document.getElementById('vietqrModal').classList.add('active');
+        }
+        function closeVietQRModal() {
+            document.getElementById('vietqrModal').classList.remove('active');
+        }
+
+        function openReviewModal() {
+            document.getElementById('reviewModal').classList.add('active');
+        }
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+        }
+
+        function simulateWebhookPayment() {
+            closeVietQRModal();
+            const badge = document.getElementById('currentSettleStatus');
+            badge.innerHTML = '<span class="badge badge-paid">✓ Đã Thanh Toán (Paid)</span>';
+            const btn = document.getElementById('btnPayVietQR');
+            btn.className = 'btn btn-success';
+            btn.innerHTML = '<span>✓ Đã Quyết Toán Thành Công</span>';
+            btn.disabled = true;
+            alert('🎉 [Webhook Ngân Hàng] Nhận thông báo giao dịch thành công qua VietQR!\n- Mã giao dịch: VCB2026092700918\n- Số tiền: 12.500.000 đ\n- Trạng thái Kỳ đối soát đã cập nhật: PAID.');
+        }
+
+        function manualReconcile() {
+            alert('✅ Kế toán đã khớp số tiền 12.500.000đ với sao kê ngân hàng MBBank!\nTrạng thái đối soát của Vendor đã chuyển sang "PAID".');
+            simulateWebhookPayment();
+        }
+
+        function issueVATInvoice() {
+            alert('🧾 Đã gửi lệnh xuất Hóa Đơn Điện Tử VAT thành công qua API VNPT-Invoice!\n- Số HĐ: HD-2026-09001\n- Thuế suất: 8%\n- File hóa đơn điện tử đã gửi tới email: info@whitepeony.vn');
+        }
+
+        function approveReview() {
+            document.getElementById('pendingBadge').className = 'badge badge-paid';
+            document.getElementById('pendingBadge').innerText = 'Đã duyệt (Approved)';
+            document.getElementById('pendingReviewCard').style.borderLeft = '1px solid var(--border)';
+            document.getElementById('modActionBtns').style.display = 'none';
+            document.getElementById('modQueueCount').innerText = '1 Đang chờ';
+            alert('✅ Đánh giá đã được phê duyệt và hiển thị công khai trên hồ sơ của Nhà Cung Cấp!');
+        }
+
+        function rejectReview() {
+            const reason = prompt('Nhập lý do từ chối đánh giá (VD: Chứa hình ảnh mờ, ngôn từ không phù hợp):');
+            if(reason) {
+                document.getElementById('pendingReviewCard').style.display = 'none';
+                document.getElementById('modQueueCount').innerText = '1 Đang chờ';
+                alert('❌ Đã từ chối đánh giá. Hệ thống đã gửi email thông báo lý do tới khách hàng.');
+            }
+        }
+
+        function submitClientReview() {
+            closeReviewModal();
+            alert('💌 Cảm ơn bạn đã gửi đánh giá! Đánh giá của bạn đã được đưa vào hàng đợi kiểm duyệt (SLA < 24h).');
+        }
+    </script>
+</body>
+</html>

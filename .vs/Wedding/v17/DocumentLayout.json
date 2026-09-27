@@ -1,0 +1,199 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\EXE201\\Wedding\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\persistence\\migrations\\20260927170319_addchatmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\persistence\\migrations\\20260927170319_addchatmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\persistence\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\persistence\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|d:\\exe201\\wedding\\src\\wedding.webapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|solutionrelative:src\\wedding.webapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|d:\\exe201\\wedding\\src\\wedding.webapi\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|solutionrelative:src\\wedding.webapi\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DCD679AA-913A-4FF5-8F6D-7FECAC02C176}|src\\Wedding.Application\\Wedding.Application.csproj|d:\\exe201\\wedding\\src\\wedding.application\\common\\interfaces\\iapplicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DCD679AA-913A-4FF5-8F6D-7FECAC02C176}|src\\Wedding.Application\\Wedding.Application.csproj|solutionrelative:src\\wedding.application\\common\\interfaces\\iapplicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 1,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedHeight": 372,
+          "SelectedChildIndex": 14,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:19:0:{e8034f19-ab72-4f06-83fd-f6832b41aa63}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:6:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:5:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:14:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:15:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:13:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:11:0:{e8034f19-ab72-4f06-83fd-f6832b41aa63}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:9:0:{e8034f19-ab72-4f06-83fd-f6832b41aa63}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "20260927170319_AddChatMessages.cs",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
+              "RelativeDocumentMoniker": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
+              "RelativeToolTip": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
+              "ViewState": "AgIAACQAAAAAAAAAAAAmwEUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-27T17:18:50.147Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ApplicationDbContextModelSnapshot.cs",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "RelativeDocumentMoniker": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "RelativeToolTip": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-27T17:18:49.149Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
+              "RelativeDocumentMoniker": "src\\Wedding.WebApi\\appsettings.json",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
+              "RelativeToolTip": "src\\Wedding.WebApi\\appsettings.json",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAowAoAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-27T16:22:22.571Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "appsettings.Development.json",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.Development.json",
+              "RelativeDocumentMoniker": "src\\Wedding.WebApi\\appsettings.Development.json",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.Development.json",
+              "RelativeToolTip": "src\\Wedding.WebApi\\appsettings.Development.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-27T16:22:21.039Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "IApplicationDbContext.cs",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Application\\Common\\Interfaces\\IApplicationDbContext.cs",
+              "RelativeDocumentMoniker": "src\\Wedding.Application\\Common\\Interfaces\\IApplicationDbContext.cs",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.Application\\Common\\Interfaces\\IApplicationDbContext.cs",
+              "RelativeToolTip": "src\\Wedding.Application\\Common\\Interfaces\\IApplicationDbContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-27T16:04:51.819Z"
+            }
+          ]
+        },
+        {
+          "DockedHeight": 155,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{004be353-6879-467c-9d1e-9ac23cdf6d49}"
+            }
+          ]
+        },
+        {
+          "DockedHeight": 608,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:2:0:{e8034f19-ab72-4f06-83fd-f6832b41aa63}"
+            }
+          ]
+        },
+        {
+          "DockedHeight": 165,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{a80febb4-e7e0-4147-b476-21aaf2453969}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

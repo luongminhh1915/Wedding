@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Service Platform - Tiện Ích Chuẩn Bị Cưới & Thiệp Mời Online (Epic 7)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #c97a7e;
+            --primary-dark: #a8585c;
+            --primary-light: #fbeeed;
+            --accent: #2a9d8f;
+            --warning: #e76f51;
+            --success: #2ec4b6;
+            --bg: #f8f9fa;
+            --surface: #ffffff;
+            --text-main: #2b2323;
+            --text-muted: #6c757d;
+            --border: #e9ecef;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --transition: all 0.25s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        header {
+            background: #241c1c;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-box { display: flex; align-items: center; gap: 12px; }
+        .brand-icon { background: var(--primary); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .brand-name { font-weight: 700; font-size: 17px; }
+
+        .container { max-width: 1320px; margin: 24px auto; padding: 0 20px; }
+
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .tab-item {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: var(--transition);
+        }
+        .tab-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .grid-editor {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title { font-size: 17px; font-weight: 700; }
+        .card-body { padding: 24px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(201, 122, 126, 0.15); }
+
+        .theme-picker { display: flex; gap: 12px; margin-bottom: 20px; }
+        .theme-item {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .theme-item.active { border-color: var(--primary); background: var(--primary-light); }
+        .theme-name { font-weight: 700; font-size: 13px; margin-top: 4px; }
+
+        /* PHONE SIMULATOR FOR E-INVITATION */
+        .phone-frame {
+            width: 380px;
+            height: 720px;
+            border: 12px solid #241c1c;
+            border-radius: 44px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background: #fffafa;
+            overflow-y: auto;
+            position: relative;
+            margin: 0 auto;
+        }
+        .phone-notch {
+            width: 140px;
+            height: 20px;
+            background: #241c1c;
+            border-radius: 0 0 14px 14px;
+            margin: 0 auto;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .phone-content { padding: 20px 16px; text-align: center; }
+        .inv-title { font-family: 'Great Vibes', cursive; font-size: 38px; color: var(--primary); margin: 12px 0 4px; }
+        .inv-names { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #222; }
+        .inv-date { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #777; margin: 8px 0 16px; font-weight: 600; }
+        .inv-img { width: 100%; height: 200px; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 16px; }
+
+        .inv-card-box { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 16px; border: 1px solid #f1e6e6; }
+        .rsvp-btn-group { display: flex; gap: 8px; margin-top: 12px; }
+        .rsvp-btn { flex: 1; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; }
+        .rsvp-yes { background: var(--accent); color: white; }
+        .rsvp-no { background: #f1f5f9; color: #64748b; }
+
+        /* BUDGET & CHECKLIST STYLES */
+        .progress-bar-bg { background: #eee; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 8px; }
+        .progress-bar-fill { background: var(--primary); height: 100%; border-radius: 5px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: #555; }
+        .btn-outline:hover { background: #f1f1f1; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: #fdf8f8; padding: 12px 16px; font-weight: 700; color: #555; border-bottom: 1px solid var(--border); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover td { background: #fafafa; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-box">
+            <div class="brand-icon">💍</div>
+            <div>
+                <div class="brand-name">Wedding Service Platform</div>
+                <div style="font-size: 11px; color: #bbb;">Epic 7: Tiện Ích Chuẩn Bị Cưới & Thiệp Mời Online</div>
+            </div>
+        </div>
+        <div>
+            <span style="font-size: 13px; color: #eee; margin-right: 12px;">Cặp đôi: <strong>Hoàng Long & Minh Thư</strong></span>
+            <button class="btn btn-outline" style="color: white; border-color: #555;" onclick="alert('Đã sao chép liên kết thiệp cưới: https://exe.wedding/inv/long-thu-2026')">🔗 Copy Link Thiệp</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- TABS -->
+        <div class="nav-tabs">
+            <div class="tab-item active" onclick="switchMainTab('tab-invitation')">💌 Thiệp Mời Cưới Online & RSVP 1-Chạm (UC 7.1, 7.2, 7.3)</div>
+            <div class="tab-item" onclick="switchMainTab('tab-budget')">💰 Quản Lý Ngân Sách Cưới (Wedding Budget - UC 7.4)</div>
+            <div class="tab-item" onclick="switchMainTab('tab-checklist')">📋 Kế Hoạch 12 Tháng Chuẩn Bị Cưới (Checklist - UC 7.5)</div>
+        </div>
+
+        <!-- TAB 1: E-INVITATION & RSVP -->
+        <div id="tab-invitation">
+            <div class="grid-editor">
+                <!-- LEFT: INVITATION CONFIG & RSVP GUEST LIST -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Tùy Chỉnh Thiệp Cưới Điện Tử (E-Invitation Builder)</div>
+                            <button class="btn btn-primary" onclick="alert('Đã lưu và xuất bản cập nhật thiệp cưới!')">💾 Lưu & Xuất Bản</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Chọn Phong Cách Thiết Kế (Theme):</label>
+                                <div class="theme-picker">
+                                    <div class="theme-item active" onclick="setTheme('rustic')">
+                                        <div style="font-size: 20px;">🌿</div>
+                                        <div class="theme-name">Rustic Greenery</div>
+                                    </div>
+                                    <div class="theme-item" onclick="setTheme('minimalist')">
+                                        <div style="font-size: 20px;">🕊️</div>
+                                        <div class="theme-name">Minimalist Cream</div>
+                                    </div>
+                                    <div class="theme-item" onclick="setTheme('luxury')">
+                                        <div style="font-size: 20px;">✨</div>
+                                        <div class="theme-name">Modern Luxury Gold</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Tên Chú Rể:</label>
+                                    <input type="text" class="form-control" value="Hoàng Long" id="inputGroom" oninput="updatePreview()">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Tên Cô Dâu:</label>
+                                    <input type="text" class="form-control" value="Minh Thư" id="inputBride" oninput="updatePreview()">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Thời Gian Tổ Chức:</label>
+                                    <input type="text" class="form-control" value="18:00 - Chủ Nhật, 15/11/2026">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Địa Điểm Tiệc Cưới:</label>
+                                    <input type="text" class="form-control" value="White Palace - Sảnh Grand Ballroom (TP.HCM)">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Lời Ngỏ Tình Yêu (Love Story / Lời Mời):</label>
+                                <textarea class="form-control" style="height: 70px;">Hạnh phúc không phải là điểm đến, mà là hành trình chúng mình cùng nhau đi qua. Rất mong được đón tiếp bạn trong ngày vui trọng đại của chúng mình!</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Tài Khoản Mừng Cưới (VietQR Hộp Mừng Cưới Online):</label>
+                                <div style="display: flex; gap: 12px;">
+                                    <input type="text" class="form-control" placeholder="Số TK ngân hàng / VietQR mừng cưới..." value="Vietcombank - 0123456789 - HOANG LONG">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GUEST RSVP TRACKING (UC 7.3) -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Thống Kê Khách Mời & Xác Nhận Tham Dự (RSVP)</div>
+                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Tự động cập nhật tức thời khi khách bấm xác nhận trên link thiệp</div>
+                            </div>
+                            <button class="btn btn-outline" onclick="alert('Đã xuất danh sách khách mời ra file Excel!')">📥 Xuất File Excel</button>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 11px; color: #666; font-weight: 700;">TỔNG KHÁCH MỜI</div>
+                                    <div style="font-size: 20px; font-weight: 800; color: #222;">320</div>
+                                </div>
+                                <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 11px; color: #2e7d32; font-weight: 700;">SẼ THAM DỰ (YES)</div>
+                                    <div style="font-size: 20px; font-weight: 800; color: #2e7d32;">265</div>
+                                </div>
+                                <div style="background: #fef2f2; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 11px; color: #991b1b; font-weight: 700;">BẬN VIỆC (NO)</div>
+                                    <div style="font-size: 20px; font-weight: 800; color: #991b1b;">25</div>
+                                </div>
+                                <div style="background: #fffbeb; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 11px; color: #92400e; font-weight: 700;">DỰ KIẾN SỐ BÀN</div>
+                                    <div style="font-size: 20px; font-weight: 800; color: #92400e;">27 Bàn</div>
+                                </div>
+                            </div>
+
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tên Khách Mời</th>
+                                        <th>Phân Nhóm</th>
+                                        <th>Trạng Thái RSVP</th>
+                                        <th>Số Người Đi Cùng</th>
+                                        <th>Lời Chúc Của Khách</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Nguyễn Văn Tuấn</strong></td>
+                                        <td>Bạn Chú Rể</td>
+                                        <td><span class="badge" style="background: #dcfce7; color: #15803d;">✓ Sẽ tham dự</span></td>
+                                        <td>+1 (2 người)</td>
+                                        <td>"Chúc 2 bạn sớm có quý tử, trăm năm hạnh phúc nha!"</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Trần Thuỳ Linh</strong></td>
+                                        <td>Đồng Nghiệp Cô Dâu</td>
+                                        <td><span class="badge" style="background: #dcfce7; color: #15803d;">✓ Sẽ tham dự</span></td>
+                                        <td>Đi 1 mình</td>
+                                        <td>"Hóng xem cô dâu xinh đẹp lộng lẫy ngày cưới!"</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Lê Hoàng Hải</strong></td>
+                                        <td>Bạn Cấp 3</td>
+                                        <td><span class="badge" style="background: #fee2e2; color: #b91c1c;">✕ Tiếc quá bận công tác</span></td>
+                                        <td>0</td>
+                                        <td>"Chúc mừng hạnh phúc Long - Thư nhé, chúc hai bạn viên mãn!"</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: PHONE SIMULATOR (GUEST MOBILE VIEW - UC 7.2) -->
+                <div>
+                    <div style="text-align: center; margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--text-muted);">
+                        📱 MÔ PHỎNG GIAO DIỆN KHÁCH MỜI MỞ LINK THIỆP (GUEST VIEW)
+                    </div>
+                    <div class="phone-frame">
+                        <div class="phone-notch"></div>
+                        <div class="phone-content">
+                            <div style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #888; font-weight: 700;">Save The Date</div>
+                            <div class="inv-title">Happy Wedding</div>
+                            <div class="inv-names" id="previewNames">Hoàng Long & Minh Thư</div>
+                            <div class="inv-date">15 • 11 • 2026</div>
+
+                            <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=400" class="inv-img" alt="Wedding Couple">
+
+                            <div class="inv-card-box">
+                                <div style="font-size: 12px; font-weight: 700; color: var(--primary);">LỄ THÀNH HÔN & TIỆC CƯỚI</div>
+                                <div style="font-size: 13px; font-weight: 700; margin-top: 4px;">18:00 - Chủ Nhật, 15/11/2026</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 2px;">Trung tâm Hội nghị White Palace</div>
+                                <div style="font-size: 11px; color: #888;">194 Hoàng Văn Thụ, Q. Phú Nhuận, TP.HCM</div>
+                                <button class="btn btn-outline" style="margin-top: 8px; font-size: 11px; padding: 4px 10px;" onclick="alert('Đang mở Google Maps chỉ đường tới White Palace...')">🗺️ Chỉ Đường Bản Đồ</button>
+                            </div>
+
+                            <!-- RSVP 1-TOUCH FORM -->
+                            <div class="inv-card-box" style="border: 2px solid var(--primary-light);">
+                                <div style="font-size: 13px; font-weight: 700; color: #222;">XÁC NHẬN THAM DỰ (RSVP 1-CHẠM)</div>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">Vui lòng phản hồi trước ngày 05/11 để tụi mình chuẩn bị chu đáo nhất nhé!</div>
+
+                                <div style="margin-top: 10px; text-align: left;">
+                                    <input type="text" placeholder="Họ và tên của bạn..." style="width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; margin-bottom: 6px;">
+                                    <select style="width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; margin-bottom: 6px;">
+                                        <option>Đi 1 mình</option>
+                                        <option>Đi cùng 1 người (+1)</option>
+                                        <option>Đi cùng cả gia đình (+2 trở lên)</option>
+                                    </select>
+                                    <textarea placeholder="Gửi lời chúc mừng đến cô dâu & chú rể..." style="width: 100%; height: 50px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px;"></textarea>
+                                </div>
+
+                                <div class="rsvp-btn-group">
+                                    <button class="rsvp-btn rsvp-yes" onclick="alert('🎉 Cảm ơn bạn đã xác nhận tham dự! Hẹn gặp bạn tại tiệc cưới!')">✓ Tôi Sẽ Tham Dự</button>
+                                    <button class="rsvp-btn rsvp-no" onclick="alert('Dạ cảm ơn bạn đã báo tin. Chúc bạn nhiều niềm vui!')">Rất Tiếc Bận</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: WEDDING BUDGET (UC 7.4) -->
+        <div id="tab-budget" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Bảng Dự Toán & Quản Lý Chi Phí Cưới (Wedding Budget Planner)</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Tự động phân bổ tỷ lệ vàng theo kinh nghiệm của các chuyên gia cưới hỏi</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="alert('Đã cập nhật dự toán ngân sách!')">💾 Lưu Dự Toán</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 300px 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div style="background: #fffafa; border: 2px dashed var(--primary); padding: 20px; border-radius: 12px;">
+                            <label class="form-label" style="font-size: 12px; text-transform: uppercase;">Tổng Ngân Sách Dự Kiến:</label>
+                            <input type="text" class="form-control" value="300.000.000 đ" style="font-size: 20px; font-weight: 800; color: var(--primary);">
+                            <div style="margin-top: 14px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                    <span>Đã Chi Thực Tế:</span>
+                                    <strong>185.000.000 đ (61.6%)</strong>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: 61.6%;"></div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px;">
+                                    <span>Còn Lại:</span>
+                                    <strong style="color: var(--accent);">115.000.000 đ</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-around; background: #fafafa; border-radius: 12px; padding: 16px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 12px; color: #666;">Tiệc Cưới (50%)</div>
+                                <div style="font-size: 16px; font-weight: 700;">150.000.000 đ</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 12px; color: #666;">Trang Trí & Hoa (15%)</div>
+                                <div style="font-size: 16px; font-weight: 700;">45.000.000 đ</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 12px; color: #666;">Ảnh & Váy Cưới (15%)</div>
+                                <div style="font-size: 16px; font-weight: 700;">45.000.000 đ</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 12px; color: #666;">Nhẫn & Trang Sức (10%)</div>
+                                <div style="font-size: 16px; font-weight: 700;">30.000.000 đ</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 12px; color: #666;">Dự Phòng (10%)</div>
+                                <div style="font-size: 16px; font-weight: 700;">30.000.000 đ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hạng Mục Chi Phí</th>
+                                <th>Nhà Cung Cấp Phụ Trách</th>
+                                <th>Dự Toán Ban Đầu</th>
+                                <th>Chi Phí Thực Tế</th>
+                                <th>Đã Đặt Cọc</th>
+                                <th>Còn Lại Phải Trả</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Bàn Tiệc Nhà Hàng (25 bàn)</strong></td>
+                                <td>White Palace Grand Ballroom</td>
+                                <td>150.000.000 đ</td>
+                                <td>145.000.000 đ</td>
+                                <td>50.000.000 đ</td>
+                                <td>95.000.000 đ</td>
+                                <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">Đã Cọc 30%</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Trang Trí Gia Tiên & Tiệc Cưới</strong></td>
+                                <td>White Peony Wedding Studio</td>
+                                <td>50.000.000 đ</td>
+                                <td>48.000.000 đ</td>
+                                <td>20.000.000 đ</td>
+                                <td>28.000.000 đ</td>
+                                <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">Đã Xác Thực HĐ</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Chụp Ảnh Pre-Wedding & Phóng Sự</strong></td>
+                                <td>Mon Amour Wedding Art</td>
+                                <td>30.000.000 đ</td>
+                                <td>30.000.000 đ</td>
+                                <td>15.000.000 đ</td>
+                                <td>15.000.000 đ</td>
+                                <td><span class="badge" style="background: #dcfce7; color: #15803d;">Đã Chụp Xong</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Thuê Váy Cưới & Vest Chú Rể</strong></td>
+                                <td>Bella Bridal Couture</td>
+                                <td>25.000.000 đ</td>
+                                <td>22.000.000 đ</td>
+                                <td>10.000.000 đ</td>
+                                <td>12.000.000 đ</td>
+                                <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">Đã Thử Váy</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: WEDDING CHECKLIST (UC 7.5) -->
+        <div id="tab-checklist" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Kế Hoạch 12 Tháng Chuẩn Bị Cưới (Timeline Checklist)</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Tích chọn việc đã làm và phân công rõ ràng cho Chú rể hoặc Cô dâu</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="alert('Đã thêm 1 công việc mới vào Checklist!')">+ Thêm Việc Cần Làm</button>
+                </div>
+                <div class="card-body">
+                    <div style="margin-bottom: 24px;">
+                        <h4 style="color: var(--primary); margin-bottom: 12px; font-size: 15px;">⏳ 9 - 12 Tháng Trước Ngày Cưới (Xác định nền tảng)</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 10px; background: #fafafa; padding: 10px 14px; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span style="text-decoration: line-through; color: #888; flex: 1;">Gặp gỡ hai bên gia đình & thống nhất ngày cưới</span>
+                                <span class="badge" style="background: #f1f5f9; color: #475569;">Cả hai • Đã xong</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; background: #fafafa; padding: 10px 14px; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span style="text-decoration: line-through; color: #888; flex: 1;">Xác định tổng ngân sách cưới và phong cách mong muốn</span>
+                                <span class="badge" style="background: #f1f5f9; color: #475569;">Cả hai • Đã xong</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; background: #fafafa; padding: 10px 14px; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span style="text-decoration: line-through; color: #888; flex: 1;">Tìm và đặt cọc sảnh tiệc nhà hàng (Sợ hết ngày đẹp)</span>
+                                <span class="badge" style="background: #f1f5f9; color: #475569;">Chú Rể • Đã xong</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <h4 style="color: var(--accent); margin-bottom: 12px; font-size: 15px;">⏳ 3 - 6 Tháng Trước Ngày Cưới (Chọn Dịch Vụ Cưới Cốt Lõi)</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 10px; background: #fffafa; border: 1px solid #fce7e7; padding: 10px 14px; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span style="flex: 1; font-weight: 600;">Chụp album ảnh cưới Pre-Wedding & chọn váy cưới chính</span>
+                                <span class="badge" style="background: #dcfce7; color: #15803d;">Cô Dâu • Hoàn tất</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; background: #fffafa; border: 1px solid #fce7e7; padding: 10px 14px; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span style="flex: 1; font-weight: 600;">Chọn nhẫn cưới và trang sức cưới hồi môn</span>
+                                <span class="badge" style="background: #fef3c7; color: #92400e;">Hạn chót: 15/10/2026</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; background: #fffafa; border: 1px solid #fce7e7; padding: 10px 14px; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span style="flex: 1; font-weight: 600;">Tạo thiệp mời cưới online và lập danh sách khách mời (RSVP)</span>
+                                <span class="badge" style="background: #fef3c7; color: #92400e;">Hạn chót: 20/10/2026</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchMainTab(tabId) {
+            document.querySelectorAll('.nav-tabs .tab-item').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            ['tab-invitation', 'tab-budget', 'tab-checklist'].forEach(id => {
+                document.getElementById(id).style.display = (id === tabId) ? 'block' : 'none';
+            });
+        }
+
+        function setTheme(theme) {
+            document.querySelectorAll('.theme-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function updatePreview() {
+            const groom = document.getElementById('inputGroom').value;
+            const bride = document.getElementById('inputBride').value;
+            document.getElementById('previewNames').innerText = groom + ' & ' + bride;
+        }
+    </script>
+</body>
+</html>

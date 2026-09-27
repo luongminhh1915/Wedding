@@ -1,0 +1,15 @@
+D:\EXE201\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Application.deps.json
+D:\EXE201\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Application.dll
+D:\EXE201\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Application.pdb
+D:\EXE201\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Domain.dll
+D:\EXE201\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Domain.pdb
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.csproj.AssemblyReference.cache
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.AssemblyInfoInputs.cache
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.AssemblyInfo.cs
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.csproj.CoreCompileInputs.cache
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding..16C2A49E.Up2Date
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.dll
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\refint\Wedding.Application.dll
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.pdb
+D:\EXE201\Wedding\src\Wedding.Application\obj\Debug\net8.0\ref\Wedding.Application.dll

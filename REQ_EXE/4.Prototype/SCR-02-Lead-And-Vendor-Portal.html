@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Service Platform - Quản Lý Lead & Vendor Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #c97a7e;
+            --primary-dark: #a8585c;
+            --primary-light: #fbeeed;
+            --accent: #2a9d8f;
+            --warning: #e76f51;
+            --bg: #f8f9fa;
+            --surface: #ffffff;
+            --text-main: #2b2323;
+            --text-muted: #6c757d;
+            --border: #e9ecef;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --transition: all 0.25s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        /* Top Header */
+        header {
+            background: #241c1c;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-box { display: flex; align-items: center; gap: 10px; }
+        .brand-icon { background: var(--primary); width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .brand-name { font-weight: 700; font-size: 17px; }
+        .vendor-badge { background: #3d3232; font-size: 11px; padding: 3px 8px; border-radius: 6px; color: #f0e6e6; }
+
+        /* Layout */
+        .dashboard-container {
+            max-width: 1320px;
+            margin: 24px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+
+        /* Sidebar Stats */
+        .sidebar-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .stat-item:last-child { border-bottom: none; }
+        .stat-val { font-size: 20px; font-weight: 800; color: var(--primary-dark); }
+
+        /* Lead List Queue */
+        .lead-list-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .lead-item {
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .lead-item.new-lead {
+            border-color: var(--primary);
+            background: #fffafa;
+        }
+
+        .lead-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .badge-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-new { background: #ffe3e3; color: #c92a2a; }
+        .badge-consult { background: #e3fafc; color: #1098ad; }
+
+        .lead-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .lead-info-grid { display: flex; gap: 20px; font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+        .lead-sla { color: var(--warning); font-weight: 700; font-size: 12px; }
+
+        .btn-action {
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+        }
+        .btn-accept { background: var(--primary); color: white; }
+        .btn-accept:hover { background: var(--primary-dark); }
+        .btn-chat { background: var(--accent); color: white; }
+
+        /* Chat Drawer / Modal */
+        .chat-box {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 480px;
+            margin-top: 24px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .chat-header {
+            padding: 14px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fdfdfd;
+        }
+
+        .chat-bubble {
+            max-width: 70%;
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .bubble-client {
+            align-self: flex-start;
+            background: #f1f3f5;
+            color: var(--text-main);
+        }
+
+        .bubble-vendor {
+            align-self: flex-end;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 500;
+        }
+
+        .chat-input-bar {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            background: white;
+        }
+
+        .chat-input-bar input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        /* Demo Trigger Modal */
+        .modal-client-lead {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-client-lead.active { display: flex; }
+        .modal-box {
+            background: white;
+            padding: 32px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-box">
+            <div class="brand-icon">🏢</div>
+            <div class="brand-name">The Reverie Saigon - Vendor Portal</div>
+            <span class="vendor-badge">Lean MVP · 1 NCC = 1 Owner</span>
+        </div>
+        <div>
+            <button class="btn-action" style="background: #3d3232; color: white;" onclick="openLeadModal()">🧪 Giả Lập Dâu Rể Gửi Lead (UC 2.1)</button>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <!-- Sidebar Quick Stats -->
+        <aside>
+            <div class="sidebar-card">
+                <h3 style="font-size: 16px; margin-bottom: 16px;">Hiệu Suất Tiếp Nhận Lead</h3>
+                <div class="stat-item">
+                    <span>Lead mới trong ngày</span>
+                    <span class="stat-val" style="color: #c92a2a;">3</span>
+                </div>
+                <div class="stat-item">
+                    <span>Đang tư vấn / Báo giá</span>
+                    <span class="stat-val">12</span>
+                </div>
+                <div class="stat-item">
+                    <span>Đã chốt hợp đồng (Converted)</span>
+                    <span class="stat-val" style="color: var(--accent);">5</span>
+                </div>
+                <div class="stat-item">
+                    <span>Tỷ lệ phản hồi đúng SLA (&lt;2h)</span>
+                    <span class="stat-val" style="color: #2b8a3e;">96%</span>
+                </div>
+            </div>
+
+            <div class="sidebar-card" style="background: linear-gradient(135deg, #fff5f5, #ffffff);">
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 6px;">💡 Chính Sách Xác Thực 2 Chiều</div>
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Khi chốt hợp đồng thành công với khách hàng, NCC vui lòng bấm <strong>[Tạo Hợp Đồng]</strong> và nhập mã Voucher của khách để kích hoạt hoa hồng Kỳ 1 và gửi quà cưới.</p>
+            </div>
+        </aside>
+
+        <!-- Main Lead Queue & Realtime Chat -->
+        <main>
+            <div class="lead-list-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 20px;">Hàng Đợi Yêu Cầu Tư Vấn (Lead Queue)</h2>
+                    <span style="font-size: 13px; color: var(--text-muted);">Tự động làm mới mỗi 15s</span>
+                </div>
+
+                <!-- Lead Item 1: New Lead with SLA countdown -->
+                <div class="lead-item new-lead" id="leadItem1">
+                    <div>
+                        <div class="lead-header">
+                            <span class="badge-status badge-new">Lead Mới (Chưa nhận)</span>
+                            <span class="lead-sla">⏱️ Còn 1 giờ 45 phút (SLA 2h)</span>
+                        </div>
+                        <div class="lead-title">Khách hàng: Anh Minh & Chị Hằng (Tiệc cưới 350 khách)</div>
+                        <div class="lead-info-grid">
+                            <span>📅 Ngày cưới: 15/12/2026</span>
+                            <span>💰 Ngân sách: ~150 - 200 Triệu</span>
+                            <span>🔒 SĐT: <strong>0987***123</strong> (Smart Privacy)</span>
+                            <span>🎁 Voucher: <strong>WVIP8899</strong></span>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn-action btn-accept" onclick="acceptLead('leadItem1')">✓ Tiếp Nhận Lead</button>
+                    </div>
+                </div>
+
+                <!-- Lead Item 2: In Consultation -->
+                <div class="lead-item">
+                    <div>
+                        <div class="lead-header">
+                            <span class="badge-status badge-consult">Đang Tư Vấn</span>
+                            <span style="font-size: 12px; color: var(--text-muted);">Tiếp nhận 45 phút trước</span>
+                        </div>
+                        <div class="lead-title">Khách hàng: Tuấn Kiệt & Thùy Trang (Sảnh Pha Lê)</div>
+                        <div class="lead-info-grid">
+                            <span>📅 Ngày cưới: 28/11/2026</span>
+                            <span>💰 Ngân sách: ~180 Triệu</span>
+                            <span>📞 SĐT: <strong>0912 345 678</strong> (Khách đã mở khóa)</span>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn-action btn-chat" onclick="openChat('Tuấn Kiệt & Thùy Trang')">💬 Mở Phòng Chat</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- In-App Chat Room -->
+            <div class="chat-box" id="chatRoom">
+                <div class="chat-header">
+                    <div>
+                        <strong id="chatCustomerName">Tuấn Kiệt & Thùy Trang</strong>
+                        <span style="font-size: 12px; color: var(--accent); margin-left: 8px;">● Đang online</span>
+                    </div>
+                    <div>
+                        <button class="btn-action" style="background: var(--primary); color: white; padding: 6px 14px; font-size: 12px;" onclick="alert('Mở Modal UC 4.1: Nhập mã Voucher và tạo Hợp đồng xác thực 2 chiều')">📝 Tạo Hợp Đồng & Nhập Voucher</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-bubble bubble-client">
+                        Chào bên The Reverie Saigon, mình nhận được mã Voucher WVIP8899 từ sàn, bên bạn có thể gửi thực đơn mẫu cho tiệc 350 khách vào tháng 11 không?
+                    </div>
+                    <div class="chat-bubble bubble-vendor">
+                        Dạ em chào anh Kiệt và chị Trang ạ! Bên em rất hân hạnh được đồng hành cùng anh chị. Em xin phép gửi file PDF thực đơn tiệc cưới cao cấp kèm ưu đãi giảm 5% từ Sàn ngay đây ạ!
+                    </div>
+                </div>
+                <div class="chat-input-bar">
+                    <input type="text" id="inputMsg" placeholder="Nhập tin nhắn tư vấn hoặc báo giá..." onkeypress="if(event.key === 'Enter') sendMsg()">
+                    <button class="btn-action btn-accept" onclick="sendMsg()">Gửi</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Giả Lập Dâu Rể Gửi Lead (UC 2.1) -->
+    <div class="modal-client-lead" id="modalClientLead">
+        <div class="modal-box">
+            <h3 style="font-size: 20px; margin-bottom: 8px;">Gửi Yêu Cầu Tư Vấn & Nhận Voucher</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Thông tin số điện thoại của bạn được bảo mật an toàn theo chính sách Smart Privacy của Sàn.</p>
+
+            <div style="margin-bottom: 14px;">
+                <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px;">Họ tên Dâu / Rể:</label>
+                <input type="text" id="custName" value="Quốc Bảo & Mai Anh" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px;">Ngày cưới dự kiến:</label>
+                    <input type="date" value="2026-12-20" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px;">Ngân sách dự kiến:</label>
+                    <select style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                        <option>100 - 150 Triệu</option>
+                        <option selected>150 - 200 Triệu</option>
+                        <option>Trên 200 Triệu</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px;">Số điện thoại (Xác thực OTP):</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="custPhone" value="0988665544" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <button class="btn-action" style="background: var(--border); color: var(--text-main);" onclick="alert('Mã OTP 6 số: 889900 đã gửi qua SMS!')">Gửi OTP</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px;">Nhập mã OTP 6 số:</label>
+                <input type="text" value="889900" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-weight: 800; letter-spacing: 4px;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-action" style="background: #e9ecef;" onclick="closeLeadModal()">Hủy</button>
+                <button class="btn-action btn-accept" onclick="submitClientLead()">Gửi Lead & Lấy Mã Voucher</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openLeadModal() { document.getElementById('modalClientLead').classList.add('active'); }
+        function closeLeadModal() { document.getElementById('modalClientLead').classList.remove('active'); }
+
+        function submitClientLead() {
+            closeLeadModal();
+            alert('🎉 Gửi Lead thành công!\n\n• Mã Voucher độc quyền: WVIP6677 (Hiệu lực 30 ngày)\n• Hệ thống vừa bắn thông báo Zalo ZNS tới Nhà cung cấp trong vòng 3 giây!\n• Số điện thoại của bạn đang được ẩn an toàn.');
+            location.reload();
+        }
+
+        function acceptLead(itemId) {
+            const item = document.getElementById(itemId);
+            item.classList.remove('new-lead');
+            item.querySelector('.badge-status').className = 'badge-status badge-consult';
+            item.querySelector('.badge-status').innerText = 'Đang Tư Vấn';
+            item.querySelector('.lead-sla').innerText = 'Đã tiếp nhận (SLA Đạt)';
+            item.querySelector('.lead-sla').style.color = '#2b8a3e';
+            alert('✓ Bạn đã tiếp nhận Lead thành công trong hạn mức SLA!\nPhòng chat tư vấn trực tiếp đã được kích hoạt.');
+        }
+
+        function openChat(name) {
+            document.getElementById('chatCustomerName').innerText = name;
+            document.getElementById('chatRoom').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function sendMsg() {
+            const input = document.getElementById('inputMsg');
+            if (!input.value.trim()) return;
+            const container = document.getElementById('chatMessages');
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble bubble-vendor';
+            bubble.innerText = input.value;
+            container.appendChild(bubble);
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+</html>
