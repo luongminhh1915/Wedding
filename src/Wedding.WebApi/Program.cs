@@ -149,4 +149,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 
+// Tự động Seed dữ liệu mẫu cho hệ thống (Users, Vendors, Listings, Contracts, Reviews, Budget)
+await Wedding.Infrastructure.Persistence.DbInitializer.SeedAsync(app.Services);
+
 app.Run();

@@ -101,7 +101,76 @@ export default function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-slate-500">
+        {/* Quick Test Accounts Box */}
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 text-center">
+            🚀 Tài khoản Test Nhanh (Mật khẩu: 123456)
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('customer@wedding.com');
+                setPassword('123456');
+              }}
+              className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-800 text-left font-medium transition cursor-pointer"
+            >
+              👰 Dâu Rể (Customer)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('vendor.studio@wedding.com');
+                setPassword('123456');
+              }}
+              className="px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50/60 hover:bg-amber-100 text-amber-800 text-left font-medium transition cursor-pointer"
+            >
+              📸 Mai Studio (Vendor)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('vendor.palace@wedding.com');
+                setPassword('123456');
+              }}
+              className="px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50/60 hover:bg-purple-100 text-purple-800 text-left font-medium transition cursor-pointer"
+            >
+              🏛️ White Palace (Tiệc)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('moderator@wedding.com');
+                setPassword('123456');
+              }}
+              className="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-blue-800 text-left font-medium transition cursor-pointer"
+            >
+              🛡️ Ban Duyệt (Mod)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('finance@wedding.com');
+                setPassword('123456');
+              }}
+              className="px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 text-emerald-800 text-left font-medium transition cursor-pointer"
+            >
+              💵 Kế Toán (Finance)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@wedding.com');
+                setPassword('123456');
+              }}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 text-left font-medium transition cursor-pointer"
+            >
+              👑 Quản Trị (Admin)
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center text-sm text-slate-500">
           Chưa có tài khoản?{' '}
           <Link to="/register" className="font-semibold text-rose-600 hover:text-rose-700 transition">
             Đăng ký ngay
