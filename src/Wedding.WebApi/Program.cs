@@ -140,8 +140,12 @@ app.Use(async (context, next) =>
     }
 });
 
-app.UseHttpsRedirection();
 app.UseCors("AllowClient");
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

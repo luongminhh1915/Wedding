@@ -3,20 +3,28 @@
   "WorkspaceRootPath": "D:\\EXE201\\Wedding\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\persistence\\migrations\\20260927170319_addchatmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\persistence\\migrations\\20260927170319_addchatmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\persistence\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\persistence\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|d:\\exe201\\wedding\\src\\wedding.webapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|solutionrelative:src\\wedding.webapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|d:\\exe201\\wedding\\src\\wedding.webapi\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{1D2464D4-3DDC-4994-AB6E-DA563C137EB8}|src\\Wedding.WebApi\\Wedding.WebApi.csproj|solutionrelative:src\\wedding.webapi\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DCD679AA-913A-4FF5-8F6D-7FECAC02C176}|src\\Wedding.Application\\Wedding.Application.csproj|d:\\exe201\\wedding\\src\\wedding.application\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DCD679AA-913A-4FF5-8F6D-7FECAC02C176}|src\\Wedding.Application\\Wedding.Application.csproj|solutionrelative:src\\wedding.application\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\persistence\\migrations\\20260927170319_addchatmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\persistence\\migrations\\20260927170319_addchatmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|d:\\exe201\\wedding\\src\\wedding.infrastructure\\persistence\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{42F9C33E-1044-4BE6-BFAE-3EA03BF3CAA2}|src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj|solutionrelative:src\\wedding.infrastructure\\persistence\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DCD679AA-913A-4FF5-8F6D-7FECAC02C176}|src\\Wedding.Application\\Wedding.Application.csproj|d:\\exe201\\wedding\\src\\wedding.application\\common\\interfaces\\iapplicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -91,19 +99,55 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
+              "RelativeDocumentMoniker": "src\\Wedding.WebApi\\appsettings.json",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
+              "RelativeToolTip": "src\\Wedding.WebApi\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-27T16:22:22.571Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "DependencyInjection.cs",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Application\\DependencyInjection.cs",
+              "RelativeDocumentMoniker": "src\\Wedding.Application\\DependencyInjection.cs",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.Application\\DependencyInjection.cs",
+              "RelativeToolTip": "src\\Wedding.Application\\DependencyInjection.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T05:56:02.55Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DependencyInjection.cs",
+              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\DependencyInjection.cs",
+              "RelativeDocumentMoniker": "src\\Wedding.Infrastructure\\DependencyInjection.cs",
+              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\DependencyInjection.cs",
+              "RelativeToolTip": "src\\Wedding.Infrastructure\\DependencyInjection.cs",
+              "ViewState": "AgIAACgAAAAAAAAAAAAQwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-28T05:55:46.069Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "20260927170319_AddChatMessages.cs",
               "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
               "RelativeDocumentMoniker": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
               "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
               "RelativeToolTip": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\20260927170319_AddChatMessages.cs",
-              "ViewState": "AgIAACQAAAAAAAAAAAAmwEUAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACoAAAAHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-27T17:18:50.147Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-27T17:18:50.147Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "ApplicationDbContextModelSnapshot.cs",
               "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Infrastructure\\Persistence\\Migrations\\ApplicationDbContextModelSnapshot.cs",
               "RelativeDocumentMoniker": "src\\Wedding.Infrastructure\\Persistence\\Migrations\\ApplicationDbContextModelSnapshot.cs",
@@ -114,24 +158,8 @@
               "WhenOpened": "2026-09-27T17:18:49.149Z"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
-            },
-            {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "appsettings.json",
-              "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
-              "RelativeDocumentMoniker": "src\\Wedding.WebApi\\appsettings.json",
-              "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
-              "RelativeToolTip": "src\\Wedding.WebApi\\appsettings.json",
-              "ViewState": "AgIAAAcAAAAAAAAAAAAowAoAAAAOAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-09-27T16:22:22.571Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "appsettings.Development.json",
               "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.Development.json",
               "RelativeDocumentMoniker": "src\\Wedding.WebApi\\appsettings.Development.json",
@@ -143,7 +171,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "IApplicationDbContext.cs",
               "DocumentMoniker": "D:\\EXE201\\Wedding\\src\\Wedding.Application\\Common\\Interfaces\\IApplicationDbContext.cs",
               "RelativeDocumentMoniker": "src\\Wedding.Application\\Common\\Interfaces\\IApplicationDbContext.cs",
@@ -152,6 +180,10 @@
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-09-27T16:04:51.819Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         },
