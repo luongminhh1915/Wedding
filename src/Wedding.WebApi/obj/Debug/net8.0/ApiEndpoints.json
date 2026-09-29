@@ -692,6 +692,27 @@
   },
   {
     "ContainingType": "Wedding.WebApi.Controllers.ListingsController",
+    "Method": "UpdateListingStatus",
+    "RelativePath": "api/Listings/{id}/status",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "Wedding.WebApi.Controllers.UpdateListingStatusRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.ListingsController",
     "Method": "SubmitForApproval",
     "RelativePath": "api/Listings/{id}/submit",
     "HttpMethod": "POST",
@@ -702,6 +723,22 @@
         "Name": "id",
         "Type": "System.Guid",
         "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.ListingsController",
+    "Method": "GetAdminAllListings",
+    "RelativePath": "api/Listings/admin-all",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "status",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -853,6 +890,63 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "Wedding.WebApi.Controllers.UploadController",
+    "Method": "UploadImages",
+    "RelativePath": "api/Upload/images",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "files",
+        "Type": "System.Collections.Generic.List\u00601[[Microsoft.AspNetCore.Http.IFormFile, Microsoft.AspNetCore.Http.Features, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.UsersController",
+    "Method": "GetUsers",
+    "RelativePath": "api/Users",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[Wedding.Application.Features.Users.DTOs.UserManagementDto, Wedding.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.UsersController",
+    "Method": "UpdateUserStatus",
+    "RelativePath": "api/Users/{id}/status",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "Wedding.WebApi.Controllers.UpdateUserStatusRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "Wedding.WebApi.Controllers.VouchersController",
     "Method": "GetMyVouchers",
     "RelativePath": "api/Vouchers/my-vouchers",
@@ -978,6 +1072,22 @@
       {
         "Name": "id",
         "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.UploadController",
+    "Method": "GetListingImage",
+    "RelativePath": "uploads/listings/{fileName}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fileName",
+        "Type": "System.String",
         "IsRequired": true
       }
     ],
