@@ -2,18 +2,21 @@ import { useState } from 'react';
 import { useAuth } from '../auth/hooks/useAuth';
 import {
   ShieldCheck, FileCheck, DollarSign, Users,
-  LogOut, ChevronRight, Activity
+  LogOut, ChevronRight, Activity, Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ModerationQueue from './ModerationQueue';
+import UserManagement from './UserManagement';
+import AllListingsManager from './AllListingsManager';
 import { usePendingListings } from '../vendor-portal/hooks/useListings';
 
-type Tab = 'moderation' | 'finance' | 'vendors' | 'analytics';
+type Tab = 'moderation' | 'published-listings' | 'users' | 'finance' | 'analytics';
 
 const tabs: { id: Tab; label: string; icon: React.ReactNode; taskLabel?: string }[] = [
   { id: 'moderation', label: 'Kiểm Duyệt Bài Đăng', icon: <FileCheck className="w-4 h-4" /> },
+  { id: 'published-listings', label: 'Quản Lý Bài Đã Đăng', icon: <Layers className="w-4 h-4" /> },
+  { id: 'users', label: 'Quản Lý User', icon: <Users className="w-4 h-4" /> },
   { id: 'finance', label: 'Bảng Kê Ngày 25', icon: <DollarSign className="w-4 h-4" />, taskLabel: 'AI-11' },
-  { id: 'vendors', label: 'Quản Lý NCC', icon: <Users className="w-4 h-4" />, taskLabel: 'AI-16' },
   { id: 'analytics', label: 'GMV Dashboard', icon: <Activity className="w-4 h-4" />, taskLabel: 'AI-16' },
 ];
 
@@ -31,7 +34,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
-      <header className="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-30">
+      <header className="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-sm">
             <ShieldCheck className="w-5 h-5" />
@@ -60,8 +63,8 @@ export default function AdminDashboard() {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="bg-white border-b border-slate-200 px-6">
-        <div className="flex max-w-7xl mx-auto">
+      <nav className="bg-white border-b border-slate-200 px-6 sticky top-[57px] z-20 shadow-xs">
+        <div className="flex max-w-7xl mx-auto overflow-x-auto">
           {tabs.map(tab => {
             const badge = tab.id === 'moderation' && pendingListings.length > 0
               ? String(pendingListings.length)
@@ -72,7 +75,7 @@ export default function AdminDashboard() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  relative flex items-center gap-2 px-5 py-4 text-sm font-semibold transition border-b-2
+                  relative flex items-center gap-2 px-5 py-4 text-sm font-semibold transition border-b-2 whitespace-nowrap
                   ${activeTab === tab.id
                     ? 'border-rose-500 text-rose-600 bg-rose-50/30'
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
@@ -97,7 +100,7 @@ export default function AdminDashboard() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8 overflow-hidden">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
         {activeTab === 'moderation' && (
           <div className="h-full">
             <div className="mb-6">
@@ -110,7 +113,31 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab !== 'moderation' && (
+        {activeTab === 'published-listings' && (
+          <div>
+            <div className="mb-6">
+              <h1 className="text-xl font-bold text-slate-900">Quản Lý Bài Đã Đăng</h1>
+              <p className="text-sm text-slate-500 mt-1">
+                Theo dõi toàn bộ các gói dịch vụ trên sàn, kiểm tra thông tin và tạm ẩn/mở lại bài đăng vi phạm.
+              </p>
+            </div>
+            <AllListingsManager />
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div>
+            <div className="mb-6">
+              <h1 className="text-xl font-bold text-slate-900">Quản Lý Người Dùng & Đối Tác</h1>
+              <p className="text-sm text-slate-500 mt-1">
+                Danh sách toàn bộ tài khoản Khách hàng, Nhà cung cấp (Vendor) và Nhân viên điều phối. Cho phép kiểm tra và khóa/mở khóa tài khoản.
+              </p>
+            </div>
+            <UserManagement />
+          </div>
+        )}
+
+        {activeTab !== 'moderation' && activeTab !== 'published-listings' && activeTab !== 'users' && (
           <ComingSoon
             title={tabs.find(t => t.id === activeTab)?.label ?? ''}
             taskLabel={tabs.find(t => t.id === activeTab)?.taskLabel ?? ''}

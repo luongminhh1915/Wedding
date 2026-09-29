@@ -5,22 +5,12 @@ import {
   LogOut, LayoutList
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import axiosClient from '../../services/axiosClient';
 import ListingTable from './components/ListingTable';
 import { LeadInbox } from './components/LeadInbox';
 import { ContractList } from './components/ContractList';
 import { SettlementDashboard } from './components/SettlementDashboard';
-
-// Danh mục 7 ngành hàng dịch vụ cưới (seed data từ backend)
-// TODO: Thay bằng API call GET /api/categories khi có
-const CATEGORIES = [
-  { id: '00000000-0000-0000-0000-000000000001', name: 'Trung tâm Tiệc cưới' },
-  { id: '00000000-0000-0000-0000-000000000002', name: 'Decor & Hoa cưới' },
-  { id: '00000000-0000-0000-0000-000000000003', name: 'Quay phim & Chụp ảnh' },
-  { id: '00000000-0000-0000-0000-000000000004', name: 'Váy cưới & Trang phục' },
-  { id: '00000000-0000-0000-0000-000000000005', name: 'Makeup & Làm đẹp' },
-  { id: '00000000-0000-0000-0000-000000000006', name: 'Thiệp cưới & In ấn' },
-  { id: '00000000-0000-0000-0000-000000000007', name: 'Wedding Planner' },
-];
 
 type Tab = 'listings' | 'leads' | 'contracts' | 'settlement';
 
@@ -35,6 +25,16 @@ export default function VendorDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('listings');
+
+  // Lấy danh sách ngành hàng thực từ database (không hardcode ID nữa)
+  const { data: categories = [] } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/api/categories');
+      return res.data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleLogout = () => {
     logout();
@@ -98,7 +98,7 @@ export default function VendorDashboard() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
         {activeTab === 'listings' && (
-          <ListingTable categories={CATEGORIES} />
+          <ListingTable categories={categories} />
         )}
 
         {activeTab === 'leads' && <LeadInbox />}

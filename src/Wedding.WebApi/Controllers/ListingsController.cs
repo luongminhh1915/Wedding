@@ -5,11 +5,14 @@ using Wedding.Application.Features.Listings.Commands.ApproveListing;
 using Wedding.Application.Features.Listings.Commands.CreateListing;
 using Wedding.Application.Features.Listings.Commands.RejectListing;
 using Wedding.Application.Features.Listings.Commands.SubmitForApproval;
+using Wedding.Application.Features.Listings.Commands.ToggleListingStatus;
 using Wedding.Application.Features.Listings.Commands.UpdateListing;
+using Wedding.Application.Features.Listings.Queries.GetAdminListings;
 using Wedding.Application.Features.Listings.Queries.GetListingDetail;
 using Wedding.Application.Features.Listings.Queries.GetPendingListings;
 using Wedding.Application.Features.Listings.Queries.GetPublicListings;
 using Wedding.Application.Features.Listings.Queries.GetVendorListings;
+using Wedding.Domain.Enums;
 
 namespace Wedding.WebApi.Controllers;
 
@@ -109,6 +112,28 @@ public class ListingsController : ControllerBase
         return Ok(new { message = "Bài đăng đã bị từ chối. Lý do đã được thông báo đến NCC." });
     }
 
+    /// <summary>
+    /// [Moderator/SuperAdmin] Lấy toàn bộ danh sách bài đăng hệ thống để quản trị.
+    /// </summary>
+    [HttpGet("admin-all")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> GetAdminAllListings([FromQuery] ListingStatus? status)
+    {
+        var result = await _mediator.Send(new GetAdminListingsQuery(status));
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// [Moderator/SuperAdmin] Đổi trạng thái bài đăng (Ví dụ: Ẩn/Hiện bài đã đăng).
+    /// </summary>
+    [HttpPut("{id:guid}/status")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> UpdateListingStatus(Guid id, [FromBody] UpdateListingStatusRequest request)
+    {
+        await _mediator.Send(new ToggleListingStatusCommand(id, request.Status));
+        return Ok(new { message = "Cập nhật trạng thái bài đăng thành công." });
+    }
+
     // ─── PUBLIC ENDPOINTS (không cần auth) ────────────────────────────────────
 
     /// <summary>
@@ -154,3 +179,5 @@ public record UpdateListingRequest(
 );
 
 public record RejectListingRequest(string Reason);
+
+public record UpdateListingStatusRequest(ListingStatus Status);

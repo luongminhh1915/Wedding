@@ -141,6 +141,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors("AllowClient");
+app.UseStaticFiles();
 
 if (!app.Environment.IsDevelopment())
 {

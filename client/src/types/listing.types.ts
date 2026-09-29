@@ -51,6 +51,7 @@ export interface CreateListingRequest {
   maxPrice: number;
   description: string;
   location: string;
+  imageUrls: string[];
 }
 
 export interface UpdateListingRequest {

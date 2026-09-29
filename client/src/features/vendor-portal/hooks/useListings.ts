@@ -12,6 +12,7 @@ export const listingKeys = {
   myListings: ['my-listings'] as const,
   detail: (id: string) => ['listing', id] as const,
   pending: ['pending-listings'] as const,
+  adminAll: (status?: string) => ['admin-listings', status] as const,
 };
 
 // ─── VENDOR QUERIES ───────────────────────────────────────────────────────────
@@ -104,3 +105,29 @@ export const useRejectListing = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: listingKeys.pending }),
   });
 };
+
+/** [Admin] Lấy toàn bộ bài đăng (có thể lọc theo trạng thái) */
+export const useAdminListings = (status?: string) =>
+  useQuery<ListingDto[]>({
+    queryKey: listingKeys.adminAll(status),
+    queryFn: async () => {
+      const params = status && status !== 'ALL' ? { status } : {};
+      const res = await axiosClient.get('/api/listings/admin-all', { params });
+      return res.data;
+    },
+  });
+
+/** [Admin] Đổi trạng thái bài đăng (Ẩn/Hiện) */
+export const useUpdateListingStatus = () => {
+  const qc = useQueryClient();
+  return useMutation<void, Error, { id: string; status: string }>({
+    mutationFn: async ({ id, status }) => {
+      await axiosClient.put(`/api/listings/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-listings'] });
+      qc.invalidateQueries({ queryKey: listingKeys.pending });
+    },
+  });
+};
+

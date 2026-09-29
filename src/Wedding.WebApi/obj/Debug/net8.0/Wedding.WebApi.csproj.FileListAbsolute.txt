@@ -157,4 +157,4 @@ D:\EXE201\Wedding\src\Wedding.WebApi\obj\Debug\net8.0\Wedding.WebApi.genruntimec
 D:\EXE201\Wedding\src\Wedding.WebApi\obj\Debug\net8.0\ref\Wedding.WebApi.dll
 D:\EXE201\Wedding\src\Wedding.WebApi\bin\Debug\net8.0\BCrypt-Net-Next.dll
 D:\EXE201\Wedding\src\Wedding.WebApi\obj\Debug\net8.0\Wedding.WebApi.sourcelink.json
-D:\EXE201\Wedding\src\Wedding.WebApi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+D:\EXE201\Wedding\src\Wedding.WebApi\bin\Debug\net8.0\Wedding.WebApi.staticwebassets.runtime.json

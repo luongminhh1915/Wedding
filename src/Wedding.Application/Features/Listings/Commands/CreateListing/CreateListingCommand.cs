@@ -13,7 +13,8 @@ public record CreateListingCommand(
     decimal MinPrice,
     decimal MaxPrice,
     string Description,
-    string Location
+    string Location,
+    List<string>? ImageUrls = null
 ) : IRequest<Guid>;
 
 public class CreateListingCommandValidator : AbstractValidator<CreateListingCommand>
@@ -27,6 +28,10 @@ public class CreateListingCommandValidator : AbstractValidator<CreateListingComm
             .WithMessage("Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu.");
         RuleFor(x => x.Description).NotEmpty().WithMessage("Mô tả không được để trống.").MaximumLength(5000);
         RuleFor(x => x.Location).NotEmpty().WithMessage("Địa điểm không được để trống.").MaximumLength(300);
+        RuleFor(x => x.ImageUrls)
+            .NotNull().WithMessage("Bắt buộc phải có ít nhất 1 hình ảnh dịch vụ.")
+            .Must(x => x != null && x.Count >= 1).WithMessage("Bắt buộc phải có ít nhất 1 hình ảnh dịch vụ.")
+            .Must(x => x != null && x.Count <= 10).WithMessage("Số lượng ảnh tối đa là 10 bức ảnh.");
     }
 }
 
@@ -76,6 +81,23 @@ public class CreateListingCommandHandler : IRequestHandler<CreateListingCommand,
         );
 
         _context.Listings.Add(listing);
+
+        if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+        {
+            for (int i = 0; i < request.ImageUrls.Count; i++)
+            {
+                var media = ListingMedia.Create(
+                    listing.Id,
+                    request.ImageUrls[i],
+                    thumbnailUrl: null,
+                    mediaType: "image",
+                    displayOrder: i,
+                    isFeatured: i == 0
+                );
+                _context.ListingMedias.Add(media);
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return listing.Id;

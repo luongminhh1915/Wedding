@@ -17,6 +17,20 @@ export interface User {
   vendorBrandName?: string;
 }
 
+export interface UserManagementDto {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  role: UserRole;
+  avatarUrl?: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt?: string;
+  vendorId?: string;
+  vendorBrandName?: string;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;
