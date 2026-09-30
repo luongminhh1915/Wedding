@@ -79,7 +79,11 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
             );
         }).ToList();
 
-        var totalContractVal = commissions.Sum(c => c.Contract.ContractValue);
+        var totalContractVal = commissions
+            .Select(c => c.ContractId)
+            .Distinct()
+            .Select(cid => commissions.First(x => x.ContractId == cid).Contract.ContractValue)
+            .Sum();
         var totalCommissionVal = commissions.Sum(c => c.CommissionAmount);
         var totalPending = commissions.Where(c => c.Status == CommissionStatus.Pending).Sum(c => c.CommissionAmount);
         var totalOverdue = commissions.Where(c => c.Status == CommissionStatus.Overdue).Sum(c => c.CommissionAmount);

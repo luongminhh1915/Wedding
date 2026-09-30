@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wedding.Application.Features.Commissions.Commands.ProcessBankWebhook;
+using Wedding.Application.Features.Commissions.Commands.RecordAdminPayment;
+using Wedding.Application.Features.Commissions.Queries.GetAdminFinancialOverview;
 using Wedding.Application.Features.Commissions.Queries.GetVendorSettlementStatement;
 
 namespace Wedding.WebApi.Controllers;
@@ -18,9 +20,31 @@ public class CommissionsController : ControllerBase
     }
 
     /// <summary>
-    /// [VendorOwner] Xem bảng kê đối soát hoa hồng chu kỳ ngày 25 hàng tháng (BR-007).
-    /// Kèm mã VietQR động chuẩn Napas247 để quét app ngân hàng thanh toán.
+    /// [SuperAdmin/Admin] Bảng kiểm kê tài chính toàn hệ thống: xem hoa hồng, cọc của từng Vendor.
     /// </summary>
+    [HttpGet("admin/overview")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public async Task<IActionResult> GetAdminFinancialOverview([FromQuery] int? month, [FromQuery] int? year)
+    {
+        var result = await _mediator.Send(new GetAdminFinancialOverviewQuery(month, year));
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// [SuperAdmin/Admin] Ghi nhận số tiền hoa hồng mà Vendor đã trả thực tế.
+    /// </summary>
+    [HttpPost("admin/record-payment")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public async Task<IActionResult> RecordAdminPayment([FromBody] RecordAdminPaymentCommand command)
+    {
+        var result = await _mediator.Send(command);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
     [HttpGet("statement")]
     [Authorize(Roles = "VendorOwner")]
     public async Task<IActionResult> GetVendorStatement([FromQuery] int? month, [FromQuery] int? year)

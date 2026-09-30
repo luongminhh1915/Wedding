@@ -58,6 +58,15 @@ public class Commission : BaseEntity
         SetUpdated();
     }
 
+    public void AdjustAmount(decimal newAmount)
+    {
+        if (newAmount <= 0)
+            throw new DomainException("Số tiền hoa hồng phải lớn hơn 0 VNĐ.");
+
+        CommissionAmount = newAmount;
+        SetUpdated();
+    }
+
     public void MarkOverdue()
     {
         if (Status == CommissionStatus.Pending && DateTime.UtcNow > DueDate)

@@ -5,6 +5,7 @@ using Wedding.Application.Features.Contracts.Commands.CompleteContract;
 using Wedding.Application.Features.Contracts.Commands.ConfirmContract;
 using Wedding.Application.Features.Contracts.Commands.CreateContractDraft;
 using Wedding.Application.Features.Contracts.Commands.RejectContract;
+using Wedding.Application.Features.Contracts.Commands.RequestAdvancePayment;
 using Wedding.Application.Features.Contracts.Queries.GetContractDetail;
 using Wedding.Application.Features.Contracts.Queries.GetCustomerContracts;
 using Wedding.Application.Features.Contracts.Queries.GetVendorContracts;
@@ -97,6 +98,33 @@ public class ContractsController : ControllerBase
         var result = await _mediator.Send(new CompleteContractCommand(id));
         return Ok(new { message = "Hoàn tất hợp đồng thành công. Đã sinh hoa hồng Kỳ 2 cho kỳ đối soát tiếp theo.", contract = result });
     }
+
+    /// <summary>
+    /// [VendorOwner] Gửi yêu cầu xin thanh toán trước một phần số tiền của hợp đồng.
+    /// </summary>
+    [HttpPost("{id:guid}/advance-payment")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> RequestAdvancePayment(Guid id, [FromBody] AdvancePaymentRequestDto request)
+    {
+        var result = await _mediator.Send(new RequestAdvancePaymentCommand(
+            id,
+            request.Amount,
+            request.Reason,
+            request.BankName,
+            request.BankAccountNumber,
+            request.BankAccountName,
+            request.Note
+        ));
+        return Ok(result);
+    }
 }
 
 public record RejectContractRequest(string Reason);
+public record AdvancePaymentRequestDto(
+    decimal Amount,
+    string Reason,
+    string? BankName,
+    string? BankAccountNumber,
+    string? BankAccountName,
+    string? Note
+);

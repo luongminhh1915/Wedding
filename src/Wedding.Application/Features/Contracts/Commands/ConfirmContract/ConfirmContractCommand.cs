@@ -50,11 +50,8 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             contract.Voucher.Redeem();
         }
 
-        // BR-006 & FM-003: Thu hoa hồng chia 2 kỳ (50/50 Split Payment)
-        // Đợt 1 (50%): Thu ngay sau khi khách hàng bấm xác nhận hợp đồng
         var commissionRate = contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m;
-        var totalCommission = contract.ContractValue * commissionRate;
-        var commissionK1 = Math.Round(totalCommission * 0.5m, 0);
+        var totalCommission = Math.Round(contract.ContractValue * commissionRate, 0);
 
         // BR-007: Hạn thanh toán hoa hồng là ngày 25 của chu kỳ đối soát
         var now = DateTime.UtcNow;
@@ -72,7 +69,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             vendorId: contract.VendorId,
             period: CommissionPeriod.Period1_Deposit,
             commissionRate: commissionRate,
-            commissionAmount: commissionK1,
+            commissionAmount: totalCommission,
             dueDate: dueDate
         );
 

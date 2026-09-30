@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import ModerationQueue from './ModerationQueue';
 import UserManagement from './UserManagement';
 import AllListingsManager from './AllListingsManager';
+import FinancialDashboard from './FinancialDashboard';
 import { usePendingListings } from '../vendor-portal/hooks/useListings';
 
 type Tab = 'moderation' | 'published-listings' | 'users' | 'finance' | 'analytics';
@@ -137,7 +138,19 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab !== 'moderation' && activeTab !== 'published-listings' && activeTab !== 'users' && (
+        {activeTab === 'finance' && (
+          <div>
+            <div className="mb-6">
+              <h1 className="text-xl font-bold text-slate-900">Bảng Kiểm Kê Tài Chính</h1>
+              <p className="text-sm text-slate-500 mt-1">
+                Tổng hợp hợp đồng, tiền cọc, hoa hồng phải thu và trạng thái thanh toán của từng Nhà Cung Cấp.
+              </p>
+            </div>
+            <FinancialDashboard />
+          </div>
+        )}
+
+        {activeTab !== 'moderation' && activeTab !== 'published-listings' && activeTab !== 'users' && activeTab !== 'finance' && (
           <ComingSoon
             title={tabs.find(t => t.id === activeTab)?.label ?? ''}
             taskLabel={tabs.find(t => t.id === activeTab)?.taskLabel ?? ''}

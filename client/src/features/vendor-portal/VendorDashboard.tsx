@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/hooks/useAuth';
 import {
-  Building2, MessageSquare, FileText, QrCode,
+  Building2, MessageSquare, HeartHandshake, ShieldCheck,
   LogOut, LayoutList
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -12,13 +12,13 @@ import { LeadInbox } from './components/LeadInbox';
 import { ContractList } from './components/ContractList';
 import { SettlementDashboard } from './components/SettlementDashboard';
 
-type Tab = 'listings' | 'leads' | 'contracts' | 'settlement';
+type Tab = 'listings' | 'leads' | 'contracts-couple' | 'contracts-admin';
 
 const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: string }[] = [
   { id: 'listings', label: 'Quản Lý Bài Đăng', icon: <LayoutList className="w-4 h-4" /> },
   { id: 'leads', label: 'Hộp Thư Lead', icon: <MessageSquare className="w-4 h-4" /> },
-  { id: 'contracts', label: 'Hợp Đồng 2 Chiều', icon: <FileText className="w-4 h-4" /> },
-  { id: 'settlement', label: 'Đối Soát VietQR', icon: <QrCode className="w-4 h-4" /> },
+  { id: 'contracts-couple', label: 'HĐ Với Cô Dâu Chú Rể', icon: <HeartHandshake className="w-4 h-4" /> },
+  { id: 'contracts-admin', label: 'HĐ Với Admin', icon: <ShieldCheck className="w-4 h-4" /> },
 ];
 
 export default function VendorDashboard() {
@@ -70,13 +70,13 @@ export default function VendorDashboard() {
 
       {/* Tab Navigation */}
       <nav className="bg-white border-b border-slate-100 px-6">
-        <div className="flex gap-0 max-w-7xl mx-auto">
+        <div className="flex gap-0 max-w-7xl mx-auto overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                relative flex items-center gap-2 px-4 py-4 text-sm font-semibold transition border-b-2
+                relative flex items-center gap-2 px-4 py-4 text-sm font-semibold transition border-b-2 whitespace-nowrap cursor-pointer
                 ${activeTab === tab.id
                   ? 'border-rose-500 text-rose-600'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
@@ -97,13 +97,46 @@ export default function VendorDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+        {/* Phân hệ chuyển đổi nhanh giữa 2 loại hợp đồng */}
+        {(activeTab === 'contracts-couple' || activeTab === 'contracts-admin') && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200">
+            <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200 inline-flex gap-1 shadow-2xs">
+              <button
+                onClick={() => setActiveTab('contracts-couple')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'contracts-couple'
+                    ? 'bg-white text-rose-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <HeartHandshake className="w-3.5 h-3.5 text-rose-500" />
+                <span>1. Hợp Đồng Với Cô Dâu Chú Rể</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('contracts-admin')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'contracts-admin'
+                    ? 'bg-white text-rose-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
+                <span>2. Hợp Đồng Với Admin (Hoa Hồng)</span>
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Phân hệ quản lý: <strong>HĐ Khách Hàng (Cô dâu chú rể)</strong> và <strong>HĐ Đối Tác (Admin)</strong>
+            </p>
+          </div>
+        )}
+
         {activeTab === 'listings' && (
           <ListingTable categories={categories} />
         )}
 
         {activeTab === 'leads' && <LeadInbox />}
-        {activeTab === 'contracts' && <ContractList />}
-        {activeTab === 'settlement' && <SettlementDashboard />}
+        {activeTab === 'contracts-couple' && <ContractList />}
+        {activeTab === 'contracts-admin' && <SettlementDashboard />}
       </main>
     </div>
   );

@@ -1,14 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FileText, Clock, CheckCircle2, AlertCircle,
-  Gift, Calendar, RefreshCw
+  Gift, Calendar, RefreshCw, Banknote, Sparkles, Check, X
 } from 'lucide-react';
 import { useVendorContracts } from '../hooks/useVendorContracts';
 import type { Contract } from '../../../types/contract.types';
+import { AdvancePaymentModal, type AdvancePaymentRecord } from './AdvancePaymentModal';
+
+const ADVANCE_STORAGE_KEY = 'wedding_vendor_advance_requests';
 
 export function ContractList() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const { data: contracts = [], isLoading, isError, refetch } = useVendorContracts(selectedStatus || undefined);
+
+  // State for Advance Payment Modal
+  const [selectedContractForAdvance, setSelectedContractForAdvance] = useState<Contract | null>(null);
+  const [advanceRequests, setAdvanceRequests] = useState<Record<string, AdvancePaymentRecord>>({});
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  // Load stored advance requests from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(ADVANCE_STORAGE_KEY);
+      if (stored) {
+        setAdvanceRequests(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleOpenAdvanceModal = (contract: Contract) => {
+    setSelectedContractForAdvance(contract);
+  };
+
+  const handleCloseAdvanceModal = () => {
+    setSelectedContractForAdvance(null);
+  };
+
+  const handleAdvanceSuccess = (record: AdvancePaymentRecord) => {
+    const updated = {
+      ...advanceRequests,
+      [record.contractId]: record,
+    };
+    setAdvanceRequests(updated);
+    try {
+      localStorage.setItem(ADVANCE_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    setSuccessNotice(
+      `Đã gửi yêu cầu xin thanh toán trước ${record.amount.toLocaleString('vi-VN')} đ cho hợp đồng ${record.contractCode} thành công! Hệ thống đang chờ xử lý.`
+    );
+  };
+
+  const handleCancelAdvance = (contractId: string) => {
+    const updated = { ...advanceRequests };
+    delete updated[contractId];
+    setAdvanceRequests(updated);
+    try {
+      localStorage.setItem(ADVANCE_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -49,14 +105,37 @@ export function ContractList() {
 
   return (
     <div className="space-y-6">
+      {/* Success Notification Alert */}
+      {successNotice && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+              <Check className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-xs font-bold">{successNotice}</p>
+          </div>
+          <button
+            onClick={() => setSuccessNotice(null)}
+            className="w-7 h-7 rounded-lg bg-black/10 hover:bg-black/20 flex items-center justify-center transition cursor-pointer shrink-0"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-2xl border border-rose-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+              PHẦN 1 • HỢP ĐỒNG KHÁCH HÀNG
+            </span>
+          </div>
           <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Quản Lý Hợp Đồng Dịch Vụ Cưới (BR-005)
+            Hợp Đồng Dịch Vụ Cưới Ký Với Cô Dâu & Chú Rể (BR-005)
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Xác thực 2 chiều trong <strong className="text-rose-600">72 giờ</strong> · Tự động sinh hoa hồng kỳ 1 khi khách duyệt (<strong className="text-rose-600">BR-006</strong>).
+            Hợp đồng dịch vụ cưới ký kết trực tiếp với các cặp đôi cô dâu chú rể · Xác thực 2 chiều trong <strong className="text-rose-600">72 giờ</strong> · Hỗ trợ <strong className="text-amber-600">Xin thanh toán trước (tạm ứng)</strong> một phần kinh phí phục vụ chuẩn bị tiệc cưới.
           </p>
         </div>
 
@@ -117,6 +196,7 @@ export function ContractList() {
           {contracts.map((contract: Contract) => {
             const deadline = new Date(contract.verificationDeadline);
             const isOverdue = deadline < new Date();
+            const advanceRecord = advanceRequests[contract.id];
 
             return (
               <div
@@ -193,38 +273,139 @@ export function ContractList() {
                   </div>
                 </div>
 
-                {/* Hoa hồng đã sinh tự động */}
-                {contract.commissions && contract.commissions.length > 0 && (
-                  <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="font-bold text-emerald-900">
-                        Phí hoa hồng Đợt 1 (50% lúc cọc theo BR-006):
-                      </span>
-                      <span className="font-extrabold text-emerald-700">
-                        {contract.commissions[0].commissionAmount.toLocaleString('vi-VN')} đ
-                      </span>
-                      <span className="text-[10px] text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">
-                        Hạn thanh toán: Ngày 25
-                      </span>
+                {/* Banner Thông Báo Yêu Cầu Xin Thanh Toán Trước Đã Gửi */}
+                {advanceRecord && (
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold shrink-0">
+                        <Banknote className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-amber-950">
+                            Đã xin thanh toán trước:
+                          </span>
+                          <span className="font-extrabold text-amber-700 text-sm">
+                            {advanceRecord.amount.toLocaleString('vi-VN')} đ
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" /> Chờ xét duyệt
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800/80 mt-0.5">
+                          Mục đích: <strong className="text-amber-900">{advanceRecord.reason}</strong> · Nhận về: <strong>{advanceRecord.bankAccountNumber}</strong> ({advanceRecord.bankName} - {advanceRecord.bankAccountName})
+                        </p>
+                      </div>
                     </div>
 
-                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
-                      Trạng thái: {contract.commissions[0].status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenAdvanceModal(contract)}
+                        className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 font-bold text-xs transition cursor-pointer shadow-2xs"
+                      >
+                        Chỉnh sửa
+                      </button>
+                      <button
+                        onClick={() => handleCancelAdvance(contract.id)}
+                        className="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 font-medium text-xs transition cursor-pointer"
+                        title="Hủy đề nghị này"
+                      >
+                        Hủy
+                      </button>
+                    </div>
                   </div>
                 )}
+
+                {/* Hoa hồng đã sinh tự động */}
+                {contract.commissions && contract.commissions.length > 0 && (() => {
+                  const paid = contract.commissions.filter(c => c.status === 'Paid').reduce((s, c) => s + c.commissionAmount, 0);
+                  const pending = contract.commissions.filter(c => c.status !== 'Paid').reduce((s, c) => s + c.commissionAmount, 0);
+                  const total = paid + pending;
+
+                  const isFullyPaid = pending === 0 && paid > 0;
+                  const isPartiallyPaid = paid > 0 && pending > 0;
+                  const statusText = isFullyPaid ? 'Đã Thanh Toán' : (isPartiallyPaid ? 'Một Phần' : 'Chờ Thanh Toán');
+
+                  return (
+                    <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="font-bold text-emerald-900">
+                          Hoa hồng hợp đồng:
+                        </span>
+                        <span className="font-extrabold text-emerald-700">
+                          {total.toLocaleString('vi-VN')} đ
+                        </span>
+                        {isPartiallyPaid && (
+                          <span className="text-[11px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                            Đã thanh toán: {paid.toLocaleString('vi-VN')} đ · Còn chưa thanh toán: {pending.toLocaleString('vi-VN')} đ
+                          </span>
+                        )}
+                        <span className="text-[10px] text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">
+                          Hạn thanh toán: Ngày 25
+                        </span>
+                      </div>
+
+                      <span className={`text-[11px] font-bold uppercase tracking-wider ${isFullyPaid ? 'text-emerald-800' : isPartiallyPaid ? 'text-blue-700' : 'text-amber-800'}`}>
+                        Trạng thái: {statusText}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {contract.cancellationReason && (
                   <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-700">
                     <strong>Lý do từ chối/hủy:</strong> {contract.cancellationReason}
                   </div>
                 )}
+
+                {/* ACTION BAR: Nút Xin Thanh Toán Trước Một Phần Số Tiền Của Hợp Đồng */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    {contract.status === 'Confirmed' ? (
+                      <span className="text-emerald-700 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        Hợp đồng hợp lệ · Bạn có thể gửi yêu cầu xin thanh toán trước một phần tiền HĐ để phục vụ tiệc cưới.
+                      </span>
+                    ) : contract.status === 'PendingVerification' ? (
+                      <span className="text-amber-700 font-medium flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        Đang chờ khách duyệt trong 72h.
+                      </span>
+                    ) : contract.status === 'Completed' ? (
+                      <span className="text-purple-700 font-medium flex items-center gap-1">
+                        🎉 Đám cưới đã hoàn tất.
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Trạng thái: {contract.status}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenAdvanceModal(contract)}
+                      disabled={contract.status === 'Cancelled'}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-rose-500/20 hover:shadow-lg flex items-center gap-2 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      <Banknote className="w-4 h-4 text-amber-200" />
+                      <span>Xin Thanh Toán Trước</span>
+                      <Sparkles className="w-3 h-3 text-amber-200" />
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Modal Xin Thanh Toán Trước Hợp Đồng */}
+      <AdvancePaymentModal
+        isOpen={selectedContractForAdvance !== null}
+        onClose={handleCloseAdvanceModal}
+        contract={selectedContractForAdvance}
+        onSuccess={handleAdvanceSuccess}
+      />
     </div>
   );
 }

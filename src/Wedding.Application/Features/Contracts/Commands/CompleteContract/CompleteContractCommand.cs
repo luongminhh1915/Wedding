@@ -50,21 +50,13 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
         // Chuyển hợp đồng sang trạng thái Completed
         contract.CompleteContract();
 
-        // Kiểm tra xem đã sinh hoa hồng Kỳ 2 chưa
-        var hasK2 = contract.Commissions.Any(c => c.Period == CommissionPeriod.Period2_Completion);
-        if (!hasK2)
-        {
-            // BR-006 & FM-004: Thu hoa hồng Kỳ 2 (50% còn lại sau khi đám cưới hoàn tất)
-            var commissionRate = contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m;
-            var totalCommission = contract.ContractValue * commissionRate;
-            var commissionK1 = contract.Commissions.FirstOrDefault(c => c.Period == CommissionPeriod.Period1_Deposit);
-            
-            // FM-004: Commission_K2 = Total_Commission - Commission_K1
-            var commissionAmountK2 = commissionK1 != null
-                ? totalCommission - commissionK1.CommissionAmount
-                : Math.Round(totalCommission * 0.5m, 0);
+        var existingCommissionsTotal = contract.Commissions.Sum(c => c.CommissionAmount);
+        var commissionRate = contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m;
+        var totalCommission = Math.Round(contract.ContractValue * commissionRate, 0);
+        var remainderCommission = totalCommission - existingCommissionsTotal;
 
-            // BR-007: Hạn thanh toán hoa hồng chu kỳ ngày 25
+        if (remainderCommission > 0)
+        {
             var now = DateTime.UtcNow;
             var dueDate = new DateTime(now.Year, now.Month, 25, 23, 59, 59, DateTimeKind.Utc);
             if (now.Day > 25)
@@ -78,7 +70,7 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
                 vendorId: contract.VendorId,
                 period: CommissionPeriod.Period2_Completion,
                 commissionRate: commissionRate,
-                commissionAmount: commissionAmountK2,
+                commissionAmount: remainderCommission,
                 dueDate: dueDate
             );
 

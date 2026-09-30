@@ -37,8 +37,8 @@
       "VerticalTabListWidth": 256,
       "DocumentGroups": [
         {
-          "DockedHeight": 430,
-          "SelectedChildIndex": 15,
+          "DockedHeight": 387,
+          "SelectedChildIndex": 14,
           "Children": [
             {
               "$type": "Bookmark",
@@ -97,10 +97,6 @@
               "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
-            },
-            {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "appsettings.json",
@@ -108,7 +104,7 @@
               "RelativeDocumentMoniker": "src\\Wedding.WebApi\\appsettings.json",
               "ToolTip": "D:\\EXE201\\Wedding\\src\\Wedding.WebApi\\appsettings.json",
               "RelativeToolTip": "src\\Wedding.WebApi\\appsettings.json",
-              "ViewState": "AgIAABAAAAAAAAAAAAAuwBIAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAuwBIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
               "WhenOpened": "2026-09-27T16:22:22.571Z",
               "EditorCaption": ""
@@ -184,6 +180,10 @@
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-09-27T16:04:51.819Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         },
@@ -212,7 +212,7 @@
           ]
         },
         {
-          "DockedHeight": 107,
+          "DockedHeight": 150,
           "SelectedChildIndex": -1,
           "Children": [
             {
