@@ -24,6 +24,24 @@ export interface CommissionItem {
   qrImageUrl?: string;
 }
 
+export interface AdvancePaymentNotice {
+  id: string;
+  contractId: string;
+  contractCode: string;
+  vendorId: string;
+  vendorBrandName: string;
+  amount: number;
+  reason: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+  note?: string;
+  status: 'PendingApproval' | 'Approved' | 'Rejected';
+  requestedAt: string;
+  processedAt?: string;
+  adminNote?: string;
+}
+
 export interface MonthlySettlementStatement {
   vendorId: string;
   vendorBrandName: string;
@@ -40,6 +58,7 @@ export interface MonthlySettlementStatement {
   transferContent: string; // HH <VendorCode> T<Month>
   vietQr?: VietQrInfo;
   items: CommissionItem[];
+  advanceRequests?: AdvancePaymentNotice[];
 }
 
 export interface BankWebhookRequest {

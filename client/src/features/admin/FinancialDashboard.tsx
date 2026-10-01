@@ -3,7 +3,7 @@ import {
   DollarSign, TrendingUp, AlertTriangle, CheckCircle,
   Clock, Search, Download, RefreshCw, ChevronDown, ChevronUp,
   Building2, FileText, Coins, CreditCard, X, CheckCircle2,
-  Receipt, Calendar, Phone, Layers
+  Receipt, Calendar, Phone, Layers, Bell
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,6 +14,24 @@ interface AdminCommissionItem {
   status: string;
   paidAt?: string | null;
   paymentReferenceCode?: string | null;
+}
+
+export interface AdvancePaymentNotice {
+  id: string;
+  contractId: string;
+  contractCode: string;
+  vendorId: string;
+  vendorBrandName: string;
+  amount: number;
+  reason: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+  note?: string;
+  status: 'PendingApproval' | 'Approved' | 'Rejected';
+  requestedAt: string;
+  processedAt?: string | null;
+  adminNote?: string | null;
 }
 
 interface ContractFinancialRow {
@@ -38,6 +56,8 @@ interface ContractFinancialRow {
   weddingDate?: string;
   dueDate?: string;
   items?: AdminCommissionItem[];
+  pendingAdvanceRequest?: AdvancePaymentNotice | null;
+  advanceRequests?: AdvancePaymentNotice[];
 }
 
 interface AdminFinancialOverview {
@@ -51,6 +71,7 @@ interface AdminFinancialOverview {
   totalCommissionOverdue: number;
   orders: ContractFinancialRow[];
   vendors: ContractFinancialRow[];
+  pendingAdvanceRequestsCount?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -85,6 +106,90 @@ export default function FinancialDashboard() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+
+  // Xử lý thông báo chuyển tiền từ Vendor
+  const [actionNoticeLoading, setActionNoticeLoading] = useState(false);
+  const [actionNoticeMessage, setActionNoticeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleConfirmAdvancePayment = async (notice: AdvancePaymentNotice) => {
+    if (!window.confirm(`Xác nhận đã nhận được ${fmt(notice.amount)} từ ${notice.vendorBrandName} cho hợp đồng ${notice.contractCode}?`)) {
+      return;
+    }
+
+    setActionNoticeLoading(true);
+    setActionNoticeMessage(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/commissions/admin/advance-requests/${notice.id}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          paymentReference: `UNC-${notice.bankName ? notice.bankName.slice(0, 4).toUpperCase().trim() : 'BANK'}-${Date.now().toString().slice(-6)}`,
+          note: `Xác nhận thông báo chuyển tiền: ${notice.reason}`,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Xác nhận thanh toán thất bại.');
+      }
+
+      setActionNoticeMessage({
+        type: 'success',
+        text: `Đã xác nhận nhận đủ ${fmt(notice.amount)} từ ${notice.vendorBrandName}! Đã gạch nợ hoa hồng cho đơn ${notice.contractCode}.`
+      });
+
+      await fetchData();
+    } catch (err: any) {
+      setActionNoticeMessage({
+        type: 'error',
+        text: err.message || 'Có lỗi xảy ra khi xác nhận thanh toán.'
+      });
+    } finally {
+      setActionNoticeLoading(false);
+    }
+  };
+
+  const handleRejectAdvancePayment = async (notice: AdvancePaymentNotice) => {
+    const reason = window.prompt('Nhập lý do từ chối hoặc báo chưa nhận được tiền:', 'Chưa nhận được biến động số dư tài khoản ngân hàng');
+    if (reason === null) return;
+
+    setActionNoticeLoading(true);
+    setActionNoticeMessage(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/commissions/admin/advance-requests/${notice.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Thao tác thất bại.');
+      }
+
+      setActionNoticeMessage({
+        type: 'success',
+        text: `Đã cập nhật trạng thái: Chưa nhận được tiền / Từ chối cho đơn ${notice.contractCode}.`
+      });
+
+      await fetchData();
+    } catch (err: any) {
+      setActionNoticeMessage({
+        type: 'error',
+        text: err.message || 'Có lỗi xảy ra khi xử lý.'
+      });
+    } finally {
+      setActionNoticeLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -201,6 +306,50 @@ export default function FinancialDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Thông báo kết quả thao tác xác nhận / từ chối */}
+      {actionNoticeMessage && (
+        <div className={`p-4 rounded-2xl text-sm flex items-center justify-between gap-3 shadow-xs animate-in fade-in ${
+          actionNoticeMessage.type === 'success'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            {actionNoticeMessage.type === 'success'
+              ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              : <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />}
+            <span className="font-semibold">{actionNoticeMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setActionNoticeMessage(null)}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-black/5 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Banner thông báo các đợt chuyển tiền từ Vendor đang chờ Admin xác nhận */}
+      {data && (data.pendingAdvanceRequestsCount ?? 0) > 0 && (
+        <div className="bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 p-4 rounded-3xl text-white shadow-md flex items-center justify-between flex-wrap gap-4 animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0 animate-bounce">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm sm:text-base">
+                Có {data.pendingAdvanceRequestsCount} thông báo chuyển tiền hoa hồng từ Nhà Cung Cấp đang chờ bạn xác nhận!
+              </h4>
+              <p className="text-xs text-rose-100 mt-0.5">
+                Các đơn có yêu cầu đã được đưa lên đầu bảng. Nhấn vào đơn để xem chi tiết thông tin chuyển khoản và xác nhận nhận tiền.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-white text-rose-600 shadow-xs">
+            {data.pendingAdvanceRequestsCount} thông báo mới
+          </span>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
@@ -340,6 +489,9 @@ export default function FinancialDashboard() {
                   const ratePercent = Number((o.commissionRate * 100).toFixed(1));
                   const paidItems = o.items ? o.items.filter(i => i.status === 'Paid') : [];
                   const paidCount = paidItems.length;
+                  const contractAdvances = o.advanceRequests || [];
+                  const rejectedAdvances = contractAdvances.filter(a => a.status === 'Rejected');
+                  const approvedAdvances = contractAdvances.filter(a => a.status === 'Approved');
                   const paidPercent = o.totalCommissionDue > 0
                     ? Math.round((o.totalCommissionPaid / o.totalCommissionDue) * 100)
                     : 0;
@@ -352,7 +504,7 @@ export default function FinancialDashboard() {
                         {/* Mã HĐ */}
                         <td className="px-5 py-3.5">
                           <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-mono text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100 inline-block w-fit">
                                 {o.contractCode}
                               </span>
@@ -363,6 +515,12 @@ export default function FinancialDashboard() {
                                 {paidCount > 0 ? `Đã trả ${paidCount} đợt` : 'Chưa trả'}
                                 {isExpanded ? <ChevronUp className="w-2.5 h-2.5"/> : <ChevronDown className="w-2.5 h-2.5"/>}
                               </span>
+                              {o.pendingAdvanceRequest && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 animate-pulse" title="Vendor đã gửi thông báo chuyển tiền đang chờ xác nhận">
+                                  <Bell className="w-2.5 h-2.5 text-amber-600" />
+                                  Chờ duyệt {fmt(o.pendingAdvanceRequest.amount)}
+                                </span>
+                              )}
                             </div>
                             <span className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
                               <Calendar className="w-3 h-3"/>
@@ -469,7 +627,7 @@ export default function FinancialDashboard() {
                         <tr>
                           <td colSpan={9} className="py-4 px-6 bg-slate-50/95 border-t border-b border-slate-200/80">
                             <div className="text-xs space-y-3.5">
-                              {/* Dòng tiêu đề cùng nút ghi nhận thanh toán */}
+                              {/* Dòng tiêu đề thông tin hợp đồng */}
                               <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200/70">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Layers className="w-4 h-4 text-rose-500 shrink-0" />
@@ -488,14 +646,91 @@ export default function FinancialDashboard() {
                                     {o.weddingDate && <span>💒 {new Date(o.weddingDate).toLocaleDateString('vi-VN')}</span>}
                                   </div>
                                 </div>
-                                <button
-                                  onClick={e => { e.stopPropagation(); openPaymentModal(o); }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition self-start sm:self-auto cursor-pointer"
-                                >
-                                  <CreditCard className="w-3.5 h-3.5" />
-                                  <span>Điền số tiền đã trả cho đơn này</span>
-                                </button>
                               </div>
+
+                              {/* ─── THAY NÚT "ĐIỀN SỐ TIỀN ĐÃ TRẢ" BẰNG THÔNG BÁO BÊN VENDOR CHUYỂN TIỀN ─── */}
+                              {o.pendingAdvanceRequest ? (
+                                <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-amber-50 border-2 border-amber-300 rounded-2xl p-4 shadow-xs space-y-3 animate-in fade-in">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-amber-200">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs animate-bounce shrink-0">
+                                        <Bell className="w-4 h-4" />
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <h4 className="font-extrabold text-sm text-amber-950">
+                                            Thông Báo Chuyển Tiền Từ Nhà Cung Cấp
+                                          </h4>
+                                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
+                                            Chờ bạn xác nhận
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-amber-800 mt-0.5">
+                                          {o.vendorBrandName} đã gửi lúc {new Date(o.pendingAdvanceRequest.requestedAt).toLocaleString('vi-VN')}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* 2 nút xác nhận đã nhận được tiền hay chưa */}
+                                    <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                                      <button
+                                        onClick={e => { e.stopPropagation(); handleRejectAdvancePayment(o.pendingAdvanceRequest!); }}
+                                        disabled={actionNoticeLoading}
+                                        className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 hover:text-red-700 hover:bg-red-50 border border-slate-200 hover:border-red-200 shadow-2xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                        <span>Chưa nhận được tiền / Từ chối</span>
+                                      </button>
+                                      <button
+                                        onClick={e => { e.stopPropagation(); handleConfirmAdvancePayment(o.pendingAdvanceRequest!); }}
+                                        disabled={actionNoticeLoading}
+                                        className="px-4 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-sm shadow-emerald-600/20 transition flex items-center gap-1.5 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+                                      >
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        <span>Xác nhận đã nhận tiền ({fmt(o.pendingAdvanceRequest.amount)})</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Chi tiết nội dung thanh toán từ Vendor */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                    <div className="bg-white/90 p-2.5 rounded-xl border border-amber-200/80 shadow-3xs">
+                                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Số tiền vendor chuyển</span>
+                                      <span className="text-base font-black text-rose-600 tracking-tight">{fmt(o.pendingAdvanceRequest.amount)}</span>
+                                    </div>
+                                    <div className="bg-white/90 p-2.5 rounded-xl border border-amber-200/80 shadow-3xs">
+                                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Lý do chuyển tiền</span>
+                                      <span className="font-semibold text-slate-800 line-clamp-2 mt-0.5">{o.pendingAdvanceRequest.reason}</span>
+                                    </div>
+                                    <div className="bg-white/90 p-2.5 rounded-xl border border-amber-200/80 shadow-3xs">
+                                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Ngân hàng & Tài khoản</span>
+                                      <span className="font-bold text-slate-800 block truncate mt-0.5">{o.pendingAdvanceRequest.bankName || 'Chuyển khoản'}</span>
+                                      <span className="text-[11px] text-slate-500 font-mono">{o.pendingAdvanceRequest.bankAccountNumber} ({o.pendingAdvanceRequest.bankAccountName})</span>
+                                    </div>
+                                    <div className="bg-white/90 p-2.5 rounded-xl border border-amber-200/80 shadow-3xs">
+                                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Ghi chú từ NCC</span>
+                                      <span className="font-medium text-slate-700 italic block mt-0.5">{o.pendingAdvanceRequest.note || 'Không có ghi chú'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-3xs">
+                                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <CheckCircle2 className="w-4 h-4 text-slate-400" />
+                                    <span>
+                                      Chưa có thông báo chuyển tiền mới từ Nhà cung cấp cho hợp đồng này.
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); openPaymentModal(o); }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+                                    title="Ghi nhận thanh toán thủ công nếu cần"
+                                  >
+                                    <CreditCard className="w-3.5 h-3.5" />
+                                    <span>Ghi nhận thủ công</span>
+                                  </button>
+                                </div>
+                              )}
 
                               {/* Thanh tiến độ thanh toán hoa hồng */}
                               <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
@@ -528,43 +763,101 @@ export default function FinancialDashboard() {
                                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-emerald-50">
                                     <div className="flex items-center gap-1.5 font-bold text-slate-800">
                                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                      <span>Các Lần Đã Thanh Toán</span>
+                                      <span>
+                                        Các Lần Đã Thanh Toán ({paidItems.length} lần)
+                                        {rejectedAdvances.length > 0 && (
+                                          <span className="ml-1 text-rose-600 font-normal text-xs">
+                                            · {rejectedAdvances.length} lần từ chối
+                                          </span>
+                                        )}
+                                      </span>
                                     </div>
                                     <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                                       Tổng đã trả: {fmt(o.totalCommissionPaid)}
                                     </span>
                                   </div>
 
-                                  {paidItems.length === 0 ? (
+                                  {paidItems.length === 0 && rejectedAdvances.length === 0 ? (
                                     <div className="py-4 text-center text-slate-400">
                                       <p className="font-medium text-xs">Chưa có khoản thanh toán nào được ghi nhận cho đơn này.</p>
                                     </div>
                                   ) : (
                                     <div className="space-y-2">
-                                      {paidItems.map((item, idx) => (
+                                      {paidItems.map((item, idx) => {
+                                        const isAdvanceMatched = approvedAdvances.some(a =>
+                                          a.amount === item.commissionAmount ||
+                                          (item.paymentReferenceCode && (
+                                            item.paymentReferenceCode.includes('UNC') ||
+                                            item.paymentReferenceCode.includes('XACNHAN')
+                                          ))
+                                        );
+
+                                        return (
+                                          <div
+                                            key={item.id || idx}
+                                            className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/40 border border-emerald-100/60"
+                                          >
+                                            <div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-800 text-xs">
+                                                  Lần {idx + 1}: {fmt(item.commissionAmount)}
+                                                </span>
+                                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                                                  Đã thanh toán
+                                                </span>
+                                                {isAdvanceMatched && (
+                                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-teal-100 text-teal-800 font-semibold">
+                                                    Tạm ứng đã duyệt
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                                <span>Ngày: {item.paidAt ? new Date(item.paidAt).toLocaleDateString('vi-VN') : '—'}</span>
+                                                {item.paymentReferenceCode && (
+                                                  <span className="font-mono text-slate-600 font-medium">Mã: {item.paymentReferenceCode}</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <div className="text-right">
+                                              <CheckCircle className="w-4 h-4 text-emerald-600 inline" />
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+
+                                      {/* Các thông báo tạm ứng BỊ TỪ CHỐI */}
+                                      {rejectedAdvances.map((notice) => (
                                         <div
-                                          key={item.id || idx}
-                                          className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/40 border border-emerald-100/60"
+                                          key={notice.id}
+                                          className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-200/80 flex flex-col gap-1.5"
                                         >
-                                          <div>
-                                            <div className="flex items-center gap-2">
-                                              <span className="font-bold text-slate-800 text-xs">
-                                                Lần {idx + 1}: {fmt(item.commissionAmount)}
-                                              </span>
-                                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                                                Đã thanh toán
-                                              </span>
+                                          <div className="flex items-center justify-between">
+                                            <div>
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-bold text-rose-950 text-xs">
+                                                  Tạm ứng: {fmt(notice.amount)}
+                                                </span>
+                                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-bold border border-rose-200">
+                                                  Bị từ chối
+                                                </span>
+                                              </div>
+                                              <div className="text-[10px] text-rose-700/80 mt-0.5 flex items-center gap-2">
+                                                <span>Ngày gửi: {new Date(notice.requestedAt).toLocaleDateString('vi-VN')}</span>
+                                                {notice.processedAt && (
+                                                  <span>· Từ chối: {new Date(notice.processedAt).toLocaleDateString('vi-VN')}</span>
+                                                )}
+                                                {notice.bankName && <span>· {notice.bankName}</span>}
+                                              </div>
                                             </div>
-                                            <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
-                                              <span>Ngày: {item.paidAt ? new Date(item.paidAt).toLocaleDateString('vi-VN') : '—'}</span>
-                                              {item.paymentReferenceCode && (
-                                                <span className="font-mono text-slate-600 font-medium">Mã: {item.paymentReferenceCode}</span>
-                                              )}
+                                            <div className="text-right">
+                                              <X className="w-4 h-4 text-rose-600 inline" />
                                             </div>
                                           </div>
-                                          <div className="text-right">
-                                            <CheckCircle className="w-4 h-4 text-emerald-600 inline" />
-                                          </div>
+                                          {notice.adminNote && (
+                                            <div className="text-[10px] bg-white/90 p-2 rounded-lg border border-rose-200 text-rose-800 font-medium">
+                                              <span className="font-bold text-rose-900">Lý do từ chối:</span> {notice.adminNote}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>

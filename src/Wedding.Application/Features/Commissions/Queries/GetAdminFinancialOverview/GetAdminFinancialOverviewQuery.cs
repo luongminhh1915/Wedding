@@ -37,7 +37,9 @@ public record ContractFinancialRowDto(
     DateTime CreatedAt,
     DateTime? WeddingDate,
     DateTime DueDate,
-    List<AdminCommissionItemDto> Items
+    List<AdminCommissionItemDto> Items,
+    AdvancePaymentNoticeDto? PendingAdvanceRequest = null,
+    List<AdvancePaymentNoticeDto>? AdvanceRequests = null
 );
 
 // Tổng hợp toàn hệ thống cho Admin
@@ -51,7 +53,8 @@ public record AdminFinancialOverviewDto(
     decimal TotalCommissionPending,
     decimal TotalCommissionOverdue,
     List<ContractFinancialRowDto> Orders,
-    List<ContractFinancialRowDto> Vendors // Giữ alias vendors để tương thích ngược
+    List<ContractFinancialRowDto> Vendors, // Giữ alias vendors để tương thích ngược
+    int PendingAdvanceRequestsCount = 0
 );
 
 public record GetAdminFinancialOverviewQuery(
@@ -63,10 +66,14 @@ public class GetAdminFinancialOverviewQueryHandler
     : IRequestHandler<GetAdminFinancialOverviewQuery, AdminFinancialOverviewDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAdvancePaymentService _advancePaymentService;
 
-    public GetAdminFinancialOverviewQueryHandler(IApplicationDbContext context)
+    public GetAdminFinancialOverviewQueryHandler(
+        IApplicationDbContext context,
+        IAdvancePaymentService advancePaymentService)
     {
         _context = context;
+        _advancePaymentService = advancePaymentService;
     }
 
     public async Task<AdminFinancialOverviewDto> Handle(
@@ -97,6 +104,7 @@ public class GetAdminFinancialOverviewQueryHandler
         }
 
         var commissions = await commissionsQuery.ToListAsync(cancellationToken);
+        var allAdvanceNotices = await _advancePaymentService.GetAllAsync();
 
         // Nhóm theo từng Đơn Hợp Đồng (Contract) để hiển thị chi tiết từng đơn
         var grouped = commissions
@@ -139,6 +147,9 @@ public class GetAdminFinancialOverviewQueryHandler
                     ))
                     .ToList();
 
+                var contractNotices = allAdvanceNotices.Where(n => n.ContractId == contract.Id).ToList();
+                var pendingNotice = contractNotices.FirstOrDefault(n => n.Status == "PendingApproval");
+
                 return new ContractFinancialRowDto(
                     ContractId: contract.Id,
                     ContractCode: contract.ContractCode,
@@ -160,10 +171,13 @@ public class GetAdminFinancialOverviewQueryHandler
                     CreatedAt: contract.CreatedAt,
                     WeddingDate: contract.WeddingDate,
                     DueDate: dueDate,
-                    Items: items
+                    Items: items,
+                    PendingAdvanceRequest: pendingNotice,
+                    AdvanceRequests: contractNotices
                 );
             })
-            .OrderByDescending(o => o.TotalCommissionOverdue)
+            .OrderByDescending(o => o.PendingAdvanceRequest != null ? 1 : 0)
+            .ThenByDescending(o => o.TotalCommissionOverdue)
             .ThenByDescending(o => o.TotalCommissionPending)
             .ThenByDescending(o => o.CreatedAt)
             .ToList();
@@ -178,7 +192,8 @@ public class GetAdminFinancialOverviewQueryHandler
             TotalCommissionPending: grouped.Sum(o => o.TotalCommissionPending),
             TotalCommissionOverdue: grouped.Sum(o => o.TotalCommissionOverdue),
             Orders: grouped,
-            Vendors: grouped
+            Vendors: grouped,
+            PendingAdvanceRequestsCount: allAdvanceNotices.Count(n => n.Status == "PendingApproval")
         );
     }
 }

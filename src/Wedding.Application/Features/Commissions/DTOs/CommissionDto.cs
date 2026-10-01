@@ -33,5 +33,6 @@ public record MonthlySettlementStatementDto(
     string PaymentStatus, // Pending, Paid, PartiallyPaid, Overdue
     string TransferContent, // HH <VendorId> T<Month>
     VietQrInfo? VietQr,
-    List<CommissionItemDto> Items
+    List<CommissionItemDto> Items,
+    List<AdvancePaymentNoticeDto>? AdvanceRequests = null
 );

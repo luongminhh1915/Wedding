@@ -33,11 +33,16 @@ public class RequestAdvancePaymentCommandHandler : IRequestHandler<RequestAdvanc
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAdvancePaymentService _advancePaymentService;
 
-    public RequestAdvancePaymentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
+    public RequestAdvancePaymentCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUserService currentUserService,
+        IAdvancePaymentService advancePaymentService)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _advancePaymentService = advancePaymentService;
     }
 
     public async Task<AdvancePaymentResultDto> Handle(RequestAdvancePaymentCommand request, CancellationToken cancellationToken)
@@ -68,18 +73,31 @@ public class RequestAdvancePaymentCommandHandler : IRequestHandler<RequestAdvanc
             throw new DomainException($"Số tiền xin thanh toán trước không thể vượt quá giá trị hợp đồng ({contract.ContractValue:N0} đ).");
         }
 
-        return new AdvancePaymentResultDto(
+        var notice = await _advancePaymentService.CreateRequestAsync(
             contract.Id,
             contract.ContractCode,
+            vendor.Id,
+            vendor.BrandName,
             request.Amount,
             request.Reason,
             request.BankName,
             request.BankAccountNumber,
             request.BankAccountName,
-            request.Note,
-            "PendingApproval",
-            DateTime.UtcNow,
-            $"Đã ghi nhận yêu cầu xin thanh toán trước {request.Amount:N0} đ cho hợp đồng {contract.ContractCode}."
+            request.Note
+        );
+
+        return new AdvancePaymentResultDto(
+            contract.Id,
+            contract.ContractCode,
+            notice.Amount,
+            notice.Reason,
+            notice.BankName,
+            notice.BankAccountNumber,
+            notice.BankAccountName,
+            notice.Note,
+            notice.Status,
+            notice.RequestedAt,
+            $"Đã ghi nhận yêu cầu xin thanh toán trước {request.Amount:N0} đ cho hợp đồng {contract.ContractCode}. Hệ thống đã gửi thông báo đến Admin để xác nhận!"
         );
     }
 }

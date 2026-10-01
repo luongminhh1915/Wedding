@@ -1,0 +1,36 @@
+[
+  {
+    "Id": "a0aef10d-99c5-4d62-8643-ffc6ab9301ec",
+    "ContractId": "da6fa15c-c59a-45a7-94e0-552563e0eb96",
+    "ContractCode": "HD-20260930-8202",
+    "VendorId": "e595124a-bc7b-42f7-9172-8ef8fcc25df0",
+    "VendorBrandName": "White Palace Convention Center",
+    "Amount": 20000000,
+    "Reason": "Y\u00EAu c\u1EA7u thanh to\u00E1n tr\u01B0\u1EDBc m\u1ED9t ph\u1EA7n hoa h\u1ED3ng",
+    "BankName": "Vietcombank (VCB)",
+    "BankAccountNumber": "\u1EF5",
+    "BankAccountName": "T\u1EF4T",
+    "Note": null,
+    "Status": "Approved",
+    "RequestedAt": "2026-10-01T02:53:09.7281346Z",
+    "ProcessedAt": "2026-10-01T02:53:49.6084471Z",
+    "AdminNote": "X\u00E1c nh\u1EADn th\u00F4ng b\u00E1o chuy\u1EC3n ti\u1EC1n: Y\u00EAu c\u1EA7u thanh to\u00E1n tr\u01B0\u1EDBc m\u1ED9t ph\u1EA7n hoa h\u1ED3ng"
+  },
+  {
+    "Id": "40f32043-206b-45b4-81ac-b50490772ecc",
+    "ContractId": "da6fa15c-c59a-45a7-94e0-552563e0eb96",
+    "ContractCode": "HD-20260930-8202",
+    "VendorId": "e595124a-bc7b-42f7-9172-8ef8fcc25df0",
+    "VendorBrandName": "White Palace Convention Center",
+    "Amount": 20000000,
+    "Reason": "Y\u00EAu c\u1EA7u thanh to\u00E1n tr\u01B0\u1EDBc m\u1ED9t ph\u1EA7n hoa h\u1ED3ng qua chuy\u1EC3n kho\u1EA3n",
+    "BankName": "MB Bank (Qu\u00E2n \u0110\u1ED9i)",
+    "BankAccountNumber": "0338889999",
+    "BankAccountName": "WHITE PALACE CONVENTION CENTER",
+    "Note": "\u0110\u00E3 chuy\u1EC3n 20 tri\u1EC7u qua VietQR v\u1EDBi n\u1ED9i dung: HH E59512 T09",
+    "Status": "Rejected",
+    "RequestedAt": "2026-10-01T02:16:43.1050744Z",
+    "ProcessedAt": "2026-10-01T02:52:20.9552843Z",
+    "AdminNote": "Ch\u01B0a nh\u1EADn \u0111\u01B0\u1EE3c bi\u1EBFn \u0111\u1ED9ng s\u1ED1 d\u01B0 t\u00E0i kho\u1EA3n ng\u00E2n h\u00E0ng"
+  }
+]

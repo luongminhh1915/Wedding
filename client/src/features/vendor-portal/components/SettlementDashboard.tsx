@@ -7,7 +7,7 @@ import {
 import { useSettlement } from '../hooks/useSettlement';
 import { VietQrModal } from './VietQrModal';
 import { CommissionAdvanceModal, type CommissionAdvanceRecord } from './CommissionAdvanceModal';
-import type { CommissionItem } from '../../../types/commission.types';
+import type { CommissionItem, AdvancePaymentNotice } from '../../../types/commission.types';
 
 interface GroupedSettlementContract {
   contractCode: string;
@@ -35,39 +35,39 @@ export function SettlementDashboard() {
 
   // State cho yêu cầu xin thanh toán trước hoa hồng
   const [selectedContractForAdvance, setSelectedContractForAdvance] = useState<GroupedSettlementContract | null>(null);
-  const [advanceRequests, setAdvanceRequests] = useState<Record<string, CommissionAdvanceRecord>>({});
   const [advanceSuccessNotice, setAdvanceSuccessNotice] = useState<string | null>(null);
 
-  // Load các yêu cầu xin thanh toán trước hoa hồng từ localStorage
+  const { statement, isLoading, isError, error, refetch } = useSettlement(selectedMonth, selectedYear);
+
+  // Dọn dẹp cache localStorage cũ để dữ liệu luôn phản ánh chuẩn từ backend
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(COMMISSION_ADVANCE_STORAGE_KEY);
-      if (stored) {
-        setAdvanceRequests(JSON.parse(stored));
-      }
+      localStorage.removeItem(COMMISSION_ADVANCE_STORAGE_KEY);
     } catch {
       // ignore
     }
   }, []);
 
-  const handleAdvanceSuccess = (record: CommissionAdvanceRecord) => {
-    const updated = {
-      ...advanceRequests,
-      [record.contractCode]: record,
-    };
-    setAdvanceRequests(updated);
-    try {
-      localStorage.setItem(COMMISSION_ADVANCE_STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // ignore
+  // Tổng hợp tất cả các advance requests từ backend (statement.advanceRequests) theo contractCode
+  const advanceRequestsByContract = useMemo(() => {
+    const map: Record<string, AdvancePaymentNotice[]> = {};
+    if (statement?.advanceRequests) {
+      for (const notice of statement.advanceRequests) {
+        if (!map[notice.contractCode]) {
+          map[notice.contractCode] = [];
+        }
+        map[notice.contractCode].push(notice);
+      }
     }
+    return map;
+  }, [statement?.advanceRequests]);
 
+  const handleAdvanceSuccess = async (record: CommissionAdvanceRecord) => {
     setAdvanceSuccessNotice(
       `Đã gửi yêu cầu thanh toán trước ${record.amount.toLocaleString('vi-VN')} đ hoa hồng cho hợp đồng ${record.contractCode} thành công! Hệ thống đang chờ xử lý.`
     );
+    await refetch();
   };
-
-  const { statement, isLoading, isError, error, refetch } = useSettlement(selectedMonth, selectedYear);
 
   // Nhóm các đơn có cùng Mã Hợp Đồng thành 1 hàng duy nhất
   const groupedContracts = useMemo<GroupedSettlementContract[]>(() => {
@@ -375,6 +375,12 @@ export function SettlementDashboard() {
                   const paidItems = contract.items.filter(i => i.status === 'Paid');
                   const paidCount = paidItems.length;
 
+                  // Lấy danh sách các yêu cầu tạm ứng của hợp đồng này từ backend
+                  const contractAdvances = advanceRequestsByContract[contract.contractCode] || [];
+                  const pendingAdvance = contractAdvances.find(a => a.status === 'PendingApproval');
+                  const rejectedAdvances = contractAdvances.filter(a => a.status === 'Rejected');
+                  const approvedAdvances = contractAdvances.filter(a => a.status === 'Approved');
+
                   return (
                     <div key={contract.contractCode} style={{ display: 'contents' }}>
                       <tr
@@ -382,7 +388,7 @@ export function SettlementDashboard() {
                         className={`transition cursor-pointer ${isExpanded ? 'bg-rose-50/25' : 'hover:bg-slate-50/60'}`}
                       >
                         <td className="py-3.5 px-5 font-mono font-bold text-slate-900">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span>{contract.contractCode}</span>
                             <span
                               className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-sans font-medium flex items-center gap-1"
@@ -391,6 +397,12 @@ export function SettlementDashboard() {
                               {paidCount > 0 ? `Đã trả ${paidCount} đợt` : 'Chưa trả'}
                               {isExpanded ? <ChevronUp className="w-2.5 h-2.5"/> : <ChevronDown className="w-2.5 h-2.5"/>}
                             </span>
+                            {pendingAdvance && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 animate-pulse" title="Vendor đã gửi thông báo chuyển tiền đang chờ xác nhận">
+                                <Clock className="w-2.5 h-2.5 text-amber-600" />
+                                Chờ duyệt {pendingAdvance.amount.toLocaleString('vi-VN')} đ
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="py-3.5 px-5 font-semibold text-slate-800">
@@ -462,10 +474,10 @@ export function SettlementDashboard() {
                                       Đã thanh toán: <strong className="text-emerald-700">{contract.totalPaidAmount.toLocaleString('vi-VN')} đ</strong> ·
                                       Chưa thanh toán: <strong className="text-rose-600">{contract.totalPendingAmount.toLocaleString('vi-VN')} đ</strong>
                                     </span>
-                                    {advanceRequests[contract.contractCode] && (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                    {pendingAdvance && (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
                                         <Clock className="w-3 h-3 text-amber-600" />
-                                        Đã xin tạm ứng: {advanceRequests[contract.contractCode].amount.toLocaleString('vi-VN')} đ (Chờ duyệt)
+                                        Đã xin tạm ứng: {pendingAdvance.amount.toLocaleString('vi-VN')} đ (Chờ duyệt)
                                       </span>
                                     )}
                                   </div>
@@ -479,7 +491,7 @@ export function SettlementDashboard() {
                                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-xs shadow-xs hover:shadow flex items-center gap-1.5 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                                   >
                                     <Banknote className="w-3.5 h-3.5 text-amber-200" />
-                                    <span>{advanceRequests[contract.contractCode] ? 'Đổi Số Tiền Tạm Ứng' : 'Yêu Cầu Thanh Toán Trước Hoa Hồng'}</span>
+                                    <span>{pendingAdvance ? 'Đổi Số Tiền Tạm Ứng' : 'Yêu Cầu Thanh Toán Trước Hoa Hồng'}</span>
                                     <Sparkles className="w-3 h-3 text-amber-200" />
                                   </button>
                                 </div>
@@ -523,6 +535,11 @@ export function SettlementDashboard() {
                                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                         <span className="font-extrabold text-slate-800 text-xs">
                                           Các Lần Đã Thanh Toán ({paidItems.length} lần)
+                                          {rejectedAdvances.length > 0 && (
+                                            <span className="ml-1 text-rose-600 font-normal">
+                                              · {rejectedAdvances.length} lần từ chối
+                                            </span>
+                                          )}
                                         </span>
                                       </div>
                                       <span className="font-extrabold text-emerald-600 text-xs">
@@ -531,30 +548,105 @@ export function SettlementDashboard() {
                                     </div>
 
                                     <div className="space-y-2 text-[11px]">
-                                      {paidItems.length === 0 ? (
+                                      {paidItems.length === 0 && rejectedAdvances.length === 0 && !pendingAdvance ? (
                                         <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 text-center">
                                           Chưa có đợt thanh toán nào được thực hiện.
                                         </div>
                                       ) : (
-                                        paidItems.map((item, idx) => (
-                                          <div
-                                            key={item.id || idx}
-                                            className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between"
-                                          >
-                                            <div>
-                                              <p className="font-bold text-emerald-950">
-                                                Lần {idx + 1}: <strong className="text-emerald-700">{item.commissionAmount.toLocaleString('vi-VN')} đ</strong>
-                                              </p>
-                                              <p className="text-[10px] text-emerald-700/80 mt-0.5">
-                                                {item.paidAt && `Ngày trả: ${new Date(item.paidAt).toLocaleDateString('vi-VN')}`}
-                                                {item.paymentReferenceCode && ` · Mã GD: ${item.paymentReferenceCode}`}
+                                        <>
+                                          {/* Các đợt đã thanh toán */}
+                                          {paidItems.map((item, idx) => {
+                                            const isAdvanceMatched = approvedAdvances.some(a =>
+                                              a.amount === item.commissionAmount ||
+                                              (item.paymentReferenceCode && (
+                                                item.paymentReferenceCode.includes('UNC') ||
+                                                item.paymentReferenceCode.includes('XACNHAN')
+                                              ))
+                                            );
+
+                                            return (
+                                              <div
+                                                key={item.id || idx}
+                                                className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between"
+                                              >
+                                                <div>
+                                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <p className="font-bold text-emerald-950">
+                                                      Lần {idx + 1}: <strong className="text-emerald-700">{item.commissionAmount.toLocaleString('vi-VN')} đ</strong>
+                                                    </p>
+                                                    {isAdvanceMatched && (
+                                                      <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.2 rounded-md border border-emerald-200">
+                                                        Tạm ứng đã duyệt
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  <p className="text-[10px] text-emerald-700/80 mt-0.5">
+                                                    {item.paidAt && `Ngày trả: ${new Date(item.paidAt).toLocaleDateString('vi-VN')}`}
+                                                    {item.paymentReferenceCode && ` · Mã GD: ${item.paymentReferenceCode}`}
+                                                  </p>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                                                  <Check className="w-3 h-3" /> Đã Thanh Toán
+                                                </span>
+                                              </div>
+                                            );
+                                          })}
+
+                                          {/* Các yêu cầu tạm ứng BỊ TỪ CHỐI */}
+                                          {rejectedAdvances.map((notice) => (
+                                            <div
+                                              key={notice.id}
+                                              className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 flex flex-col gap-1.5 transition"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div>
+                                                  <p className="font-bold text-rose-950">
+                                                    Tạm ứng: <strong className="text-rose-700">{notice.amount.toLocaleString('vi-VN')} đ</strong>
+                                                  </p>
+                                                  <p className="text-[10px] text-rose-700/80 mt-0.5">
+                                                    Ngày gửi: {new Date(notice.requestedAt).toLocaleDateString('vi-VN')}
+                                                    {notice.processedAt && ` · Phản hồi: ${new Date(notice.processedAt).toLocaleDateString('vi-VN')}`}
+                                                    {notice.bankName && ` · ${notice.bankName}`}
+                                                  </p>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 shrink-0">
+                                                  <X className="w-3 h-3 text-rose-600" /> Bị Từ Chối
+                                                </span>
+                                              </div>
+                                              {notice.adminNote && (
+                                                <div className="text-[10px] bg-white/90 p-2 rounded-lg border border-rose-200 text-rose-800 font-medium">
+                                                  <span className="font-bold text-rose-900">Lý do từ chối:</span> {notice.adminNote}
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+
+                                          {/* Yêu cầu tạm ứng ĐANG CHỜ DUYỆT */}
+                                          {pendingAdvance && (
+                                            <div
+                                              key={pendingAdvance.id}
+                                              className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col gap-1.5"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div>
+                                                  <p className="font-bold text-amber-950">
+                                                    Tạm ứng: <strong className="text-amber-800">{pendingAdvance.amount.toLocaleString('vi-VN')} đ</strong>
+                                                  </p>
+                                                  <p className="text-[10px] text-amber-700/80 mt-0.5">
+                                                    Ngày gửi: {new Date(pendingAdvance.requestedAt).toLocaleDateString('vi-VN')}
+                                                    {pendingAdvance.bankName && ` · ${pendingAdvance.bankName}`}
+                                                  </p>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse shrink-0">
+                                                  <Clock className="w-3 h-3 text-amber-600" /> Đang Chờ Duyệt
+                                                </span>
+                                              </div>
+                                              <p className="text-[10px] text-amber-800 italic">
+                                                {pendingAdvance.reason}
                                               </p>
                                             </div>
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                              <Check className="w-3 h-3" /> Đã Thanh Toán
-                                            </span>
-                                          </div>
-                                        ))
+                                          )}
+                                        </>
                                       )}
                                     </div>
                                   </div>

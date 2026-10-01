@@ -145,6 +145,43 @@
   },
   {
     "ContainingType": "Wedding.WebApi.Controllers.CommissionsController",
+    "Method": "GetAdminFinancialOverview",
+    "RelativePath": "api/Commissions/admin/overview",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "month",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "year",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.CommissionsController",
+    "Method": "RecordAdminPayment",
+    "RelativePath": "api/Commissions/admin/record-payment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "command",
+        "Type": "Wedding.Application.Features.Commissions.Commands.RecordAdminPayment.RecordAdminPaymentCommand",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.CommissionsController",
     "Method": "GetVendorStatement",
     "RelativePath": "api/Commissions/statement",
     "HttpMethod": "GET",
@@ -207,6 +244,27 @@
       {
         "Name": "id",
         "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Wedding.WebApi.Controllers.ContractsController",
+    "Method": "RequestAdvancePayment",
+    "RelativePath": "api/Contracts/{id}/advance-payment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "Wedding.WebApi.Controllers.AdvancePaymentRequestDto",
         "IsRequired": true
       }
     ],

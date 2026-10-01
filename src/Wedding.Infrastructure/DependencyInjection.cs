@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddSingleton<IVietQrService, VietQrService>();
+        services.AddSingleton<IAdvancePaymentService, AdvancePaymentService>();
 
         // Đăng ký CurrentUserService — đọc UserId từ JWT claims
         services.AddHttpContextAccessor();

@@ -17,15 +17,18 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IVietQrService _vietQrService;
+    private readonly IAdvancePaymentService _advancePaymentService;
 
     public GetVendorSettlementStatementQueryHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
-        IVietQrService vietQrService)
+        IVietQrService vietQrService,
+        IAdvancePaymentService advancePaymentService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _vietQrService = vietQrService;
+        _advancePaymentService = advancePaymentService;
     }
 
     public async Task<MonthlySettlementStatementDto> Handle(GetVendorSettlementStatementQuery request, CancellationToken cancellationToken)
@@ -107,6 +110,12 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
             vietQr = _vietQrService.GenerateVietQr(totalNeedPay, transferContent);
         }
 
+        var allAdvances = await _advancePaymentService.GetAllAsync();
+        var vendorAdvances = allAdvances
+            .Where(a => a.VendorId == vendor.Id || commissions.Any(c => c.ContractId == a.ContractId))
+            .OrderByDescending(a => a.RequestedAt)
+            .ToList();
+
         return new MonthlySettlementStatementDto(
             VendorId: vendor.Id,
             VendorBrandName: vendor.BrandName,
@@ -122,7 +131,8 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
             PaymentStatus: overallStatus,
             TransferContent: transferContent,
             VietQr: vietQr,
-            Items: items
+            Items: items,
+            AdvanceRequests: vendorAdvances
         );
     }
 }
