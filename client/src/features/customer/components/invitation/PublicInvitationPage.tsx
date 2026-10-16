@@ -365,7 +365,7 @@ export default function PublicInvitationPage() {
         {/* Footer Credit */}
         <div className="mt-auto px-6 text-center text-xs text-slate-400 space-y-1">
           <p className="flex items-center justify-center gap-1">
-            Thiết kế bằng <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" /> trên Wedding Platform
+            Thiết kế bằng <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" /> trên Wedding Match
           </p>
         </div>
       </div>

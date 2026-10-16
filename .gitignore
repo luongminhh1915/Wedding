@@ -1,0 +1,11 @@
+# Local runtime data
+*.db
+*.db-shm
+*.db-wal
+advance_payments.json
+
+# Build output
+**/[Bb]in/
+**/[Oo]bj/
+client/node_modules/
+client/dist/

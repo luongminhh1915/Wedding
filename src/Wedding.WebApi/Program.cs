@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Đăng ký các tầng Clean Architecture
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
 // 2. Cấu hình JWT Authentication
 var secretKey = builder.Configuration["JwtSettings:Secret"] 
@@ -154,7 +154,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 
-// Tự động Seed dữ liệu mẫu cho hệ thống (Users, Vendors, Listings, Contracts, Reviews, Budget)
+// Khởi tạo schema. Dữ liệu mẫu chỉ được seed khi Database:SeedDemoData=true
+// (mặc định chỉ trong appsettings.Development.json) và database hoàn toàn trống.
 await Wedding.Infrastructure.Persistence.DbInitializer.SeedAsync(app.Services);
 
 app.Run();

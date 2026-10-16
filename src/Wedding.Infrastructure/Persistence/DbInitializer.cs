@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Wedding.Application.Common.Interfaces;
@@ -15,11 +16,35 @@ public static class DbInitializer
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var logger = scope.ServiceProvider.GetService<ILogger<ApplicationDbContext>>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var seedDemoData = configuration.GetValue<bool>("Database:SeedDemoData");
 
         try
         {
-            // Đảm bảo Database đã được tạo hoặc migrate
-            await context.Database.MigrateAsync();
+            // SQLite is used for local development. EnsureCreated creates the schema only on the
+            // first run and, unlike the previous implementation, never deletes existing data.
+            if (context.Database.IsSqlite())
+            {
+                await context.Database.EnsureCreatedAsync();
+            }
+            else
+            {
+                await context.Database.MigrateAsync();
+            }
+
+            // Demo accounts and sample transactions must never be injected into a deployment.
+            // Even in development, only seed an entirely new database and leave user data intact.
+            if (!seedDemoData)
+            {
+                logger?.LogInformation("Database initialized. Demo seed is disabled.");
+                return;
+            }
+
+            if (await context.Users.AnyAsync())
+            {
+                logger?.LogInformation("Database already contains users. Demo seed was skipped.");
+                return;
+            }
 
             var defaultPasswordHash = hasher.Hash("123456");
 
@@ -499,7 +524,8 @@ public static class DbInitializer
         }
         catch (Exception ex)
         {
-            logger?.LogError(ex, "Lỗi xảy ra trong quá trình Seed Database: {Message}", ex.Message);
+            logger?.LogCritical(ex, "Không thể khởi tạo cơ sở dữ liệu: {Message}", ex.Message);
+            throw;
         }
     }
 }

@@ -1,7 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import type { UserRole } from '../types/auth';
-import { ShieldAlert } from 'lucide-react';
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import type { UserRole } from "../types/auth";
+import { ShieldAlert } from "lucide-react";
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -9,9 +9,16 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { user, token } = useAuthStore();
+  const location = useLocation();
 
   if (!token || !user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location.pathname + location.search }}
+        replace
+      />
+    );
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -21,9 +28,12 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
           <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
             <ShieldAlert className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Truy Cập Bị Hạn Chế (403)</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">
+            Truy Cập Bị Hạn Chế (403)
+          </h2>
           <p className="text-sm text-slate-500 mb-6">
-            Tài khoản của bạn ({user.role}) không có quyền truy cập vào phân hệ này.
+            Tài khoản của bạn ({user.role}) không có quyền truy cập vào phân hệ
+            này.
           </p>
           <a
             href="/"

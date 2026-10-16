@@ -1,32 +1,52 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { Heart, Building2, User, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { useState } from "react";
+import {
+  useNavigate,
+  Link,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import {
+  Building2,
+  User,
+  AlertCircle,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
 export default function RegisterForm() {
-  const [tab, setTab] = useState<'customer' | 'vendor'>('customer');
-  const [errorMessage, setErrorMessage] = useState('');
-  const { registerCustomer, registerVendor, isRegisteringCustomer, isRegisteringVendor } = useAuth();
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<"customer" | "vendor">(
+    params.get("role") === "vendor" ? "vendor" : "customer",
+  );
+  const [errorMessage, setErrorMessage] = useState("");
+  const {
+    registerCustomer,
+    registerVendor,
+    isRegisteringCustomer,
+    isRegisteringVendor,
+  } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Customer Form State
-  const [custFullName, setCustFullName] = useState('');
-  const [custEmail, setCustEmail] = useState('');
-  const [custPhone, setCustPhone] = useState('');
-  const [custPassword, setCustPassword] = useState('');
+  const [custFullName, setCustFullName] = useState("");
+  const [custEmail, setCustEmail] = useState("");
+  const [custPhone, setCustPhone] = useState("");
+  const [custPassword, setCustPassword] = useState("");
 
   // Vendor Form State (BR-001)
-  const [vendFullName, setVendFullName] = useState('');
-  const [vendEmail, setVendEmail] = useState('');
-  const [vendPhone, setVendPhone] = useState('');
-  const [vendBrandName, setVendBrandName] = useState('');
-  const [vendCity, setVendCity] = useState('TP. Hồ Chí Minh');
+  const [vendFullName, setVendFullName] = useState("");
+  const [vendEmail, setVendEmail] = useState("");
+  const [vendPhone, setVendPhone] = useState("");
+  const [vendBrandName, setVendBrandName] = useState("");
+  const [vendCity, setVendCity] = useState("TP. Hồ Chí Minh");
   const [vendCommissionRate, setVendCommissionRate] = useState(0.08);
-  const [vendPassword, setVendPassword] = useState('');
+  const [vendPassword, setVendPassword] = useState("");
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
+    setErrorMessage("");
     try {
       await registerCustomer({
         fullName: custFullName,
@@ -34,16 +54,23 @@ export default function RegisterForm() {
         phoneNumber: custPhone,
         password: custPassword,
       });
-      navigate('/customer/dashboard');
+      const returnTo = (location.state as { from?: string } | null)?.from;
+      navigate(
+        returnTo?.startsWith("/customer/") || returnTo?.startsWith("/planner")
+          ? returnTo
+          : "/customer/dashboard",
+      );
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setErrorMessage(error.response?.data?.message || 'Đăng ký không thành công.');
+      setErrorMessage(
+        error.response?.data?.message || "Đăng ký không thành công.",
+      );
     }
   };
 
   const handleVendorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
+    setErrorMessage("");
     try {
       await registerVendor({
         fullName: vendFullName,
@@ -54,36 +81,53 @@ export default function RegisterForm() {
         commissionRate: vendCommissionRate,
         password: vendPassword,
       });
-      navigate('/vendor/dashboard');
+      navigate("/vendor/dashboard");
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setErrorMessage(error.response?.data?.message || 'Đăng ký đối tác không thành công.');
+      setErrorMessage(
+        error.response?.data?.message || "Đăng ký đối tác không thành công.",
+      );
     }
   };
 
   const isLoading = isRegisteringCustomer || isRegisteringVendor;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-pink-50 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-8">
+    <main className="auth-page auth-register">
+      <div className="auth-story">
+        <span className="wm-eyebrow">MỘT KHỞI ĐẦU THẬT ĐẸP</span>
+        <h1>
+          Ngày hạnh phúc,
+          <br />
+          <em>mình cùng lên plan.</em>
+        </h1>
+        <p>
+          Tạo tài khoản và gom checklist, ngân sách, thiệp cưới cùng những dịch
+          vụ yêu thích vào một nơi.
+        </p>
+        <img src="/wedding-match/milo.png" alt="Milo chào mừng hai bạn" />
+      </div>
+      <div className="auth-card">
         {/* Header */}
         <div className="text-center mb-6">
-          <Link to="/" className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rose-500 text-white shadow-md shadow-rose-200 mb-3">
-            <Heart className="w-6 h-6 fill-current" />
-          </Link>
-          <h2 className="text-2xl font-bold text-slate-900">Tạo Tài Khoản Mới</h2>
-          <p className="text-sm text-slate-500 mt-1">Đồng hành cùng nền tảng dịch vụ cưới thông minh</p>
+          <h2>Bắt đầu cùng Wedding Match</h2>
+          <p className="text-xs text-slate-400 mt-3">
+            Một không gian dành riêng cho hành trình của bạn
+          </p>
         </div>
 
         {/* Tab Selection */}
         <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-6">
           <button
             type="button"
-            onClick={() => { setTab('customer'); setErrorMessage(''); }}
+            onClick={() => {
+              setTab("customer");
+              setErrorMessage("");
+            }}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition ${
-              tab === 'customer'
-                ? 'bg-white text-rose-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+              tab === "customer"
+                ? "bg-white text-rose-600 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <User className="w-4 h-4" />
@@ -92,11 +136,14 @@ export default function RegisterForm() {
 
           <button
             type="button"
-            onClick={() => { setTab('vendor'); setErrorMessage(''); }}
+            onClick={() => {
+              setTab("vendor");
+              setErrorMessage("");
+            }}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition ${
-              tab === 'vendor'
-                ? 'bg-white text-rose-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+              tab === "vendor"
+                ? "bg-white text-rose-600 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Building2 className="w-4 h-4" />
@@ -113,7 +160,7 @@ export default function RegisterForm() {
         )}
 
         {/* Customer Register Form */}
-        {tab === 'customer' ? (
+        {tab === "customer" ? (
           <form onSubmit={handleCustomerSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -176,7 +223,9 @@ export default function RegisterForm() {
               disabled={isLoading}
               className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-sm hover:from-rose-600 hover:to-pink-600 shadow-md shadow-rose-200 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <span>{isLoading ? 'Đang tạo tài khoản...' : 'Đăng Ký Khách Hàng'}</span>
+              <span>
+                {isLoading ? "Đang tạo tài khoản..." : "Đăng Ký Khách Hàng"}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -185,7 +234,10 @@ export default function RegisterForm() {
           <form onSubmit={handleVendorSubmit} className="space-y-4">
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
-              <span>Chính sách Lean MVP (BR-001): 1 Nhà cung cấp sở hữu 1 tài khoản quản trị duy nhất.</span>
+              <span>
+                Chính sách Lean MVP (BR-001): 1 Nhà cung cấp sở hữu 1 tài khoản
+                quản trị duy nhất.
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -271,12 +323,14 @@ export default function RegisterForm() {
                 </label>
                 <select
                   value={vendCommissionRate}
-                  onChange={(e) => setVendCommissionRate(parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    setVendCommissionRate(parseFloat(e.target.value))
+                  }
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition"
                 >
                   <option value={0.03}>Tiệc cưới: 3%</option>
                   <option value={0.08}>Trang trí / Thiệp: 8%</option>
-                  <option value={0.10}>Quay chụp / Váy / Makeup: 10%</option>
+                  <option value={0.1}>Quay chụp / Váy / Makeup: 10%</option>
                   <option value={0.12}>Wedding Planner: 12%</option>
                 </select>
               </div>
@@ -301,19 +355,25 @@ export default function RegisterForm() {
               disabled={isLoading}
               className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-white font-semibold text-sm hover:from-amber-600 hover:to-rose-600 shadow-md shadow-amber-200 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <span>{isLoading ? 'Đang tạo hồ sơ NCC...' : 'Đăng Ký Đối Tác NCC'}</span>
+              <span>
+                {isLoading ? "Đang tạo hồ sơ NCC..." : "Đăng Ký Đối Tác NCC"}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         )}
 
         <div className="mt-6 text-center text-sm text-slate-500">
-          Đã có tài khoản?{' '}
-          <Link to="/login" className="font-semibold text-rose-600 hover:text-rose-700 transition">
+          Đã có tài khoản?{" "}
+          <Link
+            to="/login"
+            state={location.state}
+            className="font-semibold text-rose-600 hover:text-rose-700 transition"
+          >
             Đăng nhập
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -1,7 +1,27 @@
 @import "tailwindcss";
+@import "./styles/wedding-match.css";
+@import "./styles/brand-previews.css";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+}
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    @apply antialiased font-sans;
+    margin: 0;
+    background: #f2efe4;
+    color: #25334c;
+  }
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 2px solid #25334c;
+    outline-offset: 4px;
   }
 }

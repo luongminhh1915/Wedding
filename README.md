@@ -52,8 +52,6 @@ Wedding/
 │       └── appsettings.json                 # ConnectionStrings, JWT Secret, 3rd Party Keys
 ```
 
----
-
 ### 2. Frontend: React TypeScript (Feature-Based Structure)
 
 Khởi tạo bằng **Vite + React + TypeScript + Tailwind CSS / Vanilla CSS**:
@@ -88,3 +86,19 @@ client/ (hoặc wedding-client/)
 │   ├── App.tsx
 │   └── main.tsx
 ```
+
+---
+
+### 3. Lưu trữ dữ liệu và triển khai
+
+- Mặc định local dùng SQLite tại `WeddingPlatformDb.db`. File này được tạo một lần và được giữ nguyên khi API khởi động lại.
+- Dữ liệu mẫu chỉ được nạp trong môi trường `Development`, khi database hoàn toàn trống. Khi deploy, `Database:SeedDemoData` mặc định là `false`.
+- Có thể chuyển sang SQL Server khi triển khai bằng biến môi trường:
+
+```text
+Database__Provider=SqlServer
+ConnectionStrings__DefaultConnection=<production SQL Server connection string>
+Database__SeedDemoData=false
+```
+
+Khi dùng SQLite trên hosting, đặt `ConnectionStrings__DefaultConnection` trỏ tới một persistent volume (ví dụ `Data Source=/data/WeddingPlatformDb.db`); không lưu SQLite trong filesystem tạm của container.

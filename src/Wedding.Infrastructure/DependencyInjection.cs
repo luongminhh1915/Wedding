@@ -1,6 +1,8 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Infrastructure.Persistence;
 using Wedding.Infrastructure.Services;
@@ -9,14 +11,50 @@ namespace Wedding.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment hostEnvironment)
     {
+        var databaseProvider = configuration["Database:Provider"]
+            ?? configuration["DatabaseProvider"]
+            ?? "Sqlite";
         var connectionString = configuration.GetConnectionString("DefaultConnection") 
-            ?? "Server=(localdb)\\mssqllocaldb;Database=WeddingPlatformDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+            ?? "Data Source=WeddingPlatformDb.db";
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString, b => 
-                b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+        {
+            if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                var sqliteConnection = new SqliteConnectionStringBuilder(connectionString);
+
+                // Resolve relative paths against the application content root, never the current
+                // process directory. This keeps local restarts and deployed instances predictable.
+                if (!string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase))
+                {
+                    sqliteConnection.DataSource = Path.IsPathRooted(sqliteConnection.DataSource)
+                        ? sqliteConnection.DataSource
+                        : Path.GetFullPath(sqliteConnection.DataSource, hostEnvironment.ContentRootPath);
+                    var databaseDirectory = Path.GetDirectoryName(sqliteConnection.DataSource);
+                    if (!string.IsNullOrWhiteSpace(databaseDirectory))
+                    {
+                        Directory.CreateDirectory(databaseDirectory);
+                    }
+                }
+
+                options.UseSqlite(sqliteConnection.ConnectionString);
+            }
+            else if (databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+            {
+                options.UseSqlServer(connectionString, b =>
+                    b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Database provider '{databaseProvider}' is not supported. Use Sqlite or SqlServer.");
+            }
+        });
 
         services.AddScoped<IApplicationDbContext>(provider => 
             provider.GetRequiredService<ApplicationDbContext>());

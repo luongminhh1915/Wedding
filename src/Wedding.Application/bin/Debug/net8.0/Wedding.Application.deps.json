@@ -224,10 +224,7 @@
       },
       "Wedding.Domain/1.0.0": {
         "runtime": {
-          "Wedding.Domain.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
+          "Wedding.Domain.dll": {}
         }
       }
     }

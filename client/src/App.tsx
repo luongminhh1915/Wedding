@@ -22,7 +22,7 @@ export default function App() {
               <Heart className="w-5 h-5 fill-current" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
-              Wedding Platform
+              Wedding Match
             </span>
           </Link>
 

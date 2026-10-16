@@ -10,3 +10,15 @@ D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\refint\Wedding.Domain.dll
 D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.pdb
 D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\ref\Wedding.Domain.dll
 D:\EXE201\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.sourcelink.json
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\bin\Debug\net8.0\Wedding.Domain.deps.json
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\bin\Debug\net8.0\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\bin\Debug\net8.0\Wedding.Domain.pdb
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.AssemblyInfoInputs.cache
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.AssemblyInfo.cs
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.csproj.CoreCompileInputs.cache
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.sourcelink.json
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\refint\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\Wedding.Domain.pdb
+D:\Gitgithubhub\Wedding\src\Wedding.Domain\obj\Debug\net8.0\ref\Wedding.Domain.dll
