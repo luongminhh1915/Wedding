@@ -30,6 +30,7 @@ export function CreateContractModal({
   const [depositAmount, setDepositAmount] = useState<string>('');
   const [weddingDate, setWeddingDate] = useState<string>(defaultWeddingDate ? defaultWeddingDate.substring(0, 10) : '');
   const [contractImageUrl, setContractImageUrl] = useState<string>('');
+  const [cancellationPolicy, setCancellationPolicy] = useState('Hủy trước 90 ngày: hoàn 100% cọc; trước 30–89 ngày: hoàn 50% cọc; dưới 30 ngày: không hoàn cọc. NCC hủy: hoàn 100% cọc.');
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -58,7 +59,8 @@ export function CreateContractModal({
         contractValue: val,
         depositAmount: dep,
         contractImageUrl: contractImageUrl.trim() || undefined,
-        weddingDate: weddingDate ? new Date(weddingDate).toISOString() : undefined
+        weddingDate: weddingDate ? new Date(weddingDate).toISOString() : undefined,
+        cancellationPolicy
       });
 
       if (onSuccess) onSuccess();
@@ -78,7 +80,7 @@ export function CreateContractModal({
           <X className="w-5 h-5" />
         </button>
 
-        <form onSubmit={handleSubmit} className="p-7 space-y-4">
+        <form onSubmit={handleSubmit} className="p-7 space-y-4 max-h-[90vh] overflow-y-auto">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-600 text-xs font-bold mb-2">
               <FileText className="w-3.5 h-3.5" /> Tạo Hợp Đồng Chốt Khách
@@ -184,6 +186,7 @@ export function CreateContractModal({
             </div>
 
             {/* Quy định BR-005 */}
+            <label className="block text-xs font-bold text-slate-700">Chính sách hủy / hoàn cọc (lưu nguyên bản vào HĐ)<textarea required rows={3} maxLength={4000} value={cancellationPolicy} onChange={e => setCancellationPolicy(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-normal" /></label>
             <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-100 text-purple-900 text-[11px] space-y-1">
               <div className="font-bold flex items-center gap-1">
                 ⏱️ Quy định Xác Thực 2 Chiều (BR-005):

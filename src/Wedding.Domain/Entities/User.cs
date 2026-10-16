@@ -14,6 +14,8 @@ public class User : BaseEntity
     public string? AvatarUrl { get; private set; }
     public bool IsActive { get; private set; } = true;
     public DateTime? LastLoginAt { get; private set; }
+    public string? GoogleSubject { get; private set; }
+    public DateTime? PhoneVerifiedAt { get; private set; }
 
     // Navigation Properties
     public Vendor? Vendor { get; private set; }
@@ -73,5 +75,17 @@ public class User : BaseEntity
     {
         IsActive = isActive;
         SetUpdated();
+    }
+
+    public void LinkGoogle(string subject)
+    {
+        if (Role != UserRole.Customer || string.IsNullOrWhiteSpace(subject)) throw new DomainException("Chỉ tài khoản khách hàng được liên kết Google.");
+        if (GoogleSubject != null && GoogleSubject != subject) throw new DomainException("Tài khoản đã liên kết Google khác.");
+        GoogleSubject = subject; SetUpdated();
+    }
+
+    public void VerifyPhone(string phone)
+    {
+        PhoneNumber = phone; PhoneVerifiedAt = DateTime.UtcNow; SetUpdated();
     }
 }

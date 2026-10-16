@@ -65,8 +65,13 @@ public static class DependencyInjection
         services.AddSingleton<IVietQrService, VietQrService>();
         services.AddScoped<IAdvancePaymentService, AdvancePaymentService>(); // P0: lưu DB thay vì bộ nhớ
         services.AddScoped<IAuditLogger, AuditLogger>();
-        services.AddSingleton<INotificationSender, LoggingNotificationSender>();
+        services.AddScoped<INotificationSender, DurableNotificationSender>();
+        services.AddSingleton<SmtpDelivery>();
+        services.AddSingleton<IOtpDelivery>(provider => provider.GetRequiredService<SmtpDelivery>());
+        services.AddHttpClient("identity", client => client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
         services.AddSingleton<IMockPaymentGateway, MockPaymentGateway>();
+        services.AddScoped<IBillingService, PaymentLedgerService>();
 
         // Đăng ký CurrentUserService — đọc UserId từ JWT claims
         services.AddHttpContextAccessor();
@@ -83,6 +88,8 @@ public static class DependencyInjection
 
         // P3: tự hết hạn lịch hẹn chờ cọc/chờ duyệt quá giờ
         services.AddHostedService<AppointmentHousekeepingBackgroundService>();
+        services.AddHostedService<NotificationBackgroundService>();
+        services.AddHostedService<ReleasePeriod2BackgroundService>();
 
         return services;
     }

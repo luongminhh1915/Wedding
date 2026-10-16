@@ -25,7 +25,7 @@ export function PlannerSnapshot() {
     { icon: Wallet, label: "Ngân sách", value: vnd(p.totalBudget), sub: `Đã chi ${vnd(data.budgetActual)}` },
     { icon: CalendarClock, label: "Lịch hẹn sắp tới", value: data.appointmentUpcoming, sub: "với nhà cung cấp" },
     { icon: FileCheck2, label: "Yêu cầu / HĐ", value: `${data.leadCount} / ${data.contractCount}`, sub: "tư vấn / hợp đồng" },
-    { icon: Users, label: "Khách xác nhận", value: data.rsvpAttending, sub: `${data.guestCount} phản hồi RSVP` },
+    { icon: Users, label: "Khách xác nhận", value: data.rsvpAttending, sub: `${data.guestCount} nhóm khách trong Planner` },
   ];
   return (
     <div className="wd card p-6 mb-6">

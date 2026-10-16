@@ -13,6 +13,8 @@ public class GuestRSVP : BaseEntity
     public int CompanionCount { get; private set; } = 0; // Số người đi cùng
     public string? Wishes { get; private set; } // Lời chúc gửi dâu rể
     public string? DietaryPreference { get; private set; } // Ăn chay, kiêng...
+    public string Type { get; private set; } = "Attend";
+    public string? SubmissionKey { get; private set; }
 
     // Navigation Property
     public WeddingInvitation Invitation { get; private set; } = null!;
@@ -40,4 +42,7 @@ public class GuestRSVP : BaseEntity
             CreatedAt = DateTime.UtcNow
         };
     }
+    public void Update(string guestName, RSVPStatus status, int companionCount, string? wishes, string? dietary, string type = "Attend")
+    { GuestName = guestName.Trim(); Status = status; CompanionCount = companionCount; Wishes = wishes?.Trim(); DietaryPreference = dietary?.Trim(); Type = type; SetUpdated(); }
+    public void SetSubmissionKey(string? key) { SubmissionKey = key; }
 }

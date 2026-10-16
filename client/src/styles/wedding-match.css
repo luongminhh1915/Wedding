@@ -2331,3 +2331,16 @@
   scrollbar-width: thin;
   scrollbar-color: #e9e5d7 transparent;
 }
+/* Persistent notifications and accessible password/OTP/Google dialog. */
+.wm-auth-dialog { border:1px solid #dedccf; border-radius:24px; background:#faf8f0; color:#25334c; width:min(480px,calc(100vw - 24px)); padding:24px; margin:auto; max-height:90dvh; overflow:auto; }
+.wm-auth-dialog::backdrop { background:#17223999; backdrop-filter:blur(4px); }
+.wm-auth-close { position:absolute; right:14px; top:14px; padding:6px; z-index:1; }
+.auth-modal-content .auth-story { display:none; }
+.auth-modal-content .auth-card { width:auto; padding:20px 6px; border:0; box-shadow:none; background:transparent; }
+.wm-notification { position:relative; }
+.wm-notification summary { list-style:none; display:flex; align-items:center; cursor:pointer; color:#f2efe4; padding:8px; position:relative; }
+.wm-notification-count { position:absolute; top:-1px; right:-3px; background:#d2ac2b; color:#25334c; min-width:16px; text-align:center; font-size:10px; border-radius:12px; }
+.wm-notification section { position:absolute; right:0; top:40px; width:min(360px,calc(100vw - 32px)); max-height:65dvh; overflow:auto; padding:18px; border:1px solid #dedccf; border-radius:16px; color:#25334c; background:#faf8f0; box-shadow:0 12px 40px #17223922; z-index:60; font-size:13px; }
+.wm-notification li { padding:12px 8px; border-bottom:1px solid #dedccf; }
+.wm-notification li.unread { background:#f2efe4; }
+.wm-notification time { display:block; color:#53637b; font-size:10px; margin-top:4px; }

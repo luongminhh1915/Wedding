@@ -32,6 +32,11 @@ export interface Contract {
   cancellationReason?: string;
   createdAt: string;
   commissions: ContractCommission[];
+  cancellationPolicySnapshot?: string;
+  commissionRateSnapshot?: number;
+  rejectReason?: string;
+  revisionCount?: number;
+  appointmentDepositCredit?: number;
 }
 
 export interface CreateContractRequest {
@@ -41,4 +46,5 @@ export interface CreateContractRequest {
   depositAmount: number;
   contractImageUrl?: string;
   weddingDate?: string;
+  cancellationPolicy?: string;
 }

@@ -1,0 +1,10 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/*.db
+**/*.db-*
+**/.env
+.git
+REQ_EXE
+tests

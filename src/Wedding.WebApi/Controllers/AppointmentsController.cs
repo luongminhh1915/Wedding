@@ -31,7 +31,10 @@ public class AppointmentsController : ControllerBase
     [HttpGet("my")]
     public async Task<IActionResult> My() => Ok(await _mediator.Send(new GetMyAppointmentsQuery()));
 
-    /// <summary>action: cancel | pay-deposit (mock) | confirm | reject | reschedule | check-in | no-show</summary>
+    [HttpGet("{id:guid}.ics")]
+    public async Task<IActionResult> Calendar(Guid id) => File(System.Text.Encoding.UTF8.GetBytes(await _mediator.Send(new GetAppointmentCalendarQuery(id))), "text/calendar; charset=utf-8", $"wedding-match-{id}.ics");
+
+    /// <summary>Customer reports a transfer with pay-deposit; only the receiving vendor confirms money via confirm-deposit. Reschedules require the other party's consent.</summary>
     [HttpPost("{id:guid}/{op}")]
     public async Task<IActionResult> Act(Guid id, string op, [FromBody] ActionBody? body)
         => Ok(await _mediator.Send(new AppointmentActionCommand(id, op, body?.Note, body?.NewStartAt)));
@@ -47,4 +50,12 @@ public class AppointmentsController : ControllerBase
     [HttpPost("vendor/types")]
     [Authorize(Roles = "VendorOwner")]
     public async Task<IActionResult> SaveType([FromBody] SaveAppointmentTypeCommand command) => Ok(await _mediator.Send(command));
+
+    [HttpGet("vendor/types/{typeId:guid}/exceptions")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> Exceptions(Guid typeId) => Ok(await _mediator.Send(new GetAvailabilityExceptionsQuery(typeId)));
+
+    [HttpPost("vendor/exceptions")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> SaveException([FromBody] SaveAvailabilityExceptionCommand command) => Ok(new { success = await _mediator.Send(command) });
 }

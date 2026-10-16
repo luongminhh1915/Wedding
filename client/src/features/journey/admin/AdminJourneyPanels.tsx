@@ -110,6 +110,7 @@ export function VerificationQueue() {
 export function DisputeDesk() {
   const { data = [] } = useDisputes();
   const resolve = useResolveDispute();
+  const role = useAuthStore((s) => s.user?.role);
   return (
     <Panel eyebrow="CSKH" title="Tranh chấp & sự cố">
       <ErrorText>{resolve.isError ? apiError(resolve.error) : ""}</ErrorText>
@@ -126,7 +127,7 @@ export function DisputeDesk() {
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button className="btn btn-outline !py-2" onClick={() => { const r = prompt("Kết luận (giữ HĐ, có lợi cho NCC)?"); if (r) resolve.mutate({ id: d.id, inFavorOfCustomer: false, cancelContract: false, resolution: r }); }}>Giữ hợp đồng</button>
                   <button className="btn btn-primary !py-2" onClick={() => { const r = prompt("Kết luận (có lợi cho khách, giữ HĐ)?"); if (r) resolve.mutate({ id: d.id, inFavorOfCustomer: true, cancelContract: false, resolution: r }); }}>Bồi thường – giữ HĐ</button>
-                  <button className="btn btn-gold !py-2" onClick={() => { const r = prompt("Kết luận (hủy HĐ, hủy hoa hồng chưa thu)?"); if (r) resolve.mutate({ id: d.id, inFavorOfCustomer: true, cancelContract: true, resolution: r }); }}>Hủy hợp đồng</button>
+                  {(role === "Finance" || role === "SuperAdmin") && <button className="btn btn-gold !py-2" onClick={() => { const r = prompt("Kết luận hủy và chứng từ xác minh cọc thực giữ?"); if (!r) return; const input = prompt("Số cọc NCC thực giữ đã được xác minh (VNĐ; nhập 0 nếu hoàn toàn bộ)?"); if (input === null || input.trim() === "") return; const retainedDeposit = Number(input); if (Number.isFinite(retainedDeposit) && retainedDeposit >= 0) resolve.mutate({ id: d.id, inFavorOfCustomer: true, cancelContract: true, resolution: r, retainedDeposit }); }}>Hủy tài chính (đã xác minh)</button>}
                 </div>
               )}
             </li>

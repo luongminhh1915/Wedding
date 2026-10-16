@@ -5,6 +5,7 @@ using Wedding.Application.Features.Contracts.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.Contracts.Commands.ConfirmContract;
 
@@ -21,7 +22,8 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         _currentUserService = currentUserService;
     }
 
-    public async Task<ContractDto> Handle(ConfirmContractCommand request, CancellationToken cancellationToken)
+    public Task<ContractDto> Handle(ConfirmContractCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => ConfirmAsync(request, ct), cancellationToken);
+    private async Task<ContractDto> ConfirmAsync(ConfirmContractCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để xác nhận hợp đồng.");
@@ -31,6 +33,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             .Include(c => c.Customer)
             .Include(c => c.Voucher)
             .Include(c => c.Lead)
+                .ThenInclude(l => l.Listing).ThenInclude(l => l!.Category)
             .Include(c => c.Commissions)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng không tồn tại.");
@@ -40,6 +43,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         {
             throw new DomainException("Chỉ khách hàng của hợp đồng mới có quyền xác nhận giao dịch (BR-005).");
         }
+        var weddingScope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
 
         // Kiểm tra điều kiện và chuyển sang trạng thái Confirmed (nếu quá 72h sẽ throw exception)
         contract.ConfirmByCustomer();
@@ -51,31 +55,46 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         }
 
         // P4: chốt (snapshot) tỷ lệ hoa hồng tại thời điểm khách xác nhận – thay đổi tỷ lệ sau này không ảnh hưởng HĐ cũ
-        contract.SnapshotCommissionRate(contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m);
+        if (!contract.WeddingDate.HasValue) throw new DomainException("Cần ngày cưới để xác định thời điểm giải phóng K2.");
+        contract.SnapshotCommissionRate(CommissionRules.ResolveRate(contract.Lead.Listing?.Category.DefaultCommissionRate ?? 0.08m, contract.Vendor.CommissionRate));
         var commissionRate = contract.CommissionRateSnapshot!.Value;
-        var totalCommission = Math.Round(contract.ContractValue * commissionRate, 0);
+        var split = CommissionRules.Split(contract.ContractValue, commissionRate);
 
         // BR-007: Hạn thanh toán hoa hồng là ngày 25 của chu kỳ đối soát
         var now = DateTime.UtcNow;
-        var dueYear = now.Year;
-        var dueMonth = now.Month;
-        var dueDate = new DateTime(dueYear, dueMonth, 25, 23, 59, 59, DateTimeKind.Utc);
-        if (now.Day > 25)
-        {
-            var next = now.AddMonths(1);
-            dueDate = new DateTime(next.Year, next.Month, 25, 23, 59, 59, DateTimeKind.Utc);
-        }
+        var dueDate = SettlementCalendar.DueDate(now);
 
         var commission = Commission.Create(
             contractId: contract.Id,
             vendorId: contract.VendorId,
             period: CommissionPeriod.Period1_Deposit,
             commissionRate: commissionRate,
-            commissionAmount: totalCommission,
+            commissionAmount: split.First,
             dueDate: dueDate
         );
 
         _context.Commissions.Add(commission);
+        var second = Commission.Create(contract.Id, contract.VendorId, CommissionPeriod.Period2_Completion, commissionRate, split.Second, SettlementCalendar.DueDate(contract.WeddingDate.Value.AddDays(3)));
+        second.LockUntil(contract.WeddingDate.Value.Date.AddDays(3).AddHours(-7));
+        _context.Commissions.Add(second);
+        contract.Lead.MarkContracted();
+        contract.Lead.UnlockPhone();
+        var budget = await _context.BudgetItems.FirstOrDefaultAsync(b => b.ContractId == contract.Id, cancellationToken);
+        if (budget == null)
+        {
+            budget = BudgetItem.Create(weddingScope.OwnerId, contract.Lead.Listing?.CategoryId, $"{contract.Vendor.BrandName} · {contract.ContractCode}", contract.ContractValue, contract.DepositAmount, "Tự đồng bộ từ hợp đồng đã xác nhận.");
+            budget.LinkContract(contract.Id);
+            if (weddingScope.ProfileId.HasValue) budget.AttachToWedding(weddingScope.ProfileId.Value);
+            _context.BudgetItems.Add(budget);
+        }
+        else budget.SynchronizeContract(contract.ContractValue, contract.DepositAmount);
+        if (!await _context.ChecklistTasks.AnyAsync(t => t.ContractId == contract.Id, cancellationToken))
+        {
+            var task = ChecklistTask.Create(weddingScope.OwnerId, $"Thanh toán đợt 2 · {contract.Vendor.BrandName}", "Trước 1 tuần", contract.WeddingDate.Value.AddDays(-7), $"Còn {contract.ContractValue - contract.DepositAmount:N0} đ theo {contract.ContractCode}.");
+            task.LinkContract(contract.Id);
+            if (weddingScope.ProfileId.HasValue) task.AttachToWedding(weddingScope.ProfileId.Value);
+            _context.ChecklistTasks.Add(task);
+        }
         await _context.SaveChangesAsync(cancellationToken);
 
         var commissionDtos = new List<ContractCommissionDto>
@@ -89,6 +108,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
                 Status: commission.Status.ToString()
             )
         };
+        commissionDtos.Add(new ContractCommissionDto(second.Id, "Kỳ 2 (khóa đến sau cưới 3 ngày)", second.CommissionRate, second.CommissionAmount, second.DueDate, second.Status.ToString()));
 
         return new ContractDto(
             Id: contract.Id,

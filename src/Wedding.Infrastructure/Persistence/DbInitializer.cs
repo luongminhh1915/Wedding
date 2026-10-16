@@ -18,6 +18,7 @@ public static class DbInitializer
         var logger = scope.ServiceProvider.GetService<ILogger<ApplicationDbContext>>();
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var seedDemoData = configuration.GetValue<bool>("Database:SeedDemoData");
+        var applyMigrations = configuration.GetValue("Database:ApplyMigrations", true);
 
         try
         {
@@ -27,7 +28,7 @@ public static class DbInitializer
             {
                 await context.Database.EnsureCreatedAsync();
             }
-            else
+            else if (applyMigrations)
             {
                 await context.Database.MigrateAsync();
             }
@@ -42,7 +43,6 @@ public static class DbInitializer
 
             if (await context.Users.AnyAsync())
             {
-                await WeddyJourneySeeder.SeedAsync(context, hasher);
                 logger?.LogInformation("Database already contains users. Demo seed was skipped.");
                 return;
             }

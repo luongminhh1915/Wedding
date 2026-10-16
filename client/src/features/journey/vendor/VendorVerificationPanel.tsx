@@ -3,6 +3,7 @@ import { BadgeCheck, ShieldQuestion } from "lucide-react";
 import { apiError, useMyVerifications, useSubmitVerification } from "../api";
 import { ErrorText, Panel, StatusPill } from "../ui";
 import { vnDate } from "../format";
+import { VendorTaxProfileForm } from "../admin/OperationsPanels";
 
 /** P6 – NCC nộp hồ sơ xác minh (GPKD + giấy tờ) để nhận huy hiệu "Đã xác minh". */
 export function VendorVerificationPanel() {
@@ -13,6 +14,7 @@ export function VendorVerificationPanel() {
   const latest = data[0];
   return (
     <div className="wd">
+      <VendorTaxProfileForm />
       <Panel eyebrow="Xác minh đối tác" title="Huy hiệu “Đã xác minh”">
         <p className="text-sm muted mb-4">NCC đã xác minh được ưu tiên trong combo và kết quả tìm kiếm. Hồ sơ được Moderator duyệt trong 24 giờ.</p>
         {latest && (
@@ -27,7 +29,7 @@ export function VendorVerificationPanel() {
         {(!latest || latest.status === "Rejected") && (
           <div className="grid md:grid-cols-2 gap-3">
             <label><span className="label">Số giấy phép kinh doanh / MST</span><input className="input" value={license} onChange={(e) => setLicense(e.target.value)} /></label>
-            <label><span className="label">Link giấy tờ (mỗi dòng 1 link)</span><textarea className="input" rows={2} value={docs} onChange={(e) => setDocs(e.target.value)} placeholder="https://..." /></label>
+            <label><span className="label">3 link HTTPS: GPKD, giấy tờ đại diện, ảnh cơ sở (mỗi dòng 1 link)</span><textarea className="input" rows={4} value={docs} onChange={(e) => setDocs(e.target.value)} placeholder="https://..." /></label>
             <div className="md:col-span-2 flex justify-end gap-3 items-center">
               <ErrorText>{submit.isError ? apiError(submit.error) : ""}</ErrorText>
               <button className="btn btn-primary" disabled={submit.isPending} onClick={() => submit.mutate({ businessLicenseNumber: license, documentUrls: docs.split("\n").map((s) => s.trim()).filter(Boolean) })}>Nộp hồ sơ</button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarCheck2, Clock, X } from "lucide-react";
 import { apiError, useAppointmentAction, useBookAppointment, useNextAvailableDate, useSlots, useVendorAppointmentTypes, type Appointment } from "../api";
@@ -14,6 +14,7 @@ export function BookAppointmentModal({ vendorId, vendorName, onClose }: { vendor
   const { data: types = [], isLoading } = useVendorAppointmentTypes(vendorId);
   const [typeId, setTypeId] = useState<string>();
   const [days] = useState(() => { const now = Date.now(); return Array.from({ length: 14 }, (_, i) => new Date(now + (i + 1) * 86400000)); });
+  const [bookingWindow] = useState(() => ({ min: ymd(new Date()), max: ymd(new Date(Date.now() + 90 * 86400000)) }));
   const [date, setDate] = useState(ymd(days[0]));
   const [slot, setSlot] = useState<string>();
   const [attendees, setAttendees] = useState(2);
@@ -21,7 +22,6 @@ export function BookAppointmentModal({ vendorId, vendorName, onClose }: { vendor
   const [result, setResult] = useState<Appointment | null>(null);
   const activeType = types.find((t) => t.id === (typeId ?? types[0]?.id));
   const { data: slots = [], isFetching } = useSlots(activeType?.id, date);
-  useEffect(() => { if (!typeId && types.length > 0) setTypeId(types[0].id); }, [types, typeId]);
   const dayOff = !isFetching && !!activeType && slots.every((s) => s.remaining <= 0);
   const later = days.map(ymd).filter((v) => v > date);
   const { data: nextDate, isFetching: findingNext } = useNextAvailableDate(activeType?.id, later, dayOff);
@@ -48,9 +48,9 @@ export function BookAppointmentModal({ vendorId, vendorName, onClose }: { vendor
             {result.status === "AwaitingDeposit" && (
               <div className="pt-2">
                 {result.depositQrUrl && <img src={result.depositQrUrl} alt="QR đặt cọc" width={170} height={170} className="mx-auto rounded-xl border border-[var(--line)]" />}
-                <p className="text-xs muted mt-2">Cọc {vnd(result.depositAmount)} giữ chỗ trong 30 phút – chuyển thẳng cho NCC, nội dung <b>{result.code}</b>.</p>
+                <p className="text-xs muted mt-2">Cọc {vnd(result.depositAmount)} giữ chỗ trong 30 phút – chuyển thẳng cho NCC, nội dung <b>HEN {result.code}</b>. NCC đối soát tiền nhận được; nút bên dưới chỉ báo đã chuyển, không tự xác nhận thanh toán.</p>
                 <button className="btn btn-gold mt-3" disabled={act.isPending}
-                  onClick={() => act.mutate({ id: result.id, op: "pay-deposit" }, { onSuccess: setResult })}>Tôi đã chuyển cọc (demo)</button>
+                  onClick={() => act.mutate({ id: result.id, op: "pay-deposit" }, { onSuccess: setResult })}>Báo đã chuyển cọc cho NCC</button>
               </div>
             )}
             <div className="pt-2"><Link to="/customer/dashboard?tab=appointments" className="btn btn-outline" onClick={onClose}>Xem lịch hẹn của tôi</Link></div>
@@ -76,6 +76,7 @@ export function BookAppointmentModal({ vendorId, vendorName, onClose }: { vendor
             </div>
             <div>
               <span className="label">Chọn ngày</span>
+              <input className="input mb-2" aria-label="Chọn ngày trong 90 ngày tới" type="date" value={date} min={bookingWindow.min} max={bookingWindow.max} onChange={(e) => { setDate(e.target.value); setSlot(undefined); }} />
               <div className="wd-scroll-x flex gap-2 pb-1">
                 {days.map((d) => {
                   const v = ymd(d);
@@ -113,6 +114,7 @@ export function BookAppointmentModal({ vendorId, vendorName, onClose }: { vendor
               <label><span className="label">Ghi chú cho NCC</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: muốn xem sảnh 300 khách" /></label>
             </div>
             <ErrorText>{book.isError ? apiError(book.error) : ""}</ErrorText>
+            <p className="text-xs muted">Đặt trước tối thiểu 12 giờ, tối đa 90 ngày. Mỗi tài khoản tối đa 5 lịch đang mở; một lịch/loại/NCC. Đổi lịch tối đa 2 lần và cần phía còn lại đồng ý.</p>
             <button className="btn btn-primary w-full" disabled={!slot || !activeType || book.isPending}
               onClick={() => activeType && slot && book.mutate({ appointmentTypeId: activeType.id, startAt: slot, attendees, note }, { onSuccess: setResult })}>
               <CalendarCheck2 size={14} /> {book.isPending ? "Đang đặt..." : "Xác nhận đặt lịch"}

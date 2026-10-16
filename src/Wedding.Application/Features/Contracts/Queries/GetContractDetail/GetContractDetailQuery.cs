@@ -76,7 +76,12 @@ public class GetContractDetailQueryHandler : IRequestHandler<GetContractDetailQu
                 CommissionAmount: cm.CommissionAmount,
                 DueDate: cm.DueDate,
                 Status: cm.Status.ToString()
-            )).ToList()
+            )).ToList(),
+            CancellationPolicySnapshot: contract.CancellationPolicySnapshot,
+            CommissionRateSnapshot: contract.CommissionRateSnapshot,
+            RejectReason: contract.RejectReason,
+            RevisionCount: contract.RevisionCount,
+            AppointmentDepositCredit: contract.AppointmentDepositCredit
         );
     }
 }

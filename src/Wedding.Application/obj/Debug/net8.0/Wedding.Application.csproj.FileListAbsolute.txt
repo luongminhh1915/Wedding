@@ -29,7 +29,6 @@ D:/Gitgithubhub/Wedding/src/Wedding.Application/obj/Debug/net8.0/Wedding.Applica
 D:/Gitgithubhub/Wedding/src/Wedding.Application/obj/Debug/net8.0/refint/Wedding.Application.dll
 D:/Gitgithubhub/Wedding/src/Wedding.Application/obj/Debug/net8.0/Wedding.Application.pdb
 D:/Gitgithubhub/Wedding/src/Wedding.Application/obj/Debug/net8.0/ref/Wedding.Application.dll
-D:/Gitgithubhub/Wedding/src/Wedding.Application/obj/Debug/net8.0/Wedding.Application.csproj.CopyComplete
 /workspace/Wedding/src/Wedding.Application/bin/Debug/net8.0/Wedding.Application.deps.json
 /workspace/Wedding/src/Wedding.Application/bin/Debug/net8.0/Wedding.Application.dll
 /workspace/Wedding/src/Wedding.Application/bin/Debug/net8.0/Wedding.Application.pdb
@@ -46,3 +45,19 @@ D:/Gitgithubhub/Wedding/src/Wedding.Application/obj/Debug/net8.0/Wedding.Applica
 /workspace/Wedding/src/Wedding.Application/obj/Debug/net8.0/refint/Wedding.Application.dll
 /workspace/Wedding/src/Wedding.Application/obj/Debug/net8.0/Wedding.Application.pdb
 /workspace/Wedding/src/Wedding.Application/obj/Debug/net8.0/ref/Wedding.Application.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\refint\Wedding.Application.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.pdb
+D:\Gitgithubhub\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Application.deps.json
+D:\Gitgithubhub\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Application.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Application.pdb
+D:\Gitgithubhub\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Application\bin\Debug\net8.0\Wedding.Domain.pdb
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.csproj.AssemblyReference.cache
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.AssemblyInfoInputs.cache
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.AssemblyInfo.cs
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.csproj.CoreCompileInputs.cache
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding.Application.sourcelink.json
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\Wedding..16C2A49E.Up2Date
+D:\Gitgithubhub\Wedding\src\Wedding.Application\obj\Debug\net8.0\ref\Wedding.Application.dll

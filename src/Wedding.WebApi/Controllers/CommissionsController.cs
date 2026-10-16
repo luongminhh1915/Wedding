@@ -75,9 +75,8 @@ public class CommissionsController : ControllerBase
             return BadRequest(new { success = false, message = $"Thông báo này đã ở trạng thái {notice.Status}." });
         }
 
-        var refCode = !string.IsNullOrWhiteSpace(request?.PaymentReference)
-            ? request.PaymentReference.Trim()
-            : $"UNC-XACNHAN-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        if (string.IsNullOrWhiteSpace(request?.PaymentReference)) return BadRequest(new { message = "Cần mã giao dịch ngân hàng thật, không tự sinh mã xác nhận." });
+        var refCode = request.PaymentReference.Trim();
 
         var paymentResult = await _mediator.Send(new RecordAdminPaymentCommand(
             ContractId: notice.ContractId,
@@ -159,12 +158,8 @@ public class CommissionsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ProcessBankWebhook([FromBody] ProcessBankWebhookCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        await Task.CompletedTask;
+        return StatusCode(410, new { message = "Webhook cũ đã ngừng. Dùng /api/billing/webhook/bank-transfer với chữ ký HMAC X-Wedding-Signature." });
     }
 }
 

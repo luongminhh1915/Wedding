@@ -37,7 +37,7 @@ export const useAuth = () => {
   });
 
   const currentUserQuery = useQuery({
-    queryKey: ['currentUser'],
+    queryKey: ['currentUser', user?.id],
     queryFn: async (): Promise<User> => {
       const response = await axiosClient.get<User>('/api/auth/me');
       return response.data;

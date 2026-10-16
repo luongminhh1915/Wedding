@@ -21,7 +21,8 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
         _currentUserService = currentUserService;
     }
 
-    public async Task<ContractDto> Handle(CompleteContractCommand request, CancellationToken cancellationToken)
+    public Task<ContractDto> Handle(CompleteContractCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => CompleteAsync(request, ct), cancellationToken);
+    private async Task<ContractDto> CompleteAsync(CompleteContractCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để thao tác.");
@@ -42,7 +43,7 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
         var isVendor = contract.Vendor.UserId == userId;
         var isStaff = user.Role == UserRole.SuperAdmin || user.Role == UserRole.Finance || user.Role == UserRole.Moderator;
 
-        if (!isVendor && !isStaff)
+        if (!isVendor && !isStaff && contract.CustomerId != userId)
         {
             throw new DomainException("Chỉ nhà cung cấp hoặc ban quản trị mới có quyền xác nhận hoàn tất dịch vụ cưới.");
         }
@@ -73,9 +74,14 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
                 commissionAmount: remainderCommission,
                 dueDate: dueDate
             );
+            commissionK2.LockUntil(contract.WeddingDate!.Value.Date.AddDays(3).AddHours(-7));
+            commissionK2.Release(DateTime.UtcNow);
 
             _context.Commissions.Add(commissionK2);
         }
+
+        // Completing manually never bypasses the three-day complaint window.
+        foreach (var c in contract.Commissions.Where(c => c.Period == CommissionPeriod.Period2_Completion)) c.Release(DateTime.UtcNow);
 
         await _context.SaveChangesAsync(cancellationToken);
 

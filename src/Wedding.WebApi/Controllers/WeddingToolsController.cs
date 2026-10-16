@@ -14,7 +14,7 @@ namespace Wedding.WebApi.Controllers;
 
 [ApiController]
 [Route("api/wedding-tools")]
-[Authorize]
+[Authorize(Roles = "Customer")]
 public class WeddingToolsController : ControllerBase
 {
     private readonly IMediator _mediator;

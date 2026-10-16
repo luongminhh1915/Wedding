@@ -29,11 +29,13 @@ public class GetEligibleContractsQueryHandler : IRequestHandler<GetEligibleContr
             .Include(c => c.Vendor)
             .Include(c => c.Lead)
             .Where(c => c.CustomerId == userId && (c.Status == ContractStatus.Completed || c.Status == ContractStatus.Confirmed))
+            .Where(c => !_context.Reviews.Any(r => r.BookingContractId == c.Id || r.CustomerId == userId && r.ListingId == c.Lead.ListingId))
+            .Where(c => !_context.BookingContracts.Any(d => d.CustomerId == userId && d.VendorId == c.VendorId && d.Lead.ListingId == c.Lead.ListingId && d.Status == ContractStatus.Disputed))
             .OrderByDescending(c => c.CreatedAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return contracts.Select(c => new EligibleContractDto(
+        return contracts.Where(c => ReviewRules.IsEligible(c, DateTime.UtcNow)).Select(c => new EligibleContractDto(
             ContractId: c.Id,
             ContractCode: c.ContractCode,
             VendorId: c.VendorId,

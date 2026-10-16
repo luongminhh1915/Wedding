@@ -13,9 +13,11 @@ import {
 import {
   AdminKpiPanel,
   DisputeDesk,
-  SettlementsPanel,
   VerificationQueue,
 } from "../journey/admin/AdminJourneyPanels";
+import { SettlementsPanel } from "../journey/admin/FinancialLedgerPanel";
+import { ArticleCms, EmergencyMatchingPanel } from "../journey/admin/OperationsPanels";
+import { ComboAdministration } from "../journey/admin/ComboAdministration";
 import { useAuthStore } from "../../store/authStore";
 import ModerationQueue from "./ModerationQueue";
 import UserManagement from "./UserManagement";
@@ -36,30 +38,34 @@ const tabs = [
     label: "Kiểm duyệt",
     icon: FileCheck,
     description: "Xem xét bài đăng và đánh giá từ cộng đồng.",
+    roles: ["SuperAdmin", "Moderator"],
   },
   {
     id: "published-listings",
     label: "Gói dịch vụ",
     icon: Layers,
     description: "Theo dõi và quản lý các gói dịch vụ trên nền tảng.",
+    roles: ["SuperAdmin", "Moderator"],
   },
   {
     id: "users",
     label: "Người dùng & đối tác",
     icon: Users,
     description: "Kiểm tra thông tin và quản lý trạng thái tài khoản.",
+    roles: ["SuperAdmin"],
   },
   {
     id: "finance",
     label: "Tài chính & đối soát",
     icon: DollarSign,
     description: "Tổng hợp hợp đồng, tiền cọc và hoa hồng của nhà cung cấp.",
+    roles: ["SuperAdmin", "Finance"],
   },
   {
     id: "settlements",
     label: "Bảng kê tháng",
     icon: Receipt,
-    description: "Chốt bảng kê hoa hồng theo kỳ (hạn ngày 25), thu qua VietQR, hóa đơn điện tử (giả lập).",
+    description: "Bảng kê, giao dịch ngân hàng, hàng chờ đối soát và hóa đơn có chứng từ thật.",
     roles: ["SuperAdmin", "Finance"],
   },
   {
@@ -74,8 +80,11 @@ const tabs = [
     label: "Tranh chấp",
     icon: Gavel,
     description: "Xử lý sự cố hợp đồng giữa cặp đôi và nhà cung cấp trong 72 giờ.",
-    roles: ["SuperAdmin", "CustomerCare"],
+    roles: ["SuperAdmin", "CustomerCare", "Finance"],
   },
+  { id: "cms", label: "Cẩm nang CMS", icon: FileCheck, description: "Tạo, chỉnh sửa, xuất bản và ghim dịch vụ vào bài viết.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "combos", label: "Combo & ưu đãi", icon: Layers, description: "Mẫu combo, duyệt dịch vụ và cấu hình giảm giá.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "emergency", label: "Hỗ trợ khẩn cấp", icon: ShieldCheck, description: "Tạo yêu cầu NCC thay thế cho hợp đồng đang tranh chấp.", roles: ["SuperAdmin", "CustomerCare"] },
 ] as const;
 
 export default function AdminDashboard() {
@@ -130,6 +139,9 @@ export default function AdminDashboard() {
         {activeTab === "settlements" && <SettlementsPanel />}
         {activeTab === "verifications" && <VerificationQueue />}
         {activeTab === "disputes" && <DisputeDesk />}
+        {activeTab === "cms" && <ArticleCms />}
+        {activeTab === "emergency" && <EmergencyMatchingPanel />}
+        {activeTab === "combos" && <ComboAdministration />}
       </div>
     </main>
   );

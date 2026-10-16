@@ -6,6 +6,8 @@ using Wedding.Application.Features.Invitations.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
+using System.Text.Json;
 
 namespace Wedding.Application.Features.Invitations.Commands.SaveInvitation;
 
@@ -21,7 +23,8 @@ public record SaveInvitationCommand(
     string? CoverImageUrl,
     string? MusicUrl,
     string TemplateStyle,
-    string? BankInfo
+    string? BankInfo,
+    Guid? TemplateId = null, string Lang = "vi", string? ContentJson = null, bool IsPublished = true
 ) : IRequest<WeddingInvitationDto>;
 
 public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationCommand, WeddingInvitationDto>
@@ -35,10 +38,26 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
         _currentUserService = currentUserService;
     }
 
-    public async Task<WeddingInvitationDto> Handle(SaveInvitationCommand request, CancellationToken cancellationToken)
+    public Task<WeddingInvitationDto> Handle(SaveInvitationCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => Save(request, ct), cancellationToken);
+    private async Task<WeddingInvitationDto> Save(SaveInvitationCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để thiết kế và lưu thiệp cưới.");
+        var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
+        var userId = scope.OwnerId;
+        if (string.IsNullOrWhiteSpace(request.GroomName) || request.GroomName.Length > 100 || string.IsNullOrWhiteSpace(request.BrideName) || request.BrideName.Length > 100)
+            throw new DomainException("Tên hai bạn bắt buộc, tối đa 100 ký tự.");
+        if (string.IsNullOrWhiteSpace(request.VenueName) || request.VenueName.Length > 200 || request.VenueAddress.Length > 300)
+            throw new DomainException("Địa điểm tổ chức bắt buộc, tên tối đa 200 và địa chỉ 300 ký tự.");
+        if (request.Lang is not ("vi" or "en")) throw new DomainException("Ngôn ngữ không được hỗ trợ.");
+        foreach (var url in new[] { request.MapUrl, request.CoverImageUrl, request.MusicUrl })
+            if (!string.IsNullOrWhiteSpace(url) && (url.Length > 500 || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
+                throw new DomainException("Liên kết ảnh, nhạc và bản đồ phải là URL HTTP/HTTPS hợp lệ.");
+        if (request.LoveStory?.Length > 3000 || request.BankInfo?.Length > 300 || request.ContentJson?.Length > 30000)
+            throw new DomainException("Nội dung vượt quá giới hạn cho phép.");
+        var contentJson = request.ContentJson ?? "{}";
+        try { using var content = JsonDocument.Parse(contentJson); if (content.RootElement.ValueKind != JsonValueKind.Object) throw new JsonException(); }
+        catch (JsonException) { throw new DomainException("Cấu hình nội dung thiệp không hợp lệ."); }
+        var template = InvitationTemplate.Catalog.FirstOrDefault(t => request.TemplateId.HasValue ? t.Id == request.TemplateId : t.Key == request.TemplateStyle)
+            ?? throw new DomainException("Mẫu thiệp không hợp lệ.");
 
         var invitation = await _context.WeddingInvitations
             .Include(w => w.Guests)
@@ -48,6 +67,8 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
         var rawSlug = string.IsNullOrWhiteSpace(request.Slug)
             ? GenerateSlug($"{request.GroomName}-{request.BrideName}-{request.EventDate.Year}")
             : GenerateSlug(request.Slug);
+        if (rawSlug.Length > 120 || new[] { "api", "planner", "invitation", "thiep", "login", "register", "browse", "vendors", "combo", "wiki", "lich-hen", "customer", "vendor", "admin", "setup", "assets", "auth", "premium", "wedding-match" }.Contains(rawSlug))
+            throw new DomainException("Đường dẫn thiệp không hợp lệ hoặc đã được hệ thống sử dụng.");
 
         // Kiểm tra Slug có bị trùng với thiệp của cặp đôi khác không
         var isSlugTaken = await _context.WeddingInvitations
@@ -55,7 +76,7 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
 
         if (isSlugTaken)
         {
-            rawSlug = $"{rawSlug}-{Guid.NewGuid().ToString("N")[..4].ToLowerInvariant()}";
+            throw new DomainException("Đường dẫn thiệp đã được sử dụng, vui lòng chọn tên khác.");
         }
 
         if (invitation == null)
@@ -94,6 +115,10 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
             );
         }
 
+        invitation.Update(request.GroomName, request.BrideName, request.EventDate, request.VenueName, request.VenueAddress,
+            request.MapUrl, request.LoveStory, request.CoverImageUrl, request.MusicUrl, template.Key, request.BankInfo);
+        invitation.Configure(rawSlug, template.Id, request.Lang, contentJson, request.IsPublished);
+
         await _context.SaveChangesAsync(cancellationToken);
 
         // Tính toán thống kê RSVP
@@ -111,7 +136,7 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
             Slug: invitation.Slug,
             GroomName: invitation.GroomName,
             BrideName: invitation.BrideName,
-            EventDate: invitation.EventDate,
+            EventDate: invitation.GetEventDateWithOffset(),
             VenueName: invitation.VenueName,
             VenueAddress: invitation.VenueAddress,
             MapUrl: invitation.MapUrl,
@@ -127,7 +152,8 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
             NotAttendingCount: notAttending,
             TotalAccompanying: totalAccompanying,
             EstimatedTables: Math.Max(estimatedTables, 1),
-            IsPremium: invitation.IsPremium
+            IsPremium: invitation.IsPremium,
+            TemplateId: invitation.TemplateId, Lang: invitation.Lang, ContentJson: invitation.ContentJson
         );
     }
 

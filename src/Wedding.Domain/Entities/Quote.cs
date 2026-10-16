@@ -14,6 +14,9 @@ public class Quote : BaseEntity
     public string ItemsJson { get; private set; } = "[]";
     public decimal TotalAmount { get; private set; }
     public decimal DepositAmount { get; private set; }
+    public decimal Subtotal { get; private set; }
+    public decimal VatRate { get; private set; }
+    public decimal VatAmount { get; private set; }
     public string? Terms { get; private set; }
     public DateTime ValidUntil { get; private set; }
     public QuoteStatus Status { get; private set; } = QuoteStatus.Sent;
@@ -43,6 +46,11 @@ public class Quote : BaseEntity
         if (Status != QuoteStatus.Sent) throw new DomainException("Báo giá không còn hiệu lực.");
         if (DateTime.UtcNow > ValidUntil) { Status = QuoteStatus.Expired; throw new DomainException("Báo giá đã hết hạn."); }
         Status = QuoteStatus.Accepted; SetUpdated();
+    }
+    public void SetVat(decimal subtotal, decimal vatRate)
+    {
+        if (vatRate < 0 || vatRate > 1) throw new DomainException("Thuế suất phải từ 0 đến 100%.");
+        Subtotal = subtotal; VatRate = vatRate; VatAmount = Math.Round(subtotal * vatRate, 0, MidpointRounding.AwayFromZero); TotalAmount = subtotal + VatAmount; SetUpdated();
     }
 
     public void Reject(string? note) { if (Status != QuoteStatus.Sent) throw new DomainException("Báo giá không còn hiệu lực."); Status = QuoteStatus.Rejected; CustomerNote = note; SetUpdated(); }

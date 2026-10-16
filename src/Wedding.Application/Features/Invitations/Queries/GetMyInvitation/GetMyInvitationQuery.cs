@@ -5,6 +5,7 @@ using Wedding.Application.Features.Invitations.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.Invitations.Queries.GetMyInvitation;
 
@@ -23,8 +24,7 @@ public class GetMyInvitationQueryHandler : IRequestHandler<GetMyInvitationQuery,
 
     public async Task<WeddingInvitationDto?> Handle(GetMyInvitationQuery request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để xem thiệp cưới của mình.");
+        var userId = (await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken)).OwnerId;
 
         var invitation = await _context.WeddingInvitations
             .Include(w => w.Guests)
@@ -48,7 +48,7 @@ public class GetMyInvitationQueryHandler : IRequestHandler<GetMyInvitationQuery,
             Slug: invitation.Slug,
             GroomName: invitation.GroomName,
             BrideName: invitation.BrideName,
-            EventDate: invitation.EventDate,
+            EventDate: invitation.GetEventDateWithOffset(),
             VenueName: invitation.VenueName,
             VenueAddress: invitation.VenueAddress,
             MapUrl: invitation.MapUrl,
@@ -64,7 +64,8 @@ public class GetMyInvitationQueryHandler : IRequestHandler<GetMyInvitationQuery,
             NotAttendingCount: notAttending,
             TotalAccompanying: totalAccompanying,
             EstimatedTables: Math.Max(estimatedTables, 1),
-            IsPremium: invitation.IsPremium
+            IsPremium: invitation.IsPremium,
+            TemplateId: invitation.TemplateId, Lang: invitation.Lang, ContentJson: invitation.ContentJson
         );
     }
 }

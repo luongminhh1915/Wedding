@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Enums;
+using Wedding.Domain.Entities;
 
 namespace Wedding.Infrastructure.Services;
 
@@ -31,23 +32,53 @@ public class AppointmentHousekeepingBackgroundService : BackgroundService
                 var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
                 var now = DateTime.UtcNow;
                 var depositCutoff = now.AddMinutes(-30);
-                var stale = await context.Appointments
-                    .Where(a => (a.Status == AppointmentStatus.AwaitingDeposit && a.CreatedAt <= depositCutoff)
-                             || (a.Status == AppointmentStatus.Pending && a.StartAt <= now))
-                    .ToListAsync(stoppingToken);
-                foreach (var a in stale) a.Expire();
-                if (stale.Count > 0)
+                await context.ExecuteSerializableAsync(async ct =>
                 {
-                    await context.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("Đã hết hạn {Count} lịch hẹn.", stale.Count);
-                }
+                    var stale = await context.Appointments.Where(a =>
+                        (a.Status == AppointmentStatus.AwaitingDeposit && a.CreatedAt <= depositCutoff) ||
+                        ((a.Status == AppointmentStatus.Pending || a.Status == AppointmentStatus.RescheduleProposed) && a.ResponseDueAt <= now)).ToListAsync(ct);
+                    var notify = scope.ServiceProvider.GetRequiredService<INotificationSender>();
+                    foreach (var a in stale)
+                    {
+                        a.Expire(); context.AppointmentEvents.Add(AppointmentEvent.Create(a.Id, null, "Expired", "Hết thời hạn phản hồi/giữ cọc"));
+                        var customer = await context.Users.FirstOrDefaultAsync(u => u.Id == a.CustomerId, ct);
+                        if (customer != null) await notify.SendAsync("Email", customer.Email, $"Lịch hẹn {a.Code} đã hết hạn. Khoản cọc cần hoàn: {a.RefundDue:N0}đ.", ct);
+                    }
+                    var noShows = await context.Appointments.Where(a => a.Status == AppointmentStatus.Confirmed && a.StartAt <= now.AddMinutes(-30)).ToListAsync(ct);
+                    foreach (var a in noShows)
+                    {
+                        a.MarkNoShow(); context.AppointmentEvents.Add(AppointmentEvent.Create(a.Id, null, "NoShow", "Quá giờ hẹn 30 phút, chưa check-in"));
+                    }
+                    var upcoming = await context.Appointments.Include(a => a.Customer).Include(a => a.Vendor).ThenInclude(v => v.User)
+                        .Where(a => a.Status == AppointmentStatus.Confirmed && a.StartAt > now && a.StartAt <= now.AddHours(24)).ToListAsync(ct);
+                    foreach (var a in upcoming)
+                    {
+                        var hours = (a.StartAt - now).TotalHours;
+                        if (!a.CustomerReminder24At.HasValue)
+                        {
+                            await notify.SendAsync("Email", a.Customer.Email, $"Nhắc lịch hẹn {a.Code}: {(a.StartAt.AddHours(7)):HH:mm dd/MM/yyyy}.", ct); a.MarkReminder("customer24");
+                        }
+                        if (hours <= 2 && !a.CustomerReminder2At.HasValue)
+                        {
+                            await notify.SendAsync("Email", a.Customer.Email, $"Lịch hẹn {a.Code} còn dưới 2 giờ.", ct); a.MarkReminder("customer2");
+                        }
+                        if (hours <= 1 && !a.VendorReminder1At.HasValue)
+                        {
+                            await notify.SendAsync("Email", a.Vendor.User.Email, $"Lịch hẹn {a.Code} còn dưới 1 giờ.", ct); a.MarkReminder("vendor1");
+                        }
+                    }
+                    var expiredCombos = await context.ComboOrders.Where(o => o.PriceLockUntil <= now &&
+                        (o.Status == ComboOrderStatus.Submitted || o.Status == ComboOrderStatus.InProgress || o.Status == ComboOrderStatus.PartiallyQuoted || o.Status == ComboOrderStatus.Quoted)).ToListAsync(ct);
+                    foreach (var order in expiredCombos) order.ExpirePriceLock();
+                    await context.SaveChangesAsync(ct); return stale.Count;
+                }, stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi dọn lịch hẹn quá hạn.");
             }
 
-            await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
     }
 }

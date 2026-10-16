@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
     "net8.0": {
       "Azure.Core/1.35.0": {
@@ -4308,24 +4308,24 @@
       "Microsoft.EntityFrameworkCore.SqlServer >= 8.0.10",
       "Microsoft.EntityFrameworkCore.Sqlite >= 8.0.10",
       "Microsoft.EntityFrameworkCore.Tools >= 8.0.10",
-      "System.IdentityModel.Tokens.Jwt >= 8.0.10",
+      "System.IdentityModel.Tokens.Jwt >= 8.1.0",
       "Wedding.Application >= 1.0.0"
     ]
   },
   "packageFolders": {
-    "/home/box/.nuget/packages/": {}
+    "C:\\Users\\Admin\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/workspace/Wedding/src/Wedding.Infrastructure/Wedding.Infrastructure.csproj",
+      "projectUniqueName": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj",
       "projectName": "Wedding.Infrastructure",
-      "projectPath": "/workspace/Wedding/src/Wedding.Infrastructure/Wedding.Infrastructure.csproj",
-      "packagesPath": "/home/box/.nuget/packages/",
-      "outputPath": "/workspace/Wedding/src/Wedding.Infrastructure/obj/",
+      "projectPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Infrastructure\\Wedding.Infrastructure.csproj",
+      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
+      "outputPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/box/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -4335,10 +4335,11 @@
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "/workspace/Wedding/src/Wedding.Application/Wedding.Application.csproj": {
-              "projectPath": "/workspace/Wedding/src/Wedding.Application/Wedding.Application.csproj"
+            "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\Wedding.Application.csproj": {
+              "projectPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\Wedding.Application.csproj"
             }
           }
         }
@@ -4352,10 +4353,12 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net8.0": {
+        "framework": "net8.0",
         "targetAlias": "net8.0",
         "dependencies": {
           "BCrypt.Net-Next": {
@@ -4382,7 +4385,7 @@
           },
           "System.IdentityModel.Tokens.Jwt": {
             "target": "Package",
-            "version": "[8.0.10, )"
+            "version": "[8.1.0, )"
           }
         },
         "imports": [
@@ -4396,6 +4399,20 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.31, 8.0.31]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.31, 8.0.31]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.31, 8.0.31]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"
@@ -4404,20 +4421,8 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/home/box/.dotnet/sdk/8.0.426/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
       }
     }
-  },
-  "logs": [
-    {
-      "code": "NU1603",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Wedding.Infrastructure depends on System.IdentityModel.Tokens.Jwt (>= 8.0.10) but System.IdentityModel.Tokens.Jwt 8.0.10 was not found. An approximate best match of System.IdentityModel.Tokens.Jwt 8.1.0 was resolved.",
-      "libraryId": "System.IdentityModel.Tokens.Jwt",
-      "targetGraphs": [
-        "net8.0"
-      ]
-    }
-  ]
+  }
 }

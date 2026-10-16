@@ -1,3 +1,4 @@
+using System.Globalization;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
@@ -14,93 +15,68 @@ internal static class SettlementMap
 {
     public static SettlementDto ToDto(CommissionSettlement s, IMockPaymentGateway pay) => new(s.Id, s.VendorId, s.Vendor?.BrandName ?? "", s.Period,
         s.CommissionCount, s.TotalAmount, s.PaidAmount, s.Status.ToString(), s.DueDate, s.PaymentReference, s.PaidAt, s.InvoiceNumber,
-        pay.BuildVietQrUrl(Math.Max(0, s.TotalAmount - s.PaidAmount), s.PaymentReference));
+        s.Status is SettlementStatus.Closed or SettlementStatus.Overdue ? pay.BuildVietQrUrl(Math.Max(0, s.TotalAmount - s.PaidAmount), s.PaymentReference) : "");
 }
 
-/// <summary>P4 – Chốt bảng kê kỳ yyyy-MM (BR-007: hạn ngày 25). Gom các khoản hoa hồng Pending/Overdue có hạn trong kỳ.</summary>
 public record RunSettlementCommand(string Period) : IRequest<List<SettlementDto>>;
-
 public class RunSettlementCommandHandler : IRequestHandler<RunSettlementCommand, List<SettlementDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IApplicationDbContext _db;
     private readonly IMockPaymentGateway _pay;
     private readonly IAuditLogger _audit;
-    public RunSettlementCommandHandler(IApplicationDbContext context, IMockPaymentGateway pay, IAuditLogger audit) { _context = context; _pay = pay; _audit = audit; }
-
-    public async Task<List<SettlementDto>> Handle(RunSettlementCommand r, CancellationToken ct)
+    public RunSettlementCommandHandler(IApplicationDbContext db, IMockPaymentGateway pay, IAuditLogger audit) { _db = db; _pay = pay; _audit = audit; }
+    public Task<List<SettlementDto>> Handle(RunSettlementCommand r, CancellationToken ct) => _db.ExecuteSerializableAsync(token => RunAsync(r, token), ct);
+    private async Task<List<SettlementDto>> RunAsync(RunSettlementCommand r, CancellationToken ct)
     {
-        if (!DateTime.TryParseExact(r.Period + "-01", "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var start))
-            throw new DomainException("Kỳ đối soát phải có dạng yyyy-MM.");
-        var end = start.AddMonths(1);
-        var commissions = await _context.Commissions
-            .Where(c => c.DueDate >= start && c.DueDate < end && (c.Status == CommissionStatus.Pending || c.Status == CommissionStatus.Overdue))
-            .ToListAsync(ct);
-        var existing = await _context.CommissionSettlements.Where(s => s.Period == r.Period).ToListAsync(ct);
-        foreach (var g in commissions.GroupBy(c => c.VendorId))
+        if (!DateTime.TryParseExact(r.Period + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start)) throw new DomainException("Kỳ đối soát phải có dạng yyyy-MM.");
+        var cutoff = new DateTime(start.Year, start.Month, 25, 0, 0, 0, DateTimeKind.Utc).AddHours(-7);
+        if (DateTime.UtcNow < cutoff) throw new DomainException("Chỉ chốt bảng kê từ ngày 25 theo múi giờ Việt Nam.");
+        var end = DateTime.SpecifyKind(start.AddMonths(1), DateTimeKind.Utc).AddHours(-7);
+        var commissions = await _db.Commissions.Include(c => c.Contract).Where(c => c.SettlementId == null && c.CreatedAt < cutoff && c.DueDate < end &&
+            (c.Status == CommissionStatus.Pending || c.Status == CommissionStatus.Unsettled || c.Status == CommissionStatus.Overdue) && c.Contract.Status != ContractStatus.Disputed).ToListAsync(ct);
+        var existing = await _db.CommissionSettlements.Where(s => s.Period == r.Period).ToListAsync(ct);
+        foreach (var group in commissions.GroupBy(c => c.VendorId))
         {
-            var s = existing.FirstOrDefault(x => x.VendorId == g.Key);
-            if (s == null)
-            {
-                s = CommissionSettlement.Create(g.Key, r.Period, g.Count(), g.Sum(c => c.CommissionAmount), new DateTime(start.Year, start.Month, 25, 0, 0, 0, DateTimeKind.Utc));
-                _context.CommissionSettlements.Add(s);
-            }
-            else s.Refresh(g.Count(), g.Sum(c => c.CommissionAmount));
-            s.Close();
+            // Closed statements are immutable. Late items carry into the next monthly run.
+            if (existing.Any(s => s.VendorId == group.Key)) continue;
+            var items = group.ToList();
+            var due = new DateTime(start.Year, start.Month, Math.Min(30, DateTime.DaysInMonth(start.Year, start.Month)), 23, 59, 59, DateTimeKind.Utc).AddHours(-7);
+            var statement = CommissionSettlement.Create(group.Key, r.Period, items.Count, items.Sum(c => c.OutstandingAmount), due);
+            _db.CommissionSettlements.Add(statement);
+            foreach (var c in items) c.AssignSettlement(statement.Id);
+            var credits = await _db.CommissionCreditNotes.Where(x => x.VendorId == group.Key && x.AppliedAmount < x.Amount).OrderBy(x => x.CreatedAt).ToListAsync(ct);
+            var creditAmount = Math.Min(statement.TotalAmount, credits.Sum(x => x.Amount - x.AppliedAmount));
+            var remainingCredit = creditAmount;
+            foreach (var credit in credits) { var take = Math.Min(remainingCredit, credit.Amount - credit.AppliedAmount); if (take > 0) { credit.Apply(take); remainingCredit -= take; } }
+            remainingCredit = creditAmount;
+            foreach (var c in items) { var take = Math.Min(remainingCredit, c.OutstandingAmount); if (take > 0) { c.ApplyPayment(take, $"CREDIT-{statement.Id:N}"); remainingCredit -= take; } }
+            statement.ApplyCredit(creditAmount); statement.Close();
         }
-        await _audit.LogAsync("Settlement.Run", nameof(CommissionSettlement), r.Period, new { vendors = commissions.Select(c => c.VendorId).Distinct().Count() });
-        await _context.SaveChangesAsync(ct);
-        return (await _context.CommissionSettlements.AsNoTracking().Include(s => s.Vendor).Where(s => s.Period == r.Period).ToListAsync(ct))
-            .Select(s => SettlementMap.ToDto(s, _pay)).ToList();
+        await _audit.LogAsync("Settlement.Closed", nameof(CommissionSettlement), r.Period, new { count = commissions.Count });
+        await _db.SaveChangesAsync(ct);
+        return (await _db.CommissionSettlements.AsNoTracking().Include(s => s.Vendor).Where(s => s.Period == r.Period).ToListAsync(ct)).Select(s => SettlementMap.ToDto(s, _pay)).ToList();
     }
 }
 
 public record GetSettlementsQuery(string? Period) : IRequest<List<SettlementDto>>;
-
 public class GetSettlementsQueryHandler : IRequestHandler<GetSettlementsQuery, List<SettlementDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _user;
     private readonly IMockPaymentGateway _pay;
-    public GetSettlementsQueryHandler(IApplicationDbContext context, ICurrentUserService user, IMockPaymentGateway pay) { _context = context; _user = user; _pay = pay; }
-
+    public GetSettlementsQueryHandler(IApplicationDbContext db, ICurrentUserService user, IMockPaymentGateway pay) { _db = db; _user = user; _pay = pay; }
     public async Task<List<SettlementDto>> Handle(GetSettlementsQuery r, CancellationToken ct)
     {
-        var q = _context.CommissionSettlements.AsNoTracking().Include(s => s.Vendor).AsQueryable();
-        if (_user.Role == nameof(UserRole.VendorOwner)) q = q.Where(s => s.Vendor.UserId == _user.UserId);
-        if (!string.IsNullOrWhiteSpace(r.Period)) q = q.Where(s => s.Period == r.Period);
-        foreach (var s in await _context.CommissionSettlements.Where(s => s.Status == SettlementStatus.Closed).ToListAsync(ct)) s.MarkOverdue();
-        await _context.SaveChangesAsync(ct);
-        return (await q.ToListAsync(ct)).OrderByDescending(s => s.Period).ThenBy(s => s.Vendor.BrandName).Select(s => SettlementMap.ToDto(s, _pay)).ToList();
+        var query = _db.CommissionSettlements.AsNoTracking().Include(s => s.Vendor).AsQueryable();
+        if (_user.Role == nameof(UserRole.VendorOwner)) query = query.Where(s => s.Vendor.UserId == _user.UserId);
+        else if (_user.Role is not (nameof(UserRole.Finance) or nameof(UserRole.SuperAdmin))) throw new DomainException("Bạn không có quyền xem đối soát.");
+        if (!string.IsNullOrWhiteSpace(r.Period)) query = query.Where(s => s.Period == r.Period);
+        return (await query.OrderByDescending(s => s.Period).Take(200).ToListAsync(ct)).Select(s => SettlementMap.ToDto(s, _pay)).ToList();
     }
 }
 
-/// <summary>P4 – Ghi nhận thanh toán bảng kê (mock webhook ngân hàng/SePay + mock xuất hóa đơn điện tử).</summary>
 public record PaySettlementCommand(Guid Id, decimal? Amount) : IRequest<SettlementDto>;
-
 public class PaySettlementCommandHandler : IRequestHandler<PaySettlementCommand, SettlementDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IMockPaymentGateway _pay;
-    private readonly IAuditLogger _audit;
-    public PaySettlementCommandHandler(IApplicationDbContext context, IMockPaymentGateway pay, IAuditLogger audit) { _context = context; _pay = pay; _audit = audit; }
-
-    public async Task<SettlementDto> Handle(PaySettlementCommand r, CancellationToken ct)
-    {
-        var s = await _context.CommissionSettlements.Include(x => x.Vendor).FirstOrDefaultAsync(x => x.Id == r.Id, ct) ?? throw new NotFoundException("Bảng kê không tồn tại.");
-        if (s.Status == SettlementStatus.Paid || s.TotalAmount - s.PaidAmount <= 0) throw new DomainException("Bảng kê đã được thanh toán.");
-        if (s.Status == SettlementStatus.Open) throw new DomainException("Bảng kê chưa được chốt.");
-        var amount = r.Amount ?? (s.TotalAmount - s.PaidAmount);
-        if (amount <= 0) throw new DomainException("Số tiền không hợp lệ.");
-        s.MarkPaid(amount);
-        if (s.Status == SettlementStatus.Paid)
-        {
-            var start = DateTime.ParseExact(s.Period + "-01", "yyyy-MM-dd", null);
-            var items = await _context.Commissions.Where(c => c.VendorId == s.VendorId && c.DueDate >= start && c.DueDate < start.AddMonths(1)
-                && (c.Status == CommissionStatus.Pending || c.Status == CommissionStatus.Overdue)).ToListAsync(ct);
-            foreach (var c in items) c.MarkPaid(s.PaymentReference);
-        }
-        await _audit.LogAsync("Settlement.Payment", nameof(CommissionSettlement), s.Id.ToString(), new { amount, s.PaymentReference, mock = true });
-        await _context.SaveChangesAsync(ct);
-        return SettlementMap.ToDto(s, _pay);
-    }
+    public Task<SettlementDto> Handle(PaySettlementCommand request, CancellationToken ct) => throw new DomainException("Đã tắt xác nhận giả lập. Ghi nhận giao dịch ngân hàng thật với transactionId hoặc dùng webhook ký HMAC.");
 }

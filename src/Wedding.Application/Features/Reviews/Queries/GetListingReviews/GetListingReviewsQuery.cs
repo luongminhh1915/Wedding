@@ -41,6 +41,7 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
         var reviews = await query
             .OrderByDescending(r => r.IsVerifiedBuyer) // Ưu tiên hiển thị Verified Buyer lên trước
             .ThenByDescending(r => r.CreatedAt)
+            .Take(100)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -61,7 +62,9 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
             Status: r.Status.ToString(),
             VendorReply: r.VendorReply,
             VendorRepliedAt: r.VendorRepliedAt,
-            CreatedAt: r.CreatedAt
+            CreatedAt: r.CreatedAt,
+            QualityRating: r.QualityRating, ServiceRating: r.ServiceRating, PunctualityRating: r.PunctualityRating, ValueRating: r.ValueRating, AverageRating: r.AverageRating,
+            ModerationFlag: null, ModerationDeadline: r.CreatedAt.AddHours(24)
         )).ToList();
     }
 }

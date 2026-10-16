@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "y9Rg10dn1Tw=",
+  "dgSpecHash": "SmLqsd8l22Q=",
   "success": true,
-  "projectFilePath": "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.31\\microsoft.netcore.app.ref.8.0.31.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.31\\microsoft.windowsdesktop.app.ref.8.0.31.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.31\\microsoft.aspnetcore.app.ref.8.0.31.nupkg.sha512"
+  ],
   "logs": []
 }

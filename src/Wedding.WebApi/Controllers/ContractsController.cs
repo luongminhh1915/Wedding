@@ -9,6 +9,9 @@ using Wedding.Application.Features.Contracts.Commands.RequestAdvancePayment;
 using Wedding.Application.Features.Contracts.Queries.GetContractDetail;
 using Wedding.Application.Features.Contracts.Queries.GetCustomerContracts;
 using Wedding.Application.Features.Contracts.Queries.GetVendorContracts;
+using Wedding.Application.Features.Contracts;
+using Wedding.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Wedding.WebApi.Controllers;
 
@@ -18,10 +21,14 @@ namespace Wedding.WebApi.Controllers;
 public class ContractsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _user;
+    private readonly IAuditLogger _audit;
 
-    public ContractsController(IMediator mediator)
+    public ContractsController(IMediator mediator, IApplicationDbContext db, ICurrentUserService user, IAuditLogger audit)
     {
         _mediator = mediator;
+        _db = db; _user = user; _audit = audit;
     }
 
     /// <summary>
@@ -116,6 +123,22 @@ public class ContractsController : ControllerBase
             request.Note
         ));
         return Ok(result);
+    }
+    public record RevisionBody(decimal ContractValue, decimal DepositAmount, string? ContractImageUrl, DateTime? WeddingDate, string? CancellationPolicy);
+    [HttpPost("{id:guid}/revise")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> Revise(Guid id, RevisionBody body, CancellationToken ct)
+    {
+        var contract = await _db.BookingContracts.Include(c => c.Vendor).FirstOrDefaultAsync(c => c.Id == id && c.Vendor.UserId == _user.UserId, ct);
+        if (contract == null) return NotFound(); contract.Revise(body.ContractValue, body.DepositAmount, body.ContractImageUrl, body.WeddingDate, body.CancellationPolicy); await _audit.LogAsync("Contract.Revised", "BookingContract", id.ToString(), new { contract.RevisionCount }); await _db.SaveChangesAsync(ct); return Ok();
+    }
+    public record CancelFinancialBody(decimal RetainedDeposit, string Reason);
+    [HttpPost("{id:guid}/cancel-financial")]
+    [Authorize(Roles = "Finance,SuperAdmin")]
+    public async Task<IActionResult> CancelFinancial(Guid id, CancelFinancialBody body, CancellationToken ct)
+    {
+        var contract = await _db.BookingContracts.FirstOrDefaultAsync(c => c.Id == id, ct); if (contract == null) return NotFound();
+        await FinancialContractService.CancelAsync(_db, contract, body.RetainedDeposit, body.Reason, ct); await _audit.LogAsync("Contract.CancelledFinancially", "BookingContract", id.ToString(), new { body.RetainedDeposit, body.Reason }); await _db.SaveChangesAsync(ct); return Ok();
     }
 }
 

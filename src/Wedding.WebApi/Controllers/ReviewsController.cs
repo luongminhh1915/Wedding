@@ -24,7 +24,7 @@ public class ReviewsController : ControllerBase
     /// Nếu có BookingContractId ở trạng thái Completed sẽ tự động được gắn nhãn Verified Buyer (BR-009).
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SubmitReview([FromBody] SubmitReviewCommand command)
     {
         var result = await _mediator.Send(command);

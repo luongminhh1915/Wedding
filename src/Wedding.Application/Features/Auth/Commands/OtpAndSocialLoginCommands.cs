@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -7,136 +8,97 @@ using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
 
-namespace Wedding.Application.Features.Auth.Commands;
-
-/// <summary>P1 – Yêu cầu mã OTP qua SĐT hoặc email. Kênh gửi đang mock: mã được trả về trong DevCode.</summary>
 public record RequestOtpCommand(string Target) : IRequest<RequestOtpResponseDto>;
-public record RequestOtpResponseDto(bool Sent, int ExpiresInSeconds, string? DevCode);
-
+public record RequestOtpResponseDto(bool Sent, int ExpiresInSeconds);
 public class RequestOtpCommandValidator : AbstractValidator<RequestOtpCommand>
 {
-    public RequestOtpCommandValidator()
-    {
-        RuleFor(x => x.Target).NotEmpty().WithMessage("Vui lòng nhập số điện thoại hoặc email.")
-            .Must(OtpTarget.IsValid).WithMessage("Số điện thoại hoặc email không hợp lệ.");
-    }
+    public RequestOtpCommandValidator() => RuleFor(x => x.Target).NotEmpty().Must(OtpTarget.IsValid).WithMessage("Vui lòng nhập email hợp lệ.");
 }
-
 internal static class OtpTarget
 {
-    public static string Normalize(string t) => t.Trim().ToLowerInvariant().Replace(" ", "");
-    public static bool IsEmail(string t) => t.Contains('@');
-    public static bool IsValid(string t)
-    {
-        var n = Normalize(t ?? "");
-        return IsEmail(n) ? n.Length >= 5 : System.Text.RegularExpressions.Regex.IsMatch(n, "^(0|\\+84)[0-9]{9}$");
-    }
+    public static string Normalize(string? target) => (target ?? "").Trim().ToLowerInvariant();
+    public static bool IsValid(string? target) => Normalize(target).Length <= 150 && MailAddress.TryCreate(Normalize(target), out var mail) && mail.Address == Normalize(target) && mail.Host.Contains('.');
 }
-
-public class RequestOtpCommandHandler : IRequestHandler<RequestOtpCommand, RequestOtpResponseDto>
+public class RequestOtpCommandHandler(IApplicationDbContext context, IOtpDelivery delivery) : IRequestHandler<RequestOtpCommand, RequestOtpResponseDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly INotificationSender _sender;
-
-    public RequestOtpCommandHandler(IApplicationDbContext context, INotificationSender sender)
-    {
-        _context = context;
-        _sender = sender;
-    }
-
     public async Task<RequestOtpResponseDto> Handle(RequestOtpCommand request, CancellationToken ct)
     {
+        if (!delivery.EmailEnabled) throw new DomainException("OTP email chưa được cấu hình. Vui lòng đăng nhập bằng mật khẩu.");
         var target = OtpTarget.Normalize(request.Target);
-        var since = DateTime.UtcNow.AddSeconds(-60);
-        if (await _context.OtpCodes.AnyAsync(o => o.Target == target && o.CreatedAt > since, ct))
-            throw new DomainException("Vui lòng đợi 60 giây trước khi gửi lại mã.");
-
-        var otp = OtpCode.Create(target);
-        _context.OtpCodes.Add(otp);
-        await _context.SaveChangesAsync(ct);
-        await _sender.SendAsync(OtpTarget.IsEmail(target) ? "Email" : "SMS", target, $"Wedding Match: ma OTP cua ban la {otp.Code}", ct);
-        return new RequestOtpResponseDto(true, 300, otp.Code);
+        if (!OtpTarget.IsValid(target)) throw new DomainException("Vui lòng nhập email hợp lệ. OTP SMS chưa được cấu hình.");
+        var pending = await context.ExecuteSerializableAsync(async token =>
+        {
+            var since = DateTime.UtcNow.AddMinutes(-1);
+            if (await context.OtpCodes.AnyAsync(o => o.Target == target && o.CreatedAt > since, token)) throw new DomainException("Vui lòng đợi 60 giây trước khi gửi lại mã.");
+            var hour = DateTime.UtcNow.AddHours(-1);
+            if (await context.OtpCodes.CountAsync(o => o.Target == target && o.CreatedAt > hour, token) >= 8) throw new DomainException("Bạn đã yêu cầu quá nhiều mã. Vui lòng thử lại sau.");
+            var otp = OtpCode.Create(target, out var code); context.OtpCodes.Add(otp);
+            await context.SaveChangesAsync(token);
+            return (Id: otp.Id, Code: code);
+        }, ct);
+        // SMTP is deliberately outside the database transaction/global inventory lock.
+        try { await delivery.SendEmailAsync(target, pending.Code, ct); }
+        catch
+        {
+            // Invalidate only this generation, never a later OTP requested by the same account.
+            var failed = await context.OtpCodes.FirstOrDefaultAsync(o => o.Id == pending.Id, CancellationToken.None);
+            if (failed != null && !failed.IsUsed)
+            {
+                failed.InvalidateDelivery();
+                try { await context.SaveChangesAsync(CancellationToken.None); }
+                catch (DbUpdateConcurrencyException) { /* Already consumed by a concurrent successful verification. */ }
+            }
+            throw;
+        }
+        return new RequestOtpResponseDto(true, 300);
     }
 }
-
 public record VerifyOtpCommand(string Target, string Code, string? FullName) : IRequest<AuthResponseDto>;
-
-public class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand, AuthResponseDto>
+public class VerifyOtpCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt) : IRequestHandler<VerifyOtpCommand, AuthResponseDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IPasswordHasher _hasher;
-    private readonly IJwtProvider _jwt;
-
-    public VerifyOtpCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt)
-    {
-        _context = context;
-        _hasher = hasher;
-        _jwt = jwt;
-    }
-
     public async Task<AuthResponseDto> Handle(VerifyOtpCommand request, CancellationToken ct)
     {
         var target = OtpTarget.Normalize(request.Target);
-        var otp = (await _context.OtpCodes.Where(o => o.Target == target && !o.IsUsed).ToListAsync(ct))
-            .OrderByDescending(o => o.CreatedAt).FirstOrDefault()
-            ?? throw new DomainException("Bạn chưa yêu cầu mã OTP hoặc mã đã hết hạn.");
+        var otp = await context.OtpCodes.Where(o => o.Target == target).OrderByDescending(o => o.CreatedAt).FirstOrDefaultAsync(ct)
+            ?? throw new DomainException("Bạn chưa yêu cầu mã OTP.");
         try { otp.Verify(request.Code); }
-        finally { await _context.SaveChangesAsync(ct); }
-
-        var isEmail = OtpTarget.IsEmail(target);
-        var user = await _context.Users.Include(u => u.Vendor)
-            .FirstOrDefaultAsync(u => isEmail ? u.Email == target : u.PhoneNumber == target, ct);
+        finally
+        {
+            try { await context.SaveChangesAsync(ct); }
+            catch (DbUpdateConcurrencyException) { throw new DomainException("Mã OTP đã được sử dụng. Vui lòng gửi lại mã."); }
+        }
+        var user = await context.Users.Include(u => u.Vendor).FirstOrDefaultAsync(u => u.Email == target, ct);
         if (user == null)
         {
-            var name = string.IsNullOrWhiteSpace(request.FullName) ? "Cặp đôi mới" : request.FullName!;
-            user = User.Create(name, isEmail ? target : $"{target}@phone.weddingmatch.vn", isEmail ? "chua-cap-nhat" : target,
-                _hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
-            _context.Users.Add(user);
+            user = User.Create(string.IsNullOrWhiteSpace(request.FullName) ? "Cặp đôi mới" : request.FullName, target, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
+            context.Users.Add(user);
         }
-        return await SocialLogin.IssueAsync(_context, _jwt, user, ct);
+        if (user.Role != UserRole.Customer) throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
+        return await SocialLogin.IssueAsync(context, jwt, user, ct);
     }
 }
-
-/// <summary>P1 – Đăng nhập Google (mock: client gửi email/tên đã xác thực; bản thật sẽ verify id_token ở P7).</summary>
-public record GoogleLoginCommand(string Email, string FullName, string? AvatarUrl) : IRequest<AuthResponseDto>;
-
-public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, AuthResponseDto>
+public record GoogleLoginCommand(string IdToken) : IRequest<AuthResponseDto>;
+public class GoogleLoginCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt, IGoogleIdentityVerifier google) : IRequestHandler<GoogleLoginCommand, AuthResponseDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IPasswordHasher _hasher;
-    private readonly IJwtProvider _jwt;
-
-    public GoogleLoginCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt)
-    {
-        _context = context;
-        _hasher = hasher;
-        _jwt = jwt;
-    }
-
     public async Task<AuthResponseDto> Handle(GoogleLoginCommand request, CancellationToken ct)
     {
-        if (!OtpTarget.IsEmail(request.Email ?? "")) throw new DomainException("Email Google không hợp lệ.");
-        var email = request.Email!.Trim().ToLowerInvariant();
-        var user = await _context.Users.Include(u => u.Vendor).FirstOrDefaultAsync(u => u.Email == email, ct);
+        var identity = await google.VerifyAsync(request.IdToken, ct);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.GoogleSubject == identity.Subject, ct);
         if (user == null)
         {
-            user = User.Create(string.IsNullOrWhiteSpace(request.FullName) ? email : request.FullName, email, "chua-cap-nhat",
-                _hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
-            user.UpdateProfile(user.FullName, request.AvatarUrl);
-            _context.Users.Add(user);
+            if (await context.Users.AnyAsync(u => u.Email == identity.Email, ct)) throw new DomainException("Email đã có tài khoản. Đăng nhập bằng mật khẩu/OTP rồi liên kết Google.");
+            user = User.Create(identity.Name, identity.Email, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
+            user.LinkGoogle(identity.Subject); user.UpdateProfile(identity.Name, identity.Picture); context.Users.Add(user);
         }
-        return await SocialLogin.IssueAsync(_context, _jwt, user, ct);
+        return await SocialLogin.IssueAsync(context, jwt, user, ct);
     }
 }
-
 internal static class SocialLogin
 {
     public static async Task<AuthResponseDto> IssueAsync(IApplicationDbContext context, IJwtProvider jwt, User user, CancellationToken ct)
     {
-        if (!user.IsActive) throw new DomainException("Tài khoản của bạn đang bị tạm khóa. Vui lòng liên hệ hỗ trợ.");
-        user.RecordLogin();
-        await context.SaveChangesAsync(ct);
-        return new AuthResponseDto(jwt.GenerateToken(user), new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber,
-            user.Role.ToString(), user.AvatarUrl, user.Vendor?.Id, user.Vendor?.BrandName));
+        if (!user.IsActive) throw new DomainException("Tài khoản đang bị khóa. Vui lòng liên hệ hỗ trợ.");
+        user.RecordLogin(); await context.SaveChangesAsync(ct);
+        return new AuthResponseDto(jwt.GenerateToken(user), new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber, user.Role.ToString(), user.AvatarUrl, user.Vendor?.Id, user.Vendor?.BrandName));
     }
 }

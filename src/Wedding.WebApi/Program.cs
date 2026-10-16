@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Wedding.Application;
 using Wedding.Infrastructure;
 using Wedding.WebApi.Hubs;
@@ -15,6 +18,18 @@ builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 // 2. Cấu hình JWT Authentication
 var secretKey = builder.Configuration["JwtSettings:Secret"] 
     ?? "WeddingPlatformSuperSecretKey2026CleanArchitectureJWTSecretLongEnough123456!";
+if (!builder.Environment.IsDevelopment() && (secretKey.Length < 32 || secretKey.StartsWith("WeddingPlatformSuperSecret", StringComparison.Ordinal)))
+    throw new InvalidOperationException("Configure a unique JwtSettings__Secret (32+ characters) before deploying.");
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -43,6 +58,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var id = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var role = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (!Guid.TryParse(id, out var userId)) { context.Fail("Invalid user"); return; }
+                var db = context.HttpContext.RequestServices.GetRequiredService<Wedding.Application.Common.Interfaces.IApplicationDbContext>();
+                var user = await db.Users.AsNoTracking().Where(u => u.Id == userId && u.IsActive).Select(u => new { u.Role }).FirstOrDefaultAsync(context.HttpContext.RequestAborted);
+                if (user == null || user.Role.ToString() != role) context.Fail("Account inactive or role changed");
             }
         };
     });
@@ -94,7 +118,8 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+        var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+        policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -136,7 +161,8 @@ app.Use(async (context, next) =>
     {
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { success = false, message = "Đã xảy ra lỗi máy chủ nội bộ.", detail = ex.Message });
+        app.Logger.LogError(ex, "Unhandled request error {TraceId}", context.TraceIdentifier);
+        await context.Response.WriteAsJsonAsync(new { success = false, message = "Đã xảy ra lỗi máy chủ nội bộ.", traceId = context.TraceIdentifier });
     }
 });
 
@@ -150,9 +176,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 // Khởi tạo schema. Dữ liệu mẫu chỉ được seed khi Database:SeedDemoData=true
 // (mặc định chỉ trong appsettings.Development.json) và database hoàn toàn trống.

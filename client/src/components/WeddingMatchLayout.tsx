@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   NavLink,
@@ -22,6 +22,11 @@ import {
 import { useAuthStore } from "../store/authStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { dashboardPath } from "../utils/navigation";
+import AuthModal from "../features/auth/components/AuthModal";
+import NotificationBell from "./NotificationBell";
+import ComboCartLink from "./ComboCartLink";
+import "../styles/combo-builder.css";
+import { useIntentStore } from "../store/intentStore";
 
 export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
   return (
@@ -39,6 +44,7 @@ export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
 }
 
 export function WeddingMatchHeader() {
+  const [authOpen, setAuthOpen] = useState(false);
   const { user, token, logout } = useAuthStore();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -90,7 +96,7 @@ export function WeddingMatchHeader() {
               ? "active"
               : ""
           }
-          to="/customer/dashboard?tab=invitations"
+          to="/invitation"
         >
           Thiệp mời <ChevronDown size={13} />
         </Link>
@@ -99,8 +105,10 @@ export function WeddingMatchHeader() {
         <NavLink to="/cam-nang">Cẩm nang</NavLink>
       </nav>
       <div className="wm-header-actions">
+        <ComboCartLink />
         {token && user ? (
           <>
+            <NotificationBell />
             <Link className="wm-account" to={dashboardPath(user)}>
               <span>{user.fullName.slice(0, 1)}</span>
               <span className="account-name">
@@ -120,11 +128,12 @@ export function WeddingMatchHeader() {
             </button>
           </>
         ) : (
-          <Link to="/login" className="wm-login">
+          <button type="button" className="wm-login" onClick={() => { useIntentStore.getState().remember(location.pathname + location.search); setAuthOpen(true); }}>
             Đăng nhập
-          </Link>
+          </button>
         )}
       </div>
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </header>
   );
 }

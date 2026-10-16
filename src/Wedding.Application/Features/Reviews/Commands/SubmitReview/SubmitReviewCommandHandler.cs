@@ -10,95 +10,28 @@ namespace Wedding.Application.Features.Reviews.Commands.SubmitReview;
 
 public class SubmitReviewCommandHandler : IRequestHandler<SubmitReviewCommand, ReviewDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUserService _currentUserService;
-
-    public SubmitReviewCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
+    private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _user;
+    public SubmitReviewCommandHandler(IApplicationDbContext db, ICurrentUserService user) { _db = db; _user = user; }
+    public Task<ReviewDto> Handle(SubmitReviewCommand r, CancellationToken ct) => _db.ExecuteSerializableAsync(token => SubmitAsync(r, token), ct);
+    private async Task<ReviewDto> SubmitAsync(SubmitReviewCommand r, CancellationToken ct)
     {
-        _context = context;
-        _currentUserService = currentUserService;
-    }
-
-    public async Task<ReviewDto> Handle(SubmitReviewCommand request, CancellationToken cancellationToken)
-    {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để gửi đánh giá.");
-
-        var customer = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
-            ?? throw new DomainException("Tài khoản người dùng không tồn tại.");
-
-        var listing = await _context.Listings
-            .Include(l => l.Vendor)
-            .FirstOrDefaultAsync(l => l.Id == request.ListingId, cancellationToken)
-            ?? throw new DomainException("Dịch vụ cưới không tồn tại.");
-
-        var isVerifiedBuyer = false;
-        Guid? validContractId = null;
-        string? contractCode = null;
-
-        // BR-009: Tiêu chuẩn đánh giá xác thực (Verified Buyer Review)
-        // Chỉ những khách hàng đã ký hợp đồng và hoàn tất dịch vụ cưới (Completed) mới được gắn nhãn [Verified Buyer]
-        if (request.BookingContractId.HasValue && request.BookingContractId.Value != Guid.Empty)
+        var uid = _user.UserId ?? throw new DomainException("Bạn cần đăng nhập.");
+        var customer = await _db.Users.FirstOrDefaultAsync(u => u.Id == uid && u.Role == UserRole.Customer, ct) ?? throw new DomainException("Chỉ khách hàng được gửi đánh giá.");
+        var listing = await _db.Listings.Include(l => l.Vendor).FirstOrDefaultAsync(l => l.Id == r.ListingId, ct) ?? throw new NotFoundException("Không tìm thấy dịch vụ.");
+        if (await _db.Reviews.AnyAsync(x => x.CustomerId == uid && x.ListingId == listing.Id, ct)) throw new DomainException("Mỗi khách chỉ có một đánh giá cho dịch vụ này.");
+        var contracts = await _db.BookingContracts.Include(c => c.Lead).Where(c => c.CustomerId == uid && c.VendorId == listing.VendorId && c.Lead.ListingId == listing.Id).ToListAsync(ct);
+        if (contracts.Any(c => c.Status == ContractStatus.Disputed)) throw new DomainException("Không được gửi đánh giá khi hợp đồng dịch vụ đang tranh chấp, kể cả đánh giá không gắn mã HĐ.");
+        BookingContract? contract;
+        if (r.BookingContractId.HasValue)
         {
-            var contract = await _context.BookingContracts
-                .FirstOrDefaultAsync(c => c.Id == request.BookingContractId.Value && c.CustomerId == userId, cancellationToken);
-
-            if (contract != null && contract.Status == ContractStatus.Completed)
-            {
-                isVerifiedBuyer = true;
-                validContractId = contract.Id;
-                contractCode = contract.ContractCode;
-            }
+            contract = contracts.FirstOrDefault(c => c.Id == r.BookingContractId);
+            if (contract == null || !ReviewRules.IsEligible(contract, DateTime.UtcNow)) throw new DomainException("Hợp đồng phải đúng dịch vụ/NCC và đã hoàn tất hoặc qua ngày cưới 3 ngày, không có tranh chấp.");
         }
-        else
-        {
-            // Kiểm tra xem khách có hợp đồng Completed nào với Vendor này không
-            var existingContract = await _context.BookingContracts
-                .Where(c => c.CustomerId == userId && c.VendorId == listing.VendorId && c.Status == ContractStatus.Completed)
-                .OrderByDescending(c => c.CreatedAt)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (existingContract != null)
-            {
-                isVerifiedBuyer = true;
-                validContractId = existingContract.Id;
-                contractCode = existingContract.ContractCode;
-            }
-        }
-
-        var review = Review.Create(
-            contractId: validContractId,
-            listingId: listing.Id,
-            customerId: customer.Id,
-            vendorId: listing.VendorId,
-            rating: request.Rating,
-            content: request.Content,
-            photosJson: request.PhotosJson,
-            isVerifiedBuyer: isVerifiedBuyer
-        );
-
-        _context.Reviews.Add(review);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return new ReviewDto(
-            Id: review.Id,
-            BookingContractId: review.BookingContractId,
-            ContractCode: contractCode,
-            ListingId: listing.Id,
-            ListingTitle: listing.Title,
-            CustomerId: customer.Id,
-            CustomerName: customer.FullName,
-            VendorId: listing.VendorId,
-            VendorBrandName: listing.Vendor.BrandName,
-            Rating: review.Rating,
-            Content: review.Content,
-            PhotosJson: review.PhotosJson,
-            IsVerifiedBuyer: review.IsVerifiedBuyer,
-            Status: review.Status.ToString(),
-            VendorReply: review.VendorReply,
-            VendorRepliedAt: review.VendorRepliedAt,
-            CreatedAt: review.CreatedAt
-        );
+        else contract = contracts.Where(c => ReviewRules.IsEligible(c, DateTime.UtcNow)).OrderByDescending(c => c.CreatedAt).FirstOrDefault();
+        if (contract != null && await _db.Reviews.AnyAsync(x => x.BookingContractId == contract.Id, ct)) throw new DomainException("Hợp đồng đã có đánh giá.");
+        var review = Review.Create(contract?.Id, listing.Id, uid, listing.VendorId, r.Rating, r.Content, r.PhotosJson, contract != null, r.QualityRating, r.ServiceRating, r.PunctualityRating, r.ValueRating);
+        _db.Reviews.Add(review); await _db.SaveChangesAsync(ct);
+        return ReviewRules.Dto(review) with { CustomerName = customer.FullName, ListingTitle = listing.Title, VendorBrandName = listing.Vendor.BrandName, ContractCode = contract?.ContractCode };
     }
 }

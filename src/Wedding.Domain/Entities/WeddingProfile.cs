@@ -14,6 +14,11 @@ public class WeddingProfile : BaseEntity
     public int GuestCount { get; private set; }
     public string Style { get; private set; } = "Classic";
     public string? PartnerEmail { get; private set; }
+    public DateTime? EngagementDate { get; private set; }
+    public string PlanningRole { get; private set; } = "Couple";
+    public string EventsJson { get; private set; } = "[]";
+    public string PrioritiesJson { get; private set; } = "[]";
+    public DateTime? OnboardingCompletedAt { get; private set; }
 
     public User Customer { get; private set; } = null!;
 
@@ -29,4 +34,14 @@ public class WeddingProfile : BaseEntity
         PartnerEmail = partnerEmail?.Trim().ToLowerInvariant();
         SetUpdated();
     }
+
+    public void Configure(DateTime? engagementDate, string? planningRole, string eventsJson, string prioritiesJson)
+    {
+        EngagementDate = engagementDate;
+        PlanningRole = planningRole ?? "Couple";
+        EventsJson = eventsJson;
+        PrioritiesJson = prioritiesJson;
+        SetUpdated();
+    }
+    public void CompleteOnboarding() { OnboardingCompletedAt ??= DateTime.UtcNow; SetUpdated(); }
 }

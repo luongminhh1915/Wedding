@@ -3,8 +3,9 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
 import { QuickLogin } from "../../journey/planner/QuickLogin";
+import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
 
-export default function LoginForm() {
+export default function LoginForm({ embedded = false, onComplete }: { embedded?: boolean; onComplete?: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -18,23 +19,9 @@ export default function LoginForm() {
 
     try {
       const res = await login({ email, password });
-      // Điều hướng theo phân quyền RBAC
-      if (res.user.role === "VendorOwner") {
-        navigate("/vendor/dashboard");
-      } else if (
-        ["Moderator", "Finance", "CustomerCare", "SuperAdmin"].includes(
-          res.user.role,
-        )
-      ) {
-        navigate("/admin/dashboard");
-      } else {
-        const returnTo = (location.state as { from?: string } | null)?.from;
-        navigate(
-          returnTo?.startsWith("/customer/") || returnTo?.startsWith("/planner")
-            ? returnTo
-            : "/customer/dashboard",
-        );
-      }
+      onComplete?.();
+      const returnTo = safeReturnPath((location.state as { from?: string } | null)?.from) ?? useIntentStore.getState().returnTo;
+      navigate(res.user.role === "VendorOwner" ? "/vendor/dashboard" : res.user.role !== "Customer" ? "/admin/dashboard" : "/auth/continue", { replace: true, state: { from: returnTo } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
@@ -45,8 +32,8 @@ export default function LoginForm() {
   };
 
   return (
-    <main className="auth-page">
-      <div className="auth-story">
+    <main className={embedded ? "auth-modal-content" : "auth-page"}>
+      <div className="auth-story" hidden={embedded}>
         <span className="wm-eyebrow">CHÀO MỪNG ĐẾN VỚI WEDDING MATCH</span>
         <h1>
           Mọi thứ cho
@@ -130,7 +117,7 @@ export default function LoginForm() {
             )}
           </button>
         </form>
-        <QuickLogin />
+        <QuickLogin onComplete={onComplete} />
 
         {/* Quick Test Accounts Box */}
         {import.meta.env.DEV && (

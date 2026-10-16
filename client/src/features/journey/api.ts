@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosClient from "../../services/axiosClient";
 import type { AuthResponse } from "../../types/auth";
+import { useAuthStore } from "../../store/authStore";
 
 const get = async <T,>(url: string) => (await axiosClient.get<T>(url)).data;
 const post = async <T,>(url: string, body?: unknown) => (await axiosClient.post<T>(url, body ?? {})).data;
@@ -16,15 +17,16 @@ export function apiError(e: unknown, fallback = "Đã có lỗi xảy ra, vui l�
 
 // ---------- P1: Auth OTP / Google ----------
 export const authApi = {
-  requestOtp: (target: string) => post<{ sent: boolean; expiresInSeconds: number; devCode?: string }>("/api/auth/otp/request", { target }),
+  requestOtp: (target: string) => post<{ sent: boolean; expiresInSeconds: number }>("/api/auth/otp/request", { target }),
   verifyOtp: (target: string, code: string, fullName?: string) => post<AuthResponse>("/api/auth/otp/verify", { target, code, fullName }),
-  google: (email: string, fullName: string) => post<AuthResponse>("/api/auth/google", { email, fullName }),
+  google: (idToken: string) => post<AuthResponse>("/api/auth/google", { idToken }),
 };
 
 // ---------- P1: Planner ----------
 export interface WeddingProfile {
   id: string; groomName: string; brideName: string; weddingDate?: string | null; city: string;
   totalBudget: number; guestCount: number; style: string; partnerEmail?: string | null; daysLeft?: number | null;
+  engagementDate?: string | null; planningRole?: string; events?: string[]; priorities?: string[]; onboardingCompletedAt?: string | null;
 }
 export interface PlannerOverview {
   profile: WeddingProfile | null; checklistTotal: number; checklistDone: number; budgetPlanned: number; budgetActual: number;
@@ -32,7 +34,10 @@ export interface PlannerOverview {
 }
 export type SaveProfileInput = Omit<WeddingProfile, "id" | "daysLeft"> & { generatePlan: boolean };
 
-export const usePlannerOverview = () => useQuery({ queryKey: ["planner-overview"], queryFn: () => get<PlannerOverview>("/api/planner/overview") });
+export function usePlannerOverview() {
+  const { user, token } = useAuthStore();
+  return useQuery({ queryKey: ["planner-overview", user?.id], enabled: !!token && user?.role === "Customer", queryFn: () => get<PlannerOverview>("/api/planner/overview") });
+}
 export function useSaveProfile() {
   const qc = useQueryClient();
   return useMutation({
@@ -163,7 +168,7 @@ export interface Verification { id: string; vendorId: string; vendorName: string
 export interface Dispute { id: string; code: string; contractId: string; contractCode: string; openedByRole: string; reason: string; evidenceUrl?: string; status: string; resolution?: string; slaDeadline: string; createdAt: string; resolvedAt?: string | null; slaBreached: boolean }
 export interface AdminKpi { customers: number; vendors: number; verifiedVendors: number; pendingVerifications: number; leadsThisMonth: number; leadsSlaBreached: number; contractsConfirmed: number; gmv: number; commissionPending: number; commissionPaid: number; openDisputes: number; comboOrders: number; upcomingAppointments: number; leadToContractRate: number }
 export interface AuditLog { id: string; createdAt: string; actorId?: string; actorRole?: string; action: string; entityType: string; entityId?: string; dataJson?: string }
-export interface Article { id: string; title: string; slug: string; excerpt: string; content: string; thumbnailUrl?: string; category: string; isPublished: boolean; publishedAt?: string; viewCount: number }
+export interface Article { id: string; title: string; slug: string; excerpt: string; content: string; thumbnailUrl?: string; category: string; isPublished: boolean; publishedAt?: string; viewCount: number; listingIds?: string[] }
 
 export const useMyVerifications = () => useQuery({ queryKey: ["my-verifications"], queryFn: () => get<Verification[]>("/api/verifications/my") });
 export const useVerifications = () => useQuery({ queryKey: ["verifications"], queryFn: () => get<Verification[]>("/api/verifications") });
@@ -184,7 +189,7 @@ export function useOpenDispute() {
 export function useResolveDispute() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...b }: { id: string; inFavorOfCustomer: boolean; cancelContract: boolean; resolution: string }) => post<Dispute>(`/api/disputes/${id}/resolve`, { id, ...b }),
+    mutationFn: ({ id, ...b }: { id: string; inFavorOfCustomer: boolean; cancelContract: boolean; resolution: string; retainedDeposit?: number }) => post<Dispute>(`/api/disputes/${id}/resolve`, { id, ...b }),
     onSuccess: () => qc.invalidateQueries(),
   });
 }

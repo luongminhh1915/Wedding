@@ -17,7 +17,15 @@ public record ReviewDto(
     string Status,        // Pending, Approved, Rejected
     string? VendorReply,
     DateTime? VendorRepliedAt,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int? QualityRating = null,
+    int? ServiceRating = null,
+    int? PunctualityRating = null,
+    int? ValueRating = null,
+    decimal AverageRating = 0,
+    string? ModerationFlag = null,
+    DateTime? ModerationDeadline = null,
+    string? RejectionReason = null
 );
 
 public record SubmitReviewCommand(
@@ -25,7 +33,11 @@ public record SubmitReviewCommand(
     Guid ListingId,
     int Rating,
     string Content,
-    string? PhotosJson = null
+    string? PhotosJson = null,
+    int? QualityRating = null,
+    int? ServiceRating = null,
+    int? PunctualityRating = null,
+    int? ValueRating = null
 ) : MediatR.IRequest<ReviewDto>;
 
 public record VendorReplyReviewCommand(

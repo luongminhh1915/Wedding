@@ -9,11 +9,15 @@ import {
   Loader2,
   Sparkles,
   X,
+  Pencil,
 } from "lucide-react";
 import { useWeddingBudget } from "../../hooks/useWeddingTools";
 import type { SaveBudgetItemPayload } from "../../../../types/wedding-tools.types";
+import { usePlannerAction } from "../../../journey/planner/plannerApi";
+import { apiError } from "../../../journey/api";
 
 export function WeddingBudgetPlanner() {
+  const action = usePlannerAction();
   const {
     budget,
     isLoading,
@@ -61,10 +65,10 @@ export function WeddingBudgetPlanner() {
         actualCost: 0,
         notes: "",
       });
-      setSaveSuccessMsg("Đã thêm hạng mục chi phí mới thành công!");
+      setSaveSuccessMsg("Đã lưu hạng mục chi phí thành công!");
       setTimeout(() => setSaveSuccessMsg(null), 4000);
-    } catch {
-      alert("Không thể thêm mục chi phí.");
+    } catch (error) {
+      alert(apiError(error, "Không thể lưu mục chi phí."));
     }
   };
 
@@ -129,7 +133,7 @@ export function WeddingBudgetPlanner() {
             <RotateCw className="w-4 h-4" />
           </button>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setNewItemForm({ itemName: "", plannedCost: 0, actualCost: 0, owner: "Shared" }); setIsAddModalOpen(true); }}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center gap-1.5 transition"
           >
             <Plus className="w-4 h-4" />
@@ -176,6 +180,8 @@ export function WeddingBudgetPlanner() {
               />
               <span className="text-sm font-bold text-slate-600">đ</span>
             </div>
+            <button className="wm-button small mt-3" disabled={action.isPending || customTotalBudget === null} onClick={() => action.mutate({ path: "budget", method: "put", data: { totalBudget: totalPlanned } }, { onSuccess: () => { setCustomTotalBudget(null); setSaveSuccessMsg("Đã lưu tổng ngân sách vào hồ sơ cưới."); } })}>Lưu tổng ngân sách</button>
+            {action.isError && <p role="alert" className="text-red-700 text-xs mt-2">{apiError(action.error)}</p>}
 
             {/* Spent and Remaining */}
             <div className="mt-5 space-y-3">
@@ -319,7 +325,7 @@ export function WeddingBudgetPlanner() {
             </p>
           </div>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setNewItemForm({ itemName: "", plannedCost: 0, actualCost: 0, owner: "Shared" }); setIsAddModalOpen(true); }}
             className="px-3.5 py-1.5 rounded-xl border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-50 transition flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -350,6 +356,7 @@ export function WeddingBudgetPlanner() {
                   <tr key={item.id} className="hover:bg-slate-50/50 transition">
                     <td className="py-3.5 px-5 font-bold text-slate-900">
                       {item.itemName}
+                      <small className="block font-normal text-slate-500">{item.owner === "Bride" ? "Quỹ cô dâu" : item.owner === "Groom" ? "Quỹ chú rể" : "Quỹ chung"}{item.contractId ? " · Liên kết HĐ" : ""}</small>
                     </td>
                     <td className="py-3.5 px-5 text-xs text-slate-600">
                       {item.notes || "—"}
@@ -372,6 +379,7 @@ export function WeddingBudgetPlanner() {
                       )}
                     </td>
                     <td className="py-3.5 px-5 text-center">
+                      <button className="p-1 text-slate-500 mr-2" title="Sửa khoản chi" onClick={() => { setNewItemForm(item); setIsAddModalOpen(true); }}><Pencil className="w-4 h-4" /></button>
                       <button
                         onClick={() => handleDeleteItem(item.id)}
                         className="p-1 text-slate-400 hover:text-red-600 rounded transition"
@@ -394,7 +402,7 @@ export function WeddingBudgetPlanner() {
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900">
-                Thêm Khoản Chi Phí Mới
+                {newItemForm.id ? "Chỉnh Sửa Khoản Chi" : "Thêm Khoản Chi Phí Mới"}
               </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -405,6 +413,7 @@ export function WeddingBudgetPlanner() {
             </div>
 
             <form onSubmit={handleAddItem} className="space-y-4 my-4 text-xs">
+              <label className="block font-bold text-slate-700">Quỹ phụ trách<select className="block w-full border border-slate-300 rounded-xl p-2 mt-1" value={newItemForm.owner || "Shared"} onChange={e => setNewItemForm(f => ({ ...f, owner: e.target.value }))}><option value="Shared">Quỹ chung</option><option value="Bride">Cô dâu</option><option value="Groom">Chú rể</option></select></label>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
                   Tên Hạng Mục Chi Phí:
@@ -487,7 +496,7 @@ export function WeddingBudgetPlanner() {
                   disabled={isSaving}
                   className="px-5 py-2 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-500 transition disabled:opacity-50"
                 >
-                  {isSaving ? "Đang lưu..." : "Thêm Vào Dự Toán"}
+                  {isSaving ? "Đang lưu..." : newItemForm.id ? "Lưu thay đổi" : "Thêm Vào Dự Toán"}
                 </button>
               </div>
             </form>

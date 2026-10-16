@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
 
 export default function RegisterForm() {
   const [params] = useSearchParams();
@@ -54,12 +55,8 @@ export default function RegisterForm() {
         phoneNumber: custPhone,
         password: custPassword,
       });
-      const returnTo = (location.state as { from?: string } | null)?.from;
-      navigate(
-        returnTo?.startsWith("/customer/") || returnTo?.startsWith("/planner")
-          ? returnTo
-          : "/customer/dashboard",
-      );
+      const returnTo = safeReturnPath((location.state as { from?: string } | null)?.from) ?? useIntentStore.getState().returnTo;
+      navigate("/auth/continue", { replace: true, state: { from: returnTo } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setErrorMessage(

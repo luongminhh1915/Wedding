@@ -1,112 +1,62 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CalendarHeart, Sparkles } from "lucide-react";
-import { apiError, usePlannerOverview, useSaveProfile, type WeddingProfile } from "../api";
+import { apiError, usePlannerOverview } from "../api";
 import { ErrorText } from "../ui";
 import { vnd } from "../format";
+import { useMembers, useSaveExtendedProfile, type ExtendedProfile } from "./plannerApi";
+import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
 
 const CITIES = ["Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng", "Khác"];
-const STYLES = [
-  { id: "Classic", label: "Cổ điển", desc: "Trang nhã, tông trắng – vàng" },
-  { id: "Minimal", label: "Tối giản", desc: "Ấm cúng, tinh gọn" },
-  { id: "Garden", label: "Sân vườn", desc: "Ngoài trời, nhiều hoa" },
-  { id: "Luxury", label: "Sang trọng", desc: "Sảnh lớn, dịch vụ cao cấp" },
-];
+const STYLES = ["Classic", "Minimal", "Garden", "Luxury", "Vintage", "Boho"];
+const STYLE_NAMES = ["Cổ điển", "Tối giản", "Sân vườn", "Sang trọng", "Hoài cổ", "Boho"];
+const STEPS = ["Vai trò", "Hai bạn", "Ngày cưới", "Ăn hỏi", "Khu vực", "Quy mô", "Ngân sách", "Sự kiện", "Phong cách", "Ưu tiên"];
 const BUDGETS = [150_000_000, 300_000_000, 500_000_000, 800_000_000];
+const EVENTS = ["Lễ gia tiên", "Lễ ăn hỏi", "Lễ thành hôn", "Tiệc cưới", "Tiệc thân mật"];
+const PRIORITIES = ["Ẩm thực", "Ảnh & video", "Trang phục", "Trang trí", "Trải nghiệm khách mời", "Tiết kiệm"];
 
-/** P1 – Wizard 4 bước tạo hồ sơ cưới; backend sinh checklist 12 tháng + ngân sách mẫu. */
 export default function SetupWizard() {
-  const { data, isLoading } = usePlannerOverview();
-  if (isLoading) return <main className="wd wd-page"><p className="container muted">Đang tải hồ sơ...</p></main>;
-  return <WizardForm profile={data?.profile ?? null} />;
+  const overview = usePlannerOverview();
+  const location = useLocation();
+  useEffect(() => { const from = safeReturnPath((location.state as { from?: string } | null)?.from); if (from && from !== "/planner/setup") useIntentStore.getState().remember(from); }, [location.state]);
+  const members = useMembers();
+  if (overview.isLoading || members.isLoading) return <main className="wd wd-page"><p className="container muted">Đang tải hồ sơ...</p></main>;
+  if (overview.isError || members.isError) return <main className="wd wd-page"><div className="container card p-6" role="alert"><h1 className="serif text-2xl">Chưa tải được hồ sơ hiện có</h1><p className="text-sm muted my-3">Không khởi tạo hồ sơ trống khi dữ liệu chưa tải thành công.</p><button className="btn btn-primary" onClick={() => { void overview.refetch(); void members.refetch(); }}>Thử lại</button></div></main>;
+  return <WizardForm key={overview.data?.profile?.id ?? "new"} profile={overview.data?.profile ?? null} viewer={members.data?.myRole === "Viewer"} />;
 }
-
-function WizardForm({ profile: p }: { profile: WeddingProfile | null }) {
+function WizardForm({ profile: p, viewer }: { profile: ExtendedProfile | null; viewer: boolean }) {
   const navigate = useNavigate();
-  const save = useSaveProfile();
+  const save = useSaveExtendedProfile();
   const [step, setStep] = useState(0);
   const [f, setF] = useState(() => ({
-    groomName: p?.groomName ?? "", brideName: p?.brideName ?? "", weddingDate: p?.weddingDate?.slice(0, 10) ?? "",
-    city: p?.city || "Hồ Chí Minh", guestCount: p?.guestCount || 300, totalBudget: p?.totalBudget || 300_000_000,
-    style: p?.style || "Classic", partnerEmail: p?.partnerEmail ?? "",
+    planningRole: p?.planningRole || "Couple", groomName: p?.groomName ?? "", brideName: p?.brideName ?? "",
+    weddingDate: p?.weddingDate?.slice(0, 10) ?? "", engagementDate: p?.engagementDate?.slice(0, 10) ?? "",
+    city: p?.city || "Hồ Chí Minh", guestCount: p?.guestCount ?? 300, totalBudget: p?.totalBudget ?? 300_000_000,
+    style: p?.style || "Classic", partnerEmail: p?.partnerEmail ?? "", events: p?.events ?? ["Lễ gia tiên", "Tiệc cưới"], priorities: p?.priorities ?? [],
   }));
-  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
-  const steps = ["Hai bạn", "Ngày & nơi", "Quy mô & ngân sách", "Phong cách"];
-  const canNext = step === 0 ? f.groomName.trim() && f.brideName.trim() : step === 1 ? !!f.city : true;
-
-  const submit = () =>
-    save.mutate(
-      { ...f, weddingDate: f.weddingDate || null, partnerEmail: f.partnerEmail || null, generatePlan: true },
-      { onSuccess: () => navigate("/customer/dashboard?welcome=1") },
-    );
-
-  return (
-    <main className="wd wd-page">
-      <div className="container max-w-[720px]">
-        <div className="text-center mb-8">
-          <p className="eyebrow text-[var(--gold)]">Lập kế hoạch cưới</p>
-          <h1 className="serif text-3xl md:text-4xl font-bold mt-2">Kể cho Wedding Match nghe về <span className="wd-gradient-text">ngày của hai bạn</span></h1>
-          <p className="muted mt-2 text-sm">Chỉ 1 phút – chúng mình sẽ tạo checklist 12 tháng và bảng ngân sách gợi ý.</p>
-        </div>
-        <ol className="flex items-center justify-center gap-2 mb-6" aria-label="Các bước">
-          {steps.map((s, i) => (
-            <li key={s} className="flex items-center gap-2 text-xs font-bold">
-              <span className={`step-dot ${i <= step ? "on" : ""}`}>{i + 1}</span>
-              <span className="hidden sm:inline">{s}</span>
-              {i < steps.length - 1 && <span className="w-6 h-px bg-[var(--line)]" />}
-            </li>
-          ))}
-        </ol>
-        <div className="card p-6 md:p-8 space-y-5">
-          {step === 0 && (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <label><span className="label">Tên chú rể</span><input className="input" value={f.groomName} onChange={(e) => set("groomName", e.target.value)} /></label>
-              <label><span className="label">Tên cô dâu</span><input className="input" value={f.brideName} onChange={(e) => set("brideName", e.target.value)} /></label>
-              <label className="sm:col-span-2"><span className="label">Email người ấy (tùy chọn – cùng lập kế hoạch)</span>
-                <input className="input" type="email" value={f.partnerEmail} onChange={(e) => set("partnerEmail", e.target.value)} /></label>
-            </div>
-          )}
-          {step === 1 && (
-            <div className="space-y-4">
-              <label className="block"><span className="label">Ngày cưới dự kiến</span>
-                <input className="input" type="date" min={new Date().toISOString().slice(0, 10)} value={f.weddingDate} onChange={(e) => set("weddingDate", e.target.value)} /></label>
-              <div><span className="label">Thành phố tổ chức</span>
-                <div className="flex flex-wrap gap-2">{CITIES.map((c) => <button key={c} type="button" className={`chip ${f.city === c ? "active" : ""}`} onClick={() => set("city", c)}>{c}</button>)}</div>
-              </div>
-            </div>
-          )}
-          {step === 2 && (
-            <div className="space-y-5">
-              <label className="block"><span className="label">Số khách mời dự kiến: {f.guestCount}</span>
-                <input type="range" min={50} max={1000} step={10} value={f.guestCount} onChange={(e) => set("guestCount", +e.target.value)} className="w-full accent-[var(--gold)]" /></label>
-              <div><span className="label">Tổng ngân sách</span>
-                <div className="flex flex-wrap gap-2 mb-2">{BUDGETS.map((b) => <button key={b} type="button" className={`chip ${f.totalBudget === b ? "active" : ""}`} onClick={() => set("totalBudget", b)}>{vnd(b)}</button>)}</div>
-                <input className="input" type="number" min={0} step={1_000_000} value={f.totalBudget} onChange={(e) => set("totalBudget", +e.target.value)} aria-label="Ngân sách tùy chỉnh" />
-                <p className="text-xs muted mt-1">≈ {vnd(f.guestCount ? f.totalBudget / f.guestCount : 0)}/khách</p>
-              </div>
-            </div>
-          )}
-          {step === 3 && (
-            <div className="grid sm:grid-cols-2 gap-3">
-              {STYLES.map((s) => (
-                <button key={s.id} type="button" className={`kiosk-option ${f.style === s.id ? "selected" : ""}`} onClick={() => set("style", s.id)}>
-                  <p className="serif font-bold text-lg">{s.label}</p><p className="text-xs muted">{s.desc}</p>
-                </button>
-              ))}
-            </div>
-          )}
-          <ErrorText>{save.isError ? apiError(save.error) : ""}</ErrorText>
-          <div className="flex justify-between pt-2">
-            <button className="btn btn-ghost" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={14} /> Quay lại</button>
-            {step < 3 ? (
-              <button className="btn btn-primary" disabled={!canNext} onClick={() => setStep(step + 1)}>Tiếp tục <ArrowRight size={14} /></button>
-            ) : (
-              <button className="btn btn-gold" disabled={save.isPending} onClick={submit}><Sparkles size={14} /> {save.isPending ? "Đang tạo..." : "Tạo kế hoạch"}</button>
-            )}
-          </div>
-        </div>
-        <p className="text-center text-xs muted mt-4 flex items-center justify-center gap-1"><CalendarHeart size={14} /> Bạn có thể chỉnh sửa lại bất cứ lúc nào trong Planner.</p>
-      </div>
-    </main>
-  );
+  const set = <K extends keyof typeof f>(k: K, value: (typeof f)[K]) => setF(x => ({ ...x, [k]: value }));
+  const toggle = (key: "events" | "priorities", value: string) => set(key, f[key].includes(value) ? f[key].filter(x => x !== value) : [...f[key], value]);
+  const canNext = step === 1 ? !!(f.groomName.trim() && f.brideName.trim()) : step === 4 ? !!f.city.trim() : step === 5 ? f.guestCount > 0 : step === 6 ? f.totalBudget > 0 : step === 7 ? f.events.length > 0 : true;
+  const submit = () => save.mutate({ ...f, weddingDate: f.weddingDate || null, engagementDate: f.engagementDate || null, partnerEmail: f.partnerEmail || null, generatePlan: true },
+    { onSuccess: () => navigate("/customer/dashboard?welcome=1", { replace: true }) });
+  return <main className="wd wd-page"><div className="container max-w-[760px]">
+    <div className="text-center mb-7"><p className="eyebrow">Lập kế hoạch cưới · Bước {step + 1}/10</p><h1 className="serif text-3xl md:text-4xl font-bold mt-2">Ngày vui, bắt đầu từ hai bạn</h1><p className="muted mt-2 text-sm">10 bước ngắn để tạo 35 công việc và 14 khoản ngân sách. Không ghi đè những gì bạn đã tự chỉnh.</p></div>
+    <ol className="flex flex-wrap justify-center gap-2 mb-6" aria-label="Các bước">{STEPS.map((s, i) => <li key={s}><button type="button" className={`chip ${i === step ? "active" : ""}`} onClick={() => i < step && setStep(i)} aria-current={i === step ? "step" : undefined}>{i + 1}<span className="hidden lg:inline">. {s}</span></button></li>)}</ol>
+    {viewer && <p role="alert" className="mb-4">Bạn có quyền xem. Hãy nhờ chủ hồ sơ cấp quyền chỉnh sửa.</p>}
+    <fieldset disabled={viewer || save.isPending} className="card p-6 md:p-8 space-y-5 disabled:opacity-60">
+      <legend className="sr-only">{STEPS[step]}</legend><h2 className="serif text-2xl">{STEPS[step]}</h2>
+      {step === 0 && <div className="grid sm:grid-cols-3 gap-3">{[["Bride", "Mình là cô dâu"], ["Groom", "Mình là chú rể"], ["Couple", "Cùng lập kế hoạch"]].map(([id, label]) => <button type="button" key={id} className={`kiosk-option ${f.planningRole === id ? "selected" : ""}`} onClick={() => set("planningRole", id)}>{label}</button>)}</div>}
+      {step === 1 && <div className="grid sm:grid-cols-2 gap-4"><label><span className="label">Tên chú rể</span><input maxLength={100} className="input" value={f.groomName} onChange={e => set("groomName", e.target.value)} /></label><label><span className="label">Tên cô dâu</span><input maxLength={100} className="input" value={f.brideName} onChange={e => set("brideName", e.target.value)} /></label><p className="sm:col-span-2 text-sm muted">Sau khi lưu, bạn có thể mời người ấy với quyền chỉnh sửa hoặc chỉ xem.</p></div>}
+      {step === 2 && <label className="block"><span className="label">Ngày cưới dự kiến (có thể thêm sau)</span><input className="input" type="date" min={new Date().toISOString().slice(0, 10)} value={f.weddingDate} onChange={e => set("weddingDate", e.target.value)} /></label>}
+      {step === 3 && <label className="block"><span className="label">Ngày ăn hỏi (tùy chọn)</span><input className="input" type="date" value={f.engagementDate} onChange={e => set("engagementDate", e.target.value)} /></label>}
+      {step === 4 && <><span className="label">Thành phố tổ chức</span><div className="flex flex-wrap gap-2">{CITIES.map(c => <button key={c} type="button" className={`chip ${f.city === c ? "active" : ""}`} onClick={() => set("city", c)}>{c}</button>)}</div><label className="block"><span className="label">Khu vực cụ thể</span><input maxLength={200} className="input" value={f.city} onChange={e => set("city", e.target.value)} /></label></>}
+      {step === 5 && <label className="block"><span className="label">Số khách dự kiến</span><input className="input" type="number" min={1} max={100000} value={f.guestCount} onChange={e => set("guestCount", +e.target.value)} /><p className="muted text-xs mt-2">Bạn sẽ quản lý từng nhóm khách và sơ đồ bàn trong Planner.</p></label>}
+      {step === 6 && <><div className="flex flex-wrap gap-2">{BUDGETS.map(b => <button type="button" key={b} className={`chip ${f.totalBudget === b ? "active" : ""}`} onClick={() => set("totalBudget", b)}>{vnd(b)}</button>)}</div><label className="block"><span className="label">Tổng ngân sách</span><input className="input" type="number" min={1} step={1_000_000} value={f.totalBudget} onChange={e => set("totalBudget", +e.target.value)} /></label><p className="muted text-xs">≈ {vnd(f.guestCount ? f.totalBudget / f.guestCount : 0)}/khách. Chỉ là gợi ý, bạn có thể điều chỉnh từng khoản.</p></>}
+      {step === 7 && <div className="flex flex-wrap gap-3">{EVENTS.map(e => <button type="button" key={e} className={`chip ${f.events.includes(e) ? "active" : ""}`} aria-pressed={f.events.includes(e)} onClick={() => toggle("events", e)}>{e}</button>)}</div>}
+      {step === 8 && <div className="grid sm:grid-cols-2 gap-3">{STYLES.map((s, i) => <button type="button" key={s} className={`kiosk-option ${f.style === s ? "selected" : ""}`} onClick={() => set("style", s)}>{STYLE_NAMES[i]}</button>)}</div>}
+      {step === 9 && <><p className="text-sm muted">Điều gì quan trọng nhất với hai bạn?</p><div className="flex flex-wrap gap-3">{PRIORITIES.map(e => <button type="button" key={e} className={`chip ${f.priorities.includes(e) ? "active" : ""}`} aria-pressed={f.priorities.includes(e)} onClick={() => toggle("priorities", e)}>{e}</button>)}</div><div className="p-4 bg-[var(--bg)] rounded-xl text-sm">{f.groomName} & {f.brideName} · {f.city}<br />{f.guestCount} khách · {vnd(f.totalBudget)}<br />35 công việc · 14 hạng mục ngân sách</div></>}
+      <ErrorText>{save.isError ? apiError(save.error) : ""}</ErrorText>
+      <div className="flex justify-between pt-3"><button type="button" className="btn btn-ghost" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={14} /> Quay lại</button>{step < 9 ? <button type="button" className="btn btn-primary" disabled={!canNext} onClick={() => setStep(step + 1)}>Tiếp tục <ArrowRight size={14} /></button> : <button type="button" className="btn btn-primary" disabled={save.isPending || !f.groomName.trim() || !f.brideName.trim()} onClick={submit}><Sparkles size={14} />{save.isPending ? "Đang lưu..." : "Tạo kế hoạch"}</button>}</div>
+    </fieldset><p className="text-center text-xs muted mt-4 flex items-center justify-center gap-1"><CalendarHeart size={14} />Có thể quay lại để cập nhật bất cứ lúc nào.</p>
+  </div></main>;
 }

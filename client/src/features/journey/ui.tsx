@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 
 const STATUS: Record<string, [string, string]> = {
+  Draft: ["Bản nháp", "info"], RescheduleProposed: ["Chờ đồng ý giờ mới", "warn"], CheckedIn: ["Đã check-in", "ok"],
+  PartiallyQuoted: ["Đã có một phần báo giá", "warn"], PartiallyContracted: ["Đã ký một phần", "warn"],
   AwaitingDeposit: ["Chờ đặt cọc", "warn"], Pending: ["Chờ NCC duyệt", "warn"], Confirmed: ["Đã xác nhận", "ok"],
   Rejected: ["Bị từ chối", "bad"], Cancelled: ["Đã hủy", "bad"], Completed: ["Hoàn tất", "ok"], NoShow: ["Vắng mặt", "bad"], Expired: ["Hết hạn", "bad"],
   Submitted: ["Đã gửi", "info"], InProgress: ["Đang xử lý", "warn"], Sent: ["Đã gửi NCC", "info"], Accepted: ["NCC đã nhận", "warn"],

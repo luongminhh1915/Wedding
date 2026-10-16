@@ -291,6 +291,7 @@ export default function ListingDetailPage() {
               >
                 📅 Đặt lịch hẹn xem trực tiếp
               </button>
+              <Link to={`/combo?listing=${listing.id}`} className="listing-combo-link !m-0 mt-3">🛍 Chọn dịch vụ để thêm vào combo</Link>
               <p className="text-center text-[11px] text-slate-400 mt-2">
                 Miễn phí · Không ràng buộc · Phản hồi trong 2h
               </p>

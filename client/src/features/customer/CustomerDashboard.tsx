@@ -30,11 +30,17 @@ import { MyAppointments } from "../journey/appointments/MyAppointments";
 import { MyCombos } from "../journey/combo/MyCombos";
 import { MyQuotes } from "../journey/quotes/MyQuotes";
 import { CustomerDisputes } from "../journey/quotes/CustomerDisputes";
+import { GuestsPlanner } from "../journey/planner/GuestsPlanner";
+import { WeddingMembers } from "../journey/planner/WeddingMembers";
+import { useMembers } from "../journey/planner/plannerApi";
+import InvitationManage from "../journey/invitations/InvitationManage";
+import { ContinueIntent } from "../journey/planner/ContinueIntent";
 
 const tabs = [
   { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
   { id: "checklist", label: "Công việc", icon: CheckCheck },
   { id: "budget", label: "Ngân sách", icon: Wallet },
+  { id: "guests", label: "Khách & xếp bàn", icon: Users },
   { id: "invitations", label: "Thiệp & RSVP", icon: Heart },
   { id: "appointments", label: "Lịch hẹn", icon: CalendarClock },
   { id: "combos", label: "Combo", icon: PackageCheck },
@@ -48,7 +54,7 @@ export default function CustomerDashboard() {
   const location = useLocation();
   const requestedTab =
     params.get("tab") ||
-    (location.pathname.endsWith("/contracts") ? "contracts" : "overview");
+    (location.pathname.endsWith("/contracts") || location.pathname === "/hop-dong" ? "contracts" : location.pathname === "/lich-hen" ? "appointments" : location.pathname.startsWith("/thiep/") ? "invitations" : "overview");
   const activeTab = tabs.some((tab) => tab.id === requestedTab)
     ? (requestedTab as CustomerTab)
     : "overview";
@@ -58,6 +64,8 @@ export default function CustomerDashboard() {
   const [today] = useState(() => Date.now());
   const { data: planner } = usePlannerOverview();
   const profile = planner?.profile;
+  const members = useMembers();
+  const viewer = members.data?.myRole === "Viewer";
   const dateIso = profile?.weddingDate || invitation?.eventDate;
   const date = dateIso ? new Date(dateIso) : null;
   const coupleName =
@@ -123,11 +131,14 @@ export default function CustomerDashboard() {
       <div className="feature-content">
         {activeTab === "overview" && (
           <>
+            <ContinueIntent />
+            <WeddingMembers />
             <PlannerSnapshot />
             <PlannerOverview onSelect={selectTab} />
           </>
         )}
         {activeTab === "appointments" && <MyAppointments />}
+        {activeTab === "guests" && <GuestsPlanner />}
         {activeTab === "combos" && <MyCombos />}
         {activeTab === "contracts" && (
           <>
@@ -139,12 +150,14 @@ export default function CustomerDashboard() {
         )}
         {activeTab === "invitations" && (
           <>
+            <InvitationManage embedded />
             {invitation && <PremiumUpgrade key={String(invitation.isPremium)} isPremium={invitation.isPremium} />}
-            <InvitationBuilder />
+            <fieldset disabled={viewer}><legend className="sr-only">Thiết kế thiệp</legend><InvitationBuilder /></fieldset>
           </>
         )}
-        {activeTab === "budget" && <WeddingBudgetPlanner />}
-        {activeTab === "checklist" && <WeddingChecklist />}
+        {viewer && ["budget", "checklist", "invitations"].includes(activeTab) && <p role="status" className="p-3 text-sm">Bạn đang xem hồ sơ với quyền chỉ xem.</p>}
+        {activeTab === "budget" && <fieldset disabled={viewer}><legend className="sr-only">Ngân sách</legend><WeddingBudgetPlanner /></fieldset>}
+        {activeTab === "checklist" && <fieldset disabled={viewer}><legend className="sr-only">Công việc</legend><WeddingChecklist /></fieldset>}
       </div>
     </main>
   );

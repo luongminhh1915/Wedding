@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Eye, Gift, ImageIcon, MapPin } from "lucide-react";
+import { ArrowUpRight, Eye, Gift, ImageIcon, MapPin, ShoppingBag } from "lucide-react";
 import type { ListingSummaryDto } from "../../../types/listing.types";
 
 export default function ListingCard({
@@ -53,6 +53,7 @@ export default function ListingCard({
           <ArrowUpRight size={15} />
         </span>
       </div>
+      <Link to={`/combo?listing=${listing.id}`} className="listing-combo-link"><ShoppingBag size={14} /> Chọn dịch vụ để ghép combo</Link>
     </article>
   );
 }

@@ -14,7 +14,10 @@ public class CombosController : ControllerBase
     public CombosController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet("builder")]
-    public async Task<IActionResult> Builder([FromQuery] string? city) => Ok(await _mediator.Send(new GetComboBuilderQuery(city)));
+    public async Task<IActionResult> Builder([FromQuery] string? city, [FromQuery] int guests = 200, [FromQuery] string? style = null) => Ok(await _mediator.Send(new GetComboBuilderQuery(city, guests, style)));
+
+    [HttpPost("price")]
+    public async Task<IActionResult> Price([FromBody] ComboPriceCommand command) => Ok(await _mediator.Send(command));
 
     [HttpPost("orders")]
     [Authorize(Roles = "Customer")]
@@ -33,6 +36,46 @@ public class CombosController : ControllerBase
     public async Task<IActionResult> Templates() => Ok(await _mediator.Send(new GetAllComboTemplatesQuery()));
 
     [HttpPost("templates")]
-    [Authorize(Roles = "Moderator,SuperAdmin")]
+    [Authorize(Roles = "Moderator,SuperAdmin,VendorOwner")]
     public async Task<IActionResult> SaveTemplate([FromBody] SaveComboTemplateCommand command) => Ok(await _mediator.Send(command));
+
+    public record ReviewBody(bool Approve, string? Note);
+    [HttpPost("templates/{id:guid}/review")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> ReviewTemplate(Guid id, [FromBody] ReviewBody body) => Ok(await _mediator.Send(new ReviewComboTemplateCommand(id, body.Approve)));
+
+    [HttpGet("vendor/items")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> MyItems() => Ok(await _mediator.Send(new GetServiceItemsQuery()));
+
+    [HttpGet("vendor/templates")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> MyTemplates() => Ok(await _mediator.Send(new GetAllComboTemplatesQuery(true)));
+
+    [HttpPost("vendor/items")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> SaveItem([FromBody] SaveServiceItemCommand command) => Ok(await _mediator.Send(command));
+
+    [HttpGet("vendor/participation")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> Participation() => Ok(await _mediator.Send(new GetComboParticipationQuery()));
+
+    [HttpPost("vendor/participation")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> SaveParticipation([FromBody] SaveComboParticipationCommand command) => Ok(await _mediator.Send(command));
+
+    [HttpGet("items")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> Items() => Ok(await _mediator.Send(new GetServiceItemsQuery(true)));
+
+    [HttpPost("items/{id:guid}/review")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> ReviewItem(Guid id, [FromBody] ReviewBody body) => Ok(await _mediator.Send(new ReviewServiceItemCommand(id, body.Approve, body.Note)));
+
+    [HttpGet("bundle-rules")]
+    public async Task<IActionResult> BundleRules() => Ok(await _mediator.Send(new GetBundleRulesQuery()));
+
+    [HttpPost("bundle-rules")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> SaveRules([FromBody] SaveBundleRulesCommand command) => Ok(await _mediator.Send(command));
 }

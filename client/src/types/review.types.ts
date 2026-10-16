@@ -12,10 +12,17 @@ export interface Review {
   content: string;
   photosJson?: string;
   isVerifiedBuyer: boolean; // BR-009
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: "Pending" | "Approved" | "Rejected";
   vendorReply?: string;
   vendorRepliedAt?: string;
   createdAt: string;
+  qualityRating?: number;
+  serviceRating?: number;
+  punctualityRating?: number;
+  valueRating?: number;
+  averageRating?: number;
+  moderationFlag?: string;
+  moderationDeadline?: string;
 }
 
 export interface SubmitReviewRequest {
@@ -24,6 +31,10 @@ export interface SubmitReviewRequest {
   rating: number;
   content: string;
   photosJson?: string;
+  qualityRating?: number;
+  serviceRating?: number;
+  punctualityRating?: number;
+  valueRating?: number;
 }
 
 export interface EligibleContract {

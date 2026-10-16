@@ -19,6 +19,8 @@ public class Listing : BaseEntity
     public int ViewCount { get; private set; } = 0;
     public int FavoriteCount { get; private set; } = 0;
     public DateTime? ModeratedAt { get; private set; }
+    public string CancellationPolicy { get; private set; } = "Hủy trước 90 ngày: hoàn 100% cọc; trước 30–89 ngày: hoàn 50% cọc; dưới 30 ngày: không hoàn cọc. NCC hủy: hoàn 100% cọc.";
+    public void SetCancellationPolicy(string policy) { if (string.IsNullOrWhiteSpace(policy) || policy.Length > 4000) throw new DomainException("Chính sách hủy cần từ 1 đến 4000 ký tự."); CancellationPolicy = policy.Trim(); SetUpdated(); }
 
     // Navigation Properties
     public Vendor Vendor { get; private set; } = null!;

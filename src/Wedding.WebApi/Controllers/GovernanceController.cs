@@ -40,11 +40,11 @@ public class GovernanceController : ControllerBase
     public async Task<IActionResult> MyDisputes() => Ok(await _mediator.Send(new GetDisputesQuery(true)));
 
     [HttpGet("disputes")]
-    [Authorize(Roles = "CustomerCare,SuperAdmin")]
+    [Authorize(Roles = "CustomerCare,Finance,SuperAdmin")]
     public async Task<IActionResult> Disputes() => Ok(await _mediator.Send(new GetDisputesQuery(false)));
 
     [HttpPost("disputes/{id:guid}/resolve")]
-    [Authorize(Roles = "CustomerCare,SuperAdmin")]
+    [Authorize(Roles = "CustomerCare,Finance,SuperAdmin")]
     public async Task<IActionResult> Resolve(Guid id, [FromBody] ResolveDisputeCommand body) => Ok(await _mediator.Send(body with { Id = id }));
 
     [HttpGet("articles")]
@@ -55,11 +55,24 @@ public class GovernanceController : ControllerBase
 
     [HttpGet("admin/articles")]
     [Authorize(Roles = "Moderator,SuperAdmin")]
-    public async Task<IActionResult> AllArticles() => Ok(await _mediator.Send(new GetArticlesQuery(true, null)));
+    public async Task<IActionResult> AllArticles([FromQuery] string? slug) => Ok(await _mediator.Send(new GetArticlesQuery(true, slug)));
 
     [HttpPost("admin/articles")]
     [Authorize(Roles = "Moderator,SuperAdmin")]
     public async Task<IActionResult> SaveArticle([FromBody] SaveArticleCommand command) => Ok(await _mediator.Send(command));
+
+    [HttpPut("admin/articles/{id:guid}"), Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> UpdateArticle(Guid id, [FromBody] UpdateArticleCommand command) => Ok(await _mediator.Send(command with { Id = id }));
+    [HttpDelete("admin/articles/{id:guid}"), Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> DeleteArticle(Guid id) { await _mediator.Send(new DeleteArticleCommand(id)); return NoContent(); }
+    [HttpGet("vendor/tax-profile"), Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> TaxProfile() => Ok(await _mediator.Send(new GetVendorTaxProfileQuery()));
+    [HttpPut("vendor/tax-profile"), Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> UpdateTaxProfile([FromBody] UpdateVendorTaxProfileCommand command) => Ok(await _mediator.Send(command));
+    [HttpPost("admin/vendors/{id:guid}/suspend"), Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> Suspend(Guid id, [FromBody] SuspendVendorCommand command) { await _mediator.Send(command with { VendorId = id }); return NoContent(); }
+    [HttpPost("admin/emergency-matches"), Authorize(Roles = "CustomerCare,SuperAdmin")]
+    public async Task<IActionResult> EmergencyMatch([FromBody] EmergencyMatchCommand command) => Ok(new { leadId = await _mediator.Send(command) });
 
     [HttpGet("admin/audit-logs")]
     [Authorize(Roles = "SuperAdmin,Finance")]

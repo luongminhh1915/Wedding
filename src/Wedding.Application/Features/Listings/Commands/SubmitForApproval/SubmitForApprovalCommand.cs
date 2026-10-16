@@ -30,6 +30,8 @@ public class SubmitForApprovalCommandHandler : IRequestHandler<SubmitForApproval
         var listing = await _context.Listings
             .FirstOrDefaultAsync(l => l.Id == request.ListingId && l.VendorId == vendor.Id, cancellationToken)
             ?? throw new NotFoundException("Bài đăng", request.ListingId);
+        if (!vendor.IsVerified || !await _context.VendorTaxProfiles.AnyAsync(p => p.VendorId == vendor.Id && p.Status == Domain.Enums.VerificationStatus.Approved, cancellationToken))
+            throw new DomainException("Hoàn thiện hồ sơ pháp lý/ngân hàng và được xác minh trước khi nộp bài đăng.");
 
         // Chỉ cho phép nộp khi đang ở Draft hoặc Rejected
         if (listing.Status != Domain.Enums.ListingStatus.Draft && listing.Status != Domain.Enums.ListingStatus.Rejected)

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -57,6 +58,10 @@ export default function BrowsePage() {
         </p>
       </section>
       <div className="browse-content space-y-6">
+        <section className="browse-combo-banner">
+          <div><h2>Ghép dịch vụ thành combo của riêng bạn</h2><p>Chọn theo danh mục, đổi từng dịch vụ và giữ mọi lựa chọn trong một giỏ. Có thể dùng một NCC trọn gói hoặc kết hợp nhiều NCC.</p></div>
+          <Link to={`/combo${filter.categoryId ? `?category=${filter.categoryId}` : ""}`} className="combo-primary">Mở giỏ combo →</Link>
+        </section>
         {catLoading ? (
           <div className="flex gap-3 overflow-hidden">
             {Array.from({ length: 6 }, (_, i) => (

@@ -23,7 +23,7 @@ public class Category : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Tên ngành hàng không được để trống.");
-        if (defaultCommissionRate <= 0 || defaultCommissionRate > 0.3m)
+        if (defaultCommissionRate < 0.03m || defaultCommissionRate > 0.12m)
             throw new DomainException("Tỷ lệ hoa hồng mặc định không hợp lệ.");
 
         return new Category
@@ -42,6 +42,7 @@ public class Category : BaseEntity
 
     public void Update(string name, string? icon, string? description, decimal defaultCommissionRate, int displayOrder)
     {
+        if (string.IsNullOrWhiteSpace(name) || defaultCommissionRate < .03m || defaultCommissionRate > .12m) throw new DomainException("Ngành cần tên và tỷ lệ hoa hồng trong khung 3–12%.");
         Name = name.Trim();
         Icon = icon;
         Description = description;

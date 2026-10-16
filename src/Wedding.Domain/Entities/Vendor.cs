@@ -16,10 +16,13 @@ public class Vendor : BaseEntity
     public string? LogoUrl { get; private set; }
     public string? CoverImageUrl { get; private set; }
     public decimal CommissionRate { get; private set; } // Khung theo FM-001
-    public decimal RatingAvg { get; private set; } = 5.0m;
+    public decimal RatingAvg { get; private set; }
     public int TotalReviews { get; private set; } = 0;
     public bool IsActive { get; private set; } = true;
     public bool IsVerified { get; private set; } = false;
+    public bool IsTopRated { get; private set; }
+    public bool AllowInCombos { get; private set; }
+    public decimal MaxComboDiscount { get; private set; }
 
     // Navigation Properties
     public User User { get; private set; } = null!;
@@ -38,8 +41,8 @@ public class Vendor : BaseEntity
             throw new DomainException("Tên thương hiệu không được để trống.");
         if (string.IsNullOrWhiteSpace(hotline))
             throw new DomainException("Hotline đối tác không được để trống.");
-        if (commissionRate < 0.03m || commissionRate > 0.15m)
-            throw new DomainException("Tỷ lệ hoa hồng đối tác phải nằm trong khoảng 3% đến 15%.");
+        if (commissionRate < 0.03m || commissionRate > 0.12m)
+            throw new DomainException("Tỷ lệ hoa hồng đối tác phải nằm trong khoảng 3% đến 12%.");
 
         return new Vendor
         {
@@ -51,7 +54,7 @@ public class Vendor : BaseEntity
             Hotline = hotline.Trim(),
             City = city.Trim(),
             CommissionRate = commissionRate,
-            RatingAvg = 5.0m,
+            RatingAvg = 0m,
             TotalReviews = 0,
             IsActive = true,
             IsVerified = false,
@@ -75,8 +78,9 @@ public class Vendor : BaseEntity
 
     public void UpdateRating(decimal newRatingAvg, int totalReviews)
     {
-        RatingAvg = Math.Clamp(newRatingAvg, 1.0m, 5.0m);
+        RatingAvg = totalReviews == 0 ? 0m : Math.Clamp(newRatingAvg, 1.0m, 5.0m);
         TotalReviews = totalReviews;
+        IsTopRated = totalReviews >= 50 && RatingAvg >= 4.8m;
         SetUpdated();
     }
 
@@ -84,5 +88,11 @@ public class Vendor : BaseEntity
     {
         IsVerified = isVerified;
         SetUpdated();
+    }
+
+    public void ConfigureComboParticipation(bool allow, decimal maxDiscount)
+    {
+        if (maxDiscount < 0 || maxDiscount > 0.30m) throw new DomainException("Mức giảm combo phải từ 0 đến 30%.");
+        AllowInCombos = allow; MaxComboDiscount = maxDiscount; SetUpdated();
     }
 }

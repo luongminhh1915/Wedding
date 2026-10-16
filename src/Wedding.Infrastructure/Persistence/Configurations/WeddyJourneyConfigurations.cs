@@ -36,7 +36,9 @@ public class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
     {
         b.ToTable("OtpCodes");
         b.Property(x => x.Target).HasMaxLength(150).IsRequired();
-        b.Property(x => x.Code).HasMaxLength(10).IsRequired();
+        b.Property(x => x.Code).HasMaxLength(64).IsRequired();
+        b.Property(x => x.Attempts).IsConcurrencyToken();
+        b.Property(x => x.IsUsed).IsConcurrencyToken();
         b.HasIndex(x => new { x.Target, x.CreatedAt });
     }
 }

@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Entities;
 
@@ -24,23 +26,28 @@ public class AuditLogger : IAuditLogger
     }
 }
 
-/// <summary>Mock: không gửi thật SMS/Zalo/Email – chỉ ghi log (tích hợp thật để P7).</summary>
-public class LoggingNotificationSender : INotificationSender
+/// <summary>Persist in-app messages and a durable email outbox; never log message bodies or OTPs.</summary>
+public class DurableNotificationSender(IApplicationDbContext context) : INotificationSender
 {
-    private readonly ILogger<LoggingNotificationSender> _logger;
-    public LoggingNotificationSender(ILogger<LoggingNotificationSender> logger) => _logger = logger;
-
-    public Task SendAsync(string channel, string to, string message, CancellationToken ct = default)
+    public async Task SendAsync(string channel, string to, string message, CancellationToken ct = default)
     {
-        _logger.LogInformation("[MOCK {Channel}] -> {To}: {Message}", channel, to, message);
-        return Task.CompletedTask;
+        var user = Guid.TryParse(to, out var id) ? await context.Users.FindAsync(new object[] { id }, ct)
+            : await context.Users.FirstOrDefaultAsync(u => u.Email == to || u.PhoneNumber == to, ct);
+        if (user == null) return; // Never send private data to a masked or unknown address.
+        var notification = Notification.Create(user.Id, channel == "InApp" ? "InApp" : "Email", user.Email, message);
+        context.Notifications.Add(notification);
+        await context.SaveChangesAsync(ct);
     }
 }
 
-public class MockPaymentGateway : IMockPaymentGateway
+public class MockPaymentGateway(IConfiguration configuration) : IMockPaymentGateway
 {
-    public string CreatePaymentRef(string prefix) => $"{prefix}{DateTime.UtcNow:yyMMddHHmm}{Random.Shared.Next(100, 999)}";
+    public string CreatePaymentRef(string prefix) => $"{prefix}{Guid.NewGuid():N}".ToUpperInvariant();
 
     public string BuildVietQrUrl(decimal amount, string reference)
-        => $"https://img.vietqr.io/image/970422-0338889999-compact2.png?amount={decimal.ToInt64(amount)}&addInfo={Uri.EscapeDataString(reference)}&accountName=WEDDING%20MATCH";
+    {
+        var bank = configuration["Payments:BankCode"]; var account = configuration["Payments:AccountNumber"]; var name = configuration["Payments:AccountName"];
+        if (string.IsNullOrWhiteSpace(bank) || string.IsNullOrWhiteSpace(account) || string.IsNullOrWhiteSpace(name)) return "";
+        return $"https://img.vietqr.io/image/{Uri.EscapeDataString(bank)}-{Uri.EscapeDataString(account)}-compact2.png?amount={decimal.ToInt64(amount)}&addInfo={Uri.EscapeDataString(reference)}&accountName={Uri.EscapeDataString(name)}";
+    }
 }

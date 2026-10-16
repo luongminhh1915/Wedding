@@ -107,18 +107,34 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<Guid>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("CustomerReminder24At")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CustomerReminder2At")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("DepositAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<DateTime?>("DepositConfirmedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("DepositPaid")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DepositReportedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("EndAt")
                         .HasColumnType("datetime2");
@@ -128,6 +144,29 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ProposedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ProposedStartAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("RefundDue")
+                        .HasPrecision(18)
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<string>("RefundReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RescheduleCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ResponseDueAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("StartAt")
                         .HasColumnType("datetime2");
@@ -146,18 +185,97 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<string>("VendorNote")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("VendorReminder1At")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("VendorSlaViolation")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("CustomerId");
-
                     b.HasIndex("VendorId");
 
                     b.HasIndex("AppointmentTypeId", "StartAt");
 
+                    b.HasIndex("CustomerId", "Status");
+
                     b.ToTable("Appointments", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.AppointmentAvailabilityException", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AppointmentTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan?>("CloseTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("bit");
+
+                    b.Property<TimeSpan?>("OpenTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentTypeId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("AppointmentAvailabilityExceptions");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.AppointmentEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId", "CreatedAt");
+
+                    b.ToTable("AppointmentEvents");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.AppointmentType", b =>
@@ -165,6 +283,18 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan?>("BreakEnd")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("BreakStart")
+                        .HasColumnType("time");
+
+                    b.Property<int>("BufferAfterMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BufferBeforeMinutes")
+                        .HasColumnType("int");
 
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
@@ -185,8 +315,27 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("int");
 
+                    b.Property<int>("FreeCancellationHours")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MaxAttendees")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxBookingDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MeetingMode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MinBookingHours")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -285,6 +434,34 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("Articles", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.ArticleListingPin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ArticleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("ArticleId", "ListingId")
+                        .IsUnique();
+
+                    b.ToTable("ArticleListingPins");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -336,6 +513,15 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("AppointmentDepositCredit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CancellationPolicySnapshot")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -379,6 +565,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("QuoteId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("RejectReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RevisionCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -392,6 +584,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("VerificationDeadline")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("VoucherId")
                         .HasColumnType("uniqueidentifier");
@@ -435,6 +631,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ContractId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -453,6 +652,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("Shared");
+
                     b.Property<decimal>("PlannedCost")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -460,13 +665,50 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("WeddingProfileId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("ContractId")
+                        .IsUnique()
+                        .HasFilter("[ContractId] IS NOT NULL");
+
                     b.HasIndex("CustomerId");
 
                     b.ToTable("BudgetItems", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.BundleDiscountRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MinItems")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Percent")
+                        .HasPrecision(8, 5)
+                        .HasColumnType("decimal(8,5)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MinItems")
+                        .IsUnique();
+
+                    b.ToTable("BundleDiscountRules");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.Category", b =>
@@ -660,6 +902,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("ContractId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -681,6 +926,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("Shared");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(250)
@@ -689,7 +940,14 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("WeddingProfileId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ContractId")
+                        .IsUnique()
+                        .HasFilter("[ContractId] IS NOT NULL");
 
                     b.HasIndex("CustomerId");
 
@@ -732,6 +990,13 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("PriceLockUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -767,6 +1032,14 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("BudgetItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CancellationPolicySnapshot")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
@@ -790,6 +1063,16 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SelectionJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ServiceItemId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -799,6 +1082,11 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -835,10 +1123,24 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<string>("ModerationStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("OwnerVendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Region")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("SingleVendorDiscount")
+                        .HasPrecision(8, 5)
+                        .HasColumnType("decimal(8,5)");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
@@ -867,6 +1169,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AllowedItemIdsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
@@ -880,6 +1186,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit");
 
                     b.Property<Guid>("ListingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ServiceItemId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -919,6 +1228,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("PaidAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("datetime2");
 
@@ -931,6 +1244,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<DateTime?>("ReleaseAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("SettlementId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -940,6 +1259,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("VietQrPayload")
@@ -959,6 +1282,44 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("Commissions", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionCreditNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AppliedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("ContractId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContractId")
+                        .IsUnique();
+
+                    b.ToTable("CommissionCreditNotes");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.CommissionSettlement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -970,6 +1331,13 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("CreditAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("DisputeReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
@@ -1009,7 +1377,14 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("VendorId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("PaymentReference")
+                        .IsUnique();
 
                     b.HasIndex("VendorId", "Period")
                         .IsUnique();
@@ -1077,6 +1452,85 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("Disputes", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.EInvoiceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("LookupUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("RecordedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SettlementId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SettlementId")
+                        .IsUnique();
+
+                    b.ToTable("EInvoiceRecords");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.EmergencyMatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AgentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ContractId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("NewLeadId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("ReplacementListingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContractId");
+
+                    b.ToTable("EmergencyMatches");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.GuestRSVP", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1090,8 +1544,8 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DietaryPreference")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("GuestName")
                         .IsRequired()
@@ -1110,20 +1564,343 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("SubmissionKey")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Wishes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvitationId");
-
                     b.HasIndex("Status");
 
+                    b.HasIndex("InvitationId", "SubmissionKey")
+                        .IsUnique()
+                        .HasFilter("[SubmissionKey] IS NOT NULL");
+
                     b.ToTable("GuestRSVPs", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.InvitationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BackgroundColor")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPremium")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Motif")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("PrimaryColor")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("InvitationTemplates");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000001"),
+                            BackgroundColor = "#f3f5ec",
+                            Category = "Nature",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "rustic",
+                            Motif = "❧",
+                            Name = "Lá xanh ngày vui",
+                            PrimaryColor = "#456451"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000002"),
+                            BackgroundColor = "#faf8f0",
+                            Category = "Minimal",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "minimalist",
+                            Motif = "♡",
+                            Name = "Lời hẹn tinh khôi",
+                            PrimaryColor = "#25334c"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000003"),
+                            BackgroundColor = "#faf6e9",
+                            Category = "Luxury",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "luxury",
+                            Motif = "✦",
+                            Name = "Ánh vàng thanh lịch",
+                            PrimaryColor = "#745e27"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000004"),
+                            BackgroundColor = "#f2efe4",
+                            Category = "Classic",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "navy-cream",
+                            Motif = "∞",
+                            Name = "Wedding Match",
+                            PrimaryColor = "#25334c"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000005"),
+                            BackgroundColor = "#fbf0f1",
+                            Category = "Romantic",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "rose-letter",
+                            Motif = "❀",
+                            Name = "Thư tình hồng",
+                            PrimaryColor = "#955f6b"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000006"),
+                            BackgroundColor = "#f3f5ed",
+                            Category = "Nature",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "sage-garden",
+                            Motif = "❦",
+                            Name = "Khu vườn bình yên",
+                            PrimaryColor = "#52674f"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000007"),
+                            BackgroundColor = "#faf1e8",
+                            Category = "Boho",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "terracotta",
+                            Motif = "☼",
+                            Name = "Nắng ấm",
+                            PrimaryColor = "#945a42"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000008"),
+                            BackgroundColor = "#202d44",
+                            Category = "Luxury",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "midnight",
+                            Motif = "✧",
+                            Name = "Dạ tiệc sao",
+                            PrimaryColor = "#e0c468"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000009"),
+                            BackgroundColor = "#f6f0fa",
+                            Category = "Romantic",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "lavender",
+                            Motif = "❁",
+                            Name = "Hẹn ước lavender",
+                            PrimaryColor = "#6d5a8d"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000010"),
+                            BackgroundColor = "#edf5f4",
+                            Category = "Nature",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "ocean",
+                            Motif = "≈",
+                            Name = "Lời hẹn bên biển",
+                            PrimaryColor = "#376477"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000011"),
+                            BackgroundColor = "#fff4e8",
+                            Category = "Traditional",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "tradition",
+                            Motif = "囍",
+                            Name = "Hỷ sự",
+                            PrimaryColor = "#9b3b36"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000012"),
+                            BackgroundColor = "#faf9f6",
+                            Category = "Minimal",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "black-tie",
+                            Motif = "&",
+                            Name = "Black Tie",
+                            PrimaryColor = "#242424"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000013"),
+                            BackgroundColor = "#f7f5e9",
+                            Category = "Nature",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "olive",
+                            Motif = "❧",
+                            Name = "Cành olive",
+                            PrimaryColor = "#646c3f"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000014"),
+                            BackgroundColor = "#fff7f3",
+                            Category = "Romantic",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "blossom",
+                            Motif = "✿",
+                            Name = "Mùa hoa nở",
+                            PrimaryColor = "#a85b68"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000015"),
+                            BackgroundColor = "#f4ead7",
+                            Category = "Vintage",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "vintage",
+                            Motif = "❦",
+                            Name = "Chuyện đôi mình",
+                            PrimaryColor = "#7a6144"
+                        },
+                        new
+                        {
+                            Id = new Guid("80000000-0000-0000-0000-000000000016"),
+                            BackgroundColor = "#f2f1eb",
+                            Category = "Modern",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsPremium = false,
+                            Key = "modern-arch",
+                            Motif = "⌒",
+                            Name = "Vòm hạnh phúc",
+                            PrimaryColor = "#475471"
+                        });
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ItemAddOn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("PerUnit")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18)
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<Guid>("ServiceItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.ToTable("ItemAddOns");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ItemVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("PriceDelta")
+                        .HasPrecision(18)
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<Guid>("ServiceItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.ToTable("ItemVariants");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.Lead", b =>
@@ -1138,6 +1915,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("ComboOrderId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1175,6 +1955,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("SlaDeadline")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -1209,6 +1993,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CancellationPolicy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
@@ -1323,7 +2111,7 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("ListingMedias", (string)null);
                 });
 
-            modelBuilder.Entity("Wedding.Domain.Entities.OtpCode", b =>
+            modelBuilder.Entity("Wedding.Domain.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1332,10 +2120,73 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<int>("Attempts")
                         .HasColumnType("int");
 
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeduplicationKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DeliveryError")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "DeduplicationKey")
+                        .IsUnique()
+                        .HasFilter("[DeduplicationKey] IS NOT NULL");
+
+                    b.HasIndex("UserId", "ReadAt");
+
+                    b.HasIndex("Channel", "SentAt", "NextAttemptAt");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.OtpCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1344,6 +2195,7 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsUsed")
+                        .IsConcurrencyToken()
                         .HasColumnType("bit");
 
                     b.Property<string>("Target")
@@ -1359,6 +2211,117 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.HasIndex("Target", "CreatedAt");
 
                     b.ToTable("OtpCodes", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.PaymentTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Gateway")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MatchNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("MatchedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PremiumOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SettlementId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TransactionId")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("UnmatchedReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionId")
+                        .IsUnique();
+
+                    b.ToTable("PaymentTransactions");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.PremiumOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InvitationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentReference")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentReference")
+                        .IsUnique();
+
+                    b.HasIndex("CustomerId", "Status");
+
+                    b.ToTable("PremiumOrders");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.Quote", b =>
@@ -1397,6 +2360,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Terms")
                         .HasColumnType("nvarchar(max)");
 
@@ -1409,6 +2376,14 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("ValidUntil")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
 
                     b.Property<Guid>("VendorId")
                         .HasColumnType("uniqueidentifier");
@@ -1454,11 +2429,26 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ModeratedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ModerationFlag")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PhotosJson")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
+                    b.Property<int?>("PunctualityRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("QualityRating")
+                        .HasColumnType("int");
+
                     b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ServiceRating")
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
@@ -1468,6 +2458,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("ValueRating")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("VendorId")
                         .HasColumnType("uniqueidentifier");
@@ -1485,8 +2478,6 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[BookingContractId] IS NOT NULL");
 
-                    b.HasIndex("CustomerId");
-
                     b.HasIndex("IsVerifiedBuyer");
 
                     b.HasIndex("ListingId");
@@ -1495,7 +2486,114 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("VendorId");
 
+                    b.HasIndex("CustomerId", "ListingId")
+                        .IsUnique();
+
                     b.ToTable("Reviews", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.SeatTable", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("WeddingProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WeddingProfileId");
+
+                    b.ToTable("SeatTables");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ServiceItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BasePrice")
+                        .HasPrecision(18)
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<string>("CancellationPolicy")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MaxBookingsPerDay")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxGuests")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinGuests")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModerationStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Regions")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ReviewNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("VendorId", "ModerationStatus");
+
+                    b.ToTable("ServiceItems");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.User", b =>
@@ -1521,6 +2619,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("GoogleSubject")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -1536,6 +2638,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<DateTime?>("PhoneVerifiedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -1548,6 +2653,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("GoogleSubject")
+                        .IsUnique()
+                        .HasFilter("[GoogleSubject] IS NOT NULL");
 
                     b.HasIndex("PhoneNumber");
 
@@ -1563,6 +2672,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<string>("Address")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("AllowInCombos")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Bio")
                         .HasMaxLength(2000)
@@ -1602,12 +2714,19 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsTopRated")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
 
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("MaxComboDiscount")
+                        .HasPrecision(8, 5)
+                        .HasColumnType("decimal(8,5)");
 
                     b.Property<decimal>("RatingAvg")
                         .HasPrecision(3, 2)
@@ -1638,6 +2757,62 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Vendors", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.VendorTaxProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AgreementAccepted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("BankAccountName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BankAccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("BankCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LegalName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TaxNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VendorId")
+                        .IsUnique();
+
+                    b.ToTable("VendorTaxProfiles");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.VendorVerification", b =>
@@ -1746,6 +2921,71 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("Vouchers", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.WeddingGuest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Dietary")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Group")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PartySize")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid?>("RsvpId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Side")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("TableId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("WeddingProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TableId");
+
+                    b.HasIndex("WeddingProfileId", "Name");
+
+                    b.ToTable("WeddingGuests");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.WeddingInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1760,6 +3000,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ContentJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("{}");
 
                     b.Property<string>("CoverImageUrl")
                         .HasMaxLength(500)
@@ -1785,6 +3031,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsPublished")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Lang")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("vi");
+
                     b.Property<string>("LoveStory")
                         .HasMaxLength(3000)
                         .HasColumnType("nvarchar(3000)");
@@ -1807,6 +3059,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("TemplateId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TemplateStyle")
                         .IsRequired()
@@ -1836,6 +3091,87 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("WeddingInvitations", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.WeddingJoinInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(48)
+                        .HasColumnType("nvarchar(48)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("JoinedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("WeddingProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("WeddingProfileId");
+
+                    b.ToTable("WeddingJoinInvitations");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.WeddingMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WeddingProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.HasIndex("WeddingProfileId");
+
+                    b.ToTable("WeddingMembers");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.WeddingProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1856,6 +3192,15 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("EngagementDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]");
+
                     b.Property<string>("GroomName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1865,6 +3210,18 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("PartnerEmail")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlanningRole")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("Couple");
+
+                    b.Property<string>("PrioritiesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]");
 
                     b.Property<string>("Style")
                         .IsRequired()
@@ -1916,6 +3273,24 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("Vendor");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.AppointmentAvailabilityException", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.AppointmentType", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.AppointmentEvent", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.AppointmentType", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
@@ -1936,6 +3311,25 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ArticleListingPin", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("ArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.Listing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Article");
+
+                    b.Navigation("Listing");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.BookingContract", b =>
@@ -2129,6 +3523,24 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("Invitation");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.ItemAddOn", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.ServiceItem", null)
+                        .WithMany("AddOns")
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ItemVariant", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.ServiceItem", null)
+                        .WithMany("Variants")
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.Lead", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.User", "Customer")
@@ -2238,6 +3650,34 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("Vendor");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.SeatTable", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.WeddingProfile", null)
+                        .WithMany()
+                        .HasForeignKey("WeddingProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ServiceItem", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.Listing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+
+                    b.Navigation("Vendor");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.Vendor", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.User", "User")
@@ -2247,6 +3687,17 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.VendorTaxProfile", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.VendorVerification", b =>
@@ -2279,6 +3730,20 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("Lead");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.WeddingGuest", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.SeatTable", null)
+                        .WithMany()
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.WeddingProfile", null)
+                        .WithMany()
+                        .HasForeignKey("WeddingProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.WeddingInvitation", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.User", "Customer")
@@ -2288,6 +3753,32 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.WeddingJoinInvitation", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.WeddingProfile", null)
+                        .WithMany()
+                        .HasForeignKey("WeddingProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.WeddingMember", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.WeddingProfile", null)
+                        .WithMany()
+                        .HasForeignKey("WeddingProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.WeddingProfile", b =>
@@ -2337,6 +3828,13 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("Media");
 
                     b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ServiceItem", b =>
+                {
+                    b.Navigation("AddOns");
+
+                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.User", b =>

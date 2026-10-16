@@ -31,5 +31,10 @@ public record ContractDto(
     DateTime? CompletedAt,
     string? CancellationReason,
     DateTime CreatedAt,
-    List<ContractCommissionDto> Commissions
+    List<ContractCommissionDto> Commissions,
+    string? CancellationPolicySnapshot = null,
+    decimal? CommissionRateSnapshot = null,
+    string? RejectReason = null,
+    int RevisionCount = 0,
+    decimal AppointmentDepositCredit = 0
 );

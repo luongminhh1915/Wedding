@@ -57,6 +57,8 @@ export function MyContracts() {
         : contracts;
 
   const handleConfirm = async (contractId: string) => {
+    const contract = contracts.find(c => c.id === contractId);
+    if (!window.confirm(`Xác nhận giá trị, cọc và chính sách hủy sau đây?\n\n${contract?.cancellationPolicySnapshot ?? "Vui lòng đối chiếu chính sách hủy trong hợp đồng với nhà cung cấp trước khi xác nhận."}`)) return;
     try {
       setActionErrorMsg(null);
       const res = await confirmContract(contractId);
@@ -487,6 +489,11 @@ function ContractItemCard({
           </div>
 
           {/* Link xem ảnh phiếu thu cọc */}
+          {!!contract.appointmentDepositCredit && <p className="text-xs text-slate-600">Đã trừ cọc lịch hẹn {contract.appointmentDepositCredit.toLocaleString('vi-VN')} đ; phần cọc HĐ bổ sung tối đa {Math.max(0, contract.depositAmount - contract.appointmentDepositCredit).toLocaleString('vi-VN')} đ. Không chuyển lại khoản đã cọc lịch.</p>}
+          <details className="text-xs text-slate-600 py-2">
+            <summary className="font-semibold cursor-pointer">Chính sách hủy / hoàn cọc</summary>
+            <p className="mt-2 whitespace-pre-wrap">{contract.cancellationPolicySnapshot ?? "Xem bản hợp đồng đã thống nhất với NCC."}</p>
+          </details>
           <div className="flex items-center justify-between pt-1">
             <span className="text-[11px] text-slate-500">
               Hóa đơn / Phiếu cọc:

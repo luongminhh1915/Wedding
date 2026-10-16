@@ -6,6 +6,9 @@ namespace Wedding.Domain.Entities;
 public class BudgetItem : BaseEntity
 {
     public Guid CustomerId { get; private set; }
+    public Guid? WeddingProfileId { get; private set; }
+    public Guid? ContractId { get; private set; }
+    public string Owner { get; private set; } = "Shared";
     public Guid? CategoryId { get; private set; }
     public string ItemName { get; private set; } = string.Empty;
     public decimal PlannedCost { get; private set; }
@@ -52,4 +55,14 @@ public class BudgetItem : BaseEntity
         IsPaid = isPaid;
         SetUpdated();
     }
+
+    public void AttachToWedding(Guid weddingProfileId, string owner = "Shared")
+    { WeddingProfileId = weddingProfileId; AssignOwner(owner); }
+    public void AssignOwner(string owner)
+    { if (owner is not ("Shared" or "Bride" or "Groom")) throw new DomainException("Người phụ trách không hợp lệ."); Owner = owner; SetUpdated(); }
+    public void Rename(string name)
+    { if (string.IsNullOrWhiteSpace(name) || name.Length > 200) throw new DomainException("Tên khoản chi bắt buộc, tối đa 200 ký tự."); ItemName = name.Trim(); SetUpdated(); }
+    public void LinkContract(Guid contractId) { ContractId = contractId; SetUpdated(); }
+    public void SynchronizeContract(decimal total, decimal paid)
+    { UpdateCosts(total, paid, Notes, paid >= total); }
 }

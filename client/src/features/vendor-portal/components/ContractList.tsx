@@ -6,6 +6,7 @@ import {
 import { useVendorContracts } from '../hooks/useVendorContracts';
 import type { Contract } from '../../../types/contract.types';
 import { AdvancePaymentModal, type AdvancePaymentRecord } from './AdvancePaymentModal';
+import { ContractRevisionActions } from './ContractRevisionActions';
 
 const ADVANCE_STORAGE_KEY = 'wedding_vendor_advance_requests';
 
@@ -318,8 +319,8 @@ export function ContractList() {
 
                 {/* Hoa hồng đã sinh tự động */}
                 {contract.commissions && contract.commissions.length > 0 && (() => {
-                  const paid = contract.commissions.filter(c => c.status === 'Paid').reduce((s, c) => s + c.commissionAmount, 0);
-                  const pending = contract.commissions.filter(c => c.status !== 'Paid').reduce((s, c) => s + c.commissionAmount, 0);
+                  const paid = contract.commissions.filter(c => c.status === 'Paid' || c.status === 'Settled').reduce((s, c) => s + c.commissionAmount, 0);
+                  const pending = contract.commissions.filter(c => ['Pending', 'Unsettled', 'InSettlement', 'Overdue'].includes(c.status)).reduce((s, c) => s + c.commissionAmount, 0);
                   const total = paid + pending;
 
                   const isFullyPaid = pending === 0 && paid > 0;
@@ -342,7 +343,7 @@ export function ContractList() {
                           </span>
                         )}
                         <span className="text-[10px] text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">
-                          Hạn thanh toán: Ngày 25
+                          Chốt ngày 25 · trả trước ngày 30 · K2 khóa đến sau cưới 3 ngày
                         </span>
                       </div>
 
@@ -382,6 +383,7 @@ export function ContractList() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <ContractRevisionActions contract={contract} onSuccess={() => { void refetch(); }} />
                     <button
                       onClick={() => handleOpenAdvanceModal(contract)}
                       disabled={contract.status === 'Cancelled'}

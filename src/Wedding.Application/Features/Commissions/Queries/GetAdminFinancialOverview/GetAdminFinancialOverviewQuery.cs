@@ -117,12 +117,12 @@ public class GetAdminFinancialOverviewQueryHandler
                 var customer = contract.Customer;
 
                 var totalDue = g.Sum(c => c.CommissionAmount);
-                var totalPaid = g.Where(c => c.Status == CommissionStatus.Paid).Sum(c => c.CommissionAmount);
-                var totalPending = g.Where(c => c.Status == CommissionStatus.Pending).Sum(c => c.CommissionAmount);
-                var totalOverdue = g.Where(c => c.Status == CommissionStatus.Overdue).Sum(c => c.CommissionAmount);
+                var totalPaid = g.Sum(c => c.EffectivePaidAmount);
+                var totalPending = g.Where(c => c.Status is CommissionStatus.Pending or CommissionStatus.Unsettled or CommissionStatus.InSettlement).Sum(c => c.OutstandingAmount);
+                var totalOverdue = g.Where(c => c.Status == CommissionStatus.Overdue).Sum(c => c.OutstandingAmount);
 
-                var commissionRate = vendor.CommissionRate > 0
-                    ? vendor.CommissionRate
+                var commissionRate = contract.CommissionRateSnapshot.HasValue
+                    ? contract.CommissionRateSnapshot.Value
                     : (g.Select(c => c.CommissionRate).FirstOrDefault(r => r > 0));
 
                 string payStatus;
