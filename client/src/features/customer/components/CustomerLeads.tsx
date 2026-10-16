@@ -91,7 +91,7 @@ export function CustomerLeads() {
                 {lead.voucher && (
                   <span className="flex items-center gap-2 mt-2 text-[10px] text-amber-700">
                     <Gift size={13} />
-                    <b className="font-mono">{lead.voucher.code}</b> ·{" "}
+                    Mã ưu đãi <b className="font-mono">{lead.voucher.code}</b> · Hạn sử dụng đến{" "}
                     {new Date(lead.voucher.expiresAt).toLocaleDateString(
                       "vi-VN",
                     )}

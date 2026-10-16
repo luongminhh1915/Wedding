@@ -10,6 +10,8 @@ import {
   Heart,
   LayoutDashboard,
   Mail,
+  CalendarClock,
+  PackageCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -21,12 +23,21 @@ import { WeddingBudgetPlanner } from "./components/tools/WeddingBudgetPlanner";
 import { WeddingChecklist } from "./components/tools/WeddingChecklist";
 import { useMyInvitation } from "./hooks/useInvitations";
 import { useWeddingBudget, useWeddingChecklist } from "./hooks/useWeddingTools";
+import { PlannerSnapshot } from "../journey/planner/PlannerSnapshot";
+import { usePlannerOverview } from "../journey/api";
+import { PremiumUpgrade } from "../journey/planner/PremiumUpgrade";
+import { MyAppointments } from "../journey/appointments/MyAppointments";
+import { MyCombos } from "../journey/combo/MyCombos";
+import { MyQuotes } from "../journey/quotes/MyQuotes";
+import { CustomerDisputes } from "../journey/quotes/CustomerDisputes";
 
 const tabs = [
   { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
   { id: "checklist", label: "Công việc", icon: CheckCheck },
   { id: "budget", label: "Ngân sách", icon: Wallet },
   { id: "invitations", label: "Thiệp & RSVP", icon: Heart },
+  { id: "appointments", label: "Lịch hẹn", icon: CalendarClock },
+  { id: "combos", label: "Combo", icon: PackageCheck },
   { id: "contracts", label: "Hợp đồng & tư vấn", icon: FileCheck2 },
 ] as const;
 type CustomerTab = (typeof tabs)[number]["id"];
@@ -45,7 +56,18 @@ export default function CustomerDashboard() {
     setParams(tab === "overview" ? {} : { tab });
   const { invitation } = useMyInvitation();
   const [today] = useState(() => Date.now());
-  const date = invitation?.eventDate ? new Date(invitation.eventDate) : null;
+  const { data: planner } = usePlannerOverview();
+  const profile = planner?.profile;
+  const dateIso = profile?.weddingDate || invitation?.eventDate;
+  const date = dateIso ? new Date(dateIso) : null;
+  const coupleName =
+    profile?.groomName && profile?.brideName
+      ? `${profile.groomName} & ${profile.brideName}`
+      : invitation
+        ? `${invitation.groomName} & ${invitation.brideName}`
+        : user?.fullName && user.fullName !== "Cặp đôi mới"
+          ? user.fullName
+          : "Ngày cưới của chúng mình";
   const daysLeft = date
     ? Math.max(0, Math.ceil((date.getTime() - today) / 86400000))
     : null;
@@ -56,9 +78,7 @@ export default function CustomerDashboard() {
         <div>
           <h1>
             <em>
-              {invitation
-                ? `${invitation.groomName} & ${invitation.brideName}`
-                : user?.fullName || "Ngày cưới của chúng mình"}
+              {coupleName}
             </em>{" "}
             <Heart
               className="inline ml-2 text-rose-300"
@@ -75,7 +95,7 @@ export default function CustomerDashboard() {
           <CalendarDays size={17} />
           {date ? (
             <>
-              <span>{date.toLocaleDateString("vi-VN")}</span>
+              <span>{date.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}</span>
               <span>· Còn {daysLeft} ngày</span>
             </>
           ) : (
@@ -101,14 +121,28 @@ export default function CustomerDashboard() {
         </Link>
       </nav>
       <div className="feature-content">
-        {activeTab === "overview" && <PlannerOverview onSelect={selectTab} />}
+        {activeTab === "overview" && (
+          <>
+            <PlannerSnapshot />
+            <PlannerOverview onSelect={selectTab} />
+          </>
+        )}
+        {activeTab === "appointments" && <MyAppointments />}
+        {activeTab === "combos" && <MyCombos />}
         {activeTab === "contracts" && (
           <>
             <CustomerLeads />
+            <MyQuotes />
             <MyContracts />
+            <CustomerDisputes />
           </>
         )}
-        {activeTab === "invitations" && <InvitationBuilder />}
+        {activeTab === "invitations" && (
+          <>
+            {invitation && <PremiumUpgrade key={String(invitation.isPremium)} isPremium={invitation.isPremium} />}
+            <InvitationBuilder />
+          </>
+        )}
         {activeTab === "budget" && <WeddingBudgetPlanner />}
         {activeTab === "checklist" && <WeddingChecklist />}
       </div>

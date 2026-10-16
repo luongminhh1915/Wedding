@@ -63,7 +63,10 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddSingleton<IVietQrService, VietQrService>();
-        services.AddSingleton<IAdvancePaymentService, AdvancePaymentService>();
+        services.AddScoped<IAdvancePaymentService, AdvancePaymentService>(); // P0: lưu DB thay vì bộ nhớ
+        services.AddScoped<IAuditLogger, AuditLogger>();
+        services.AddSingleton<INotificationSender, LoggingNotificationSender>();
+        services.AddSingleton<IMockPaymentGateway, MockPaymentGateway>();
 
         // Đăng ký CurrentUserService — đọc UserId từ JWT claims
         services.AddHttpContextAccessor();
@@ -77,6 +80,9 @@ public static class DependencyInjection
 
         // Đăng ký Background Worker đối soát hoa hồng và xử lý trễ hạn (BR-007)
         services.AddHostedService<MonthlySettlementBackgroundService>();
+
+        // P3: tự hết hạn lịch hẹn chờ cọc/chờ duyệt quá giờ
+        services.AddHostedService<AppointmentHousekeepingBackgroundService>();
 
         return services;
     }

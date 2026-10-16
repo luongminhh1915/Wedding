@@ -21,7 +21,8 @@ public record WeddingInvitationDto(
     int AttendingCount,
     int NotAttendingCount,
     int TotalAccompanying,
-    int EstimatedTables
+    int EstimatedTables,
+    bool IsPremium = false // P2: thiệp Premium
 );
 
 public record GuestRsvpDto(

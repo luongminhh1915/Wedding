@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\Wedding.Application.csproj": {}
+    "/workspace/Wedding/src/Wedding.Application/Wedding.Application.csproj": {}
   },
   "projects": {
-    "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\Wedding.Application.csproj": {
+    "/workspace/Wedding/src/Wedding.Application/Wedding.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\Wedding.Application.csproj",
+        "projectUniqueName": "/workspace/Wedding/src/Wedding.Application/Wedding.Application.csproj",
         "projectName": "Wedding.Application",
-        "projectPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\Wedding.Application.csproj",
-        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Application\\obj\\",
+        "projectPath": "/workspace/Wedding/src/Wedding.Application/Wedding.Application.csproj",
+        "packagesPath": "/home/box/.nuget/packages/",
+        "outputPath": "/workspace/Wedding/src/Wedding.Application/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/box/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -26,8 +26,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj": {
-                "projectPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj"
+              "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj": {
+                "projectPath": "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj"
               }
             }
           }
@@ -36,6 +36,11 @@
           "warnAsError": [
             "NU1605"
           ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -71,21 +76,21 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/home/box/.dotnet/sdk/8.0.426/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj": {
+    "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj",
+        "projectUniqueName": "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj",
         "projectName": "Wedding.Domain",
-        "projectPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj",
-        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\obj\\",
+        "projectPath": "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj",
+        "packagesPath": "/home/box/.nuget/packages/",
+        "outputPath": "/workspace/Wedding/src/Wedding.Domain/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/box/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -103,6 +108,11 @@
           "warnAsError": [
             "NU1605"
           ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -124,7 +134,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/home/box/.dotnet/sdk/8.0.426/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

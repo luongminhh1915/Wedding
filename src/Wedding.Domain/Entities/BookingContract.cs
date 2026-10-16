@@ -22,6 +22,8 @@ public class BookingContract : BaseEntity
     public DateTime? ConfirmedAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
     public string? CancellationReason { get; private set; }
+    public Guid? QuoteId { get; private set; } // P4: HĐ được điền sẵn từ báo giá
+    public decimal? CommissionRateSnapshot { get; private set; } // P4: chốt tỷ lệ hoa hồng tại thời điểm xác nhận
 
     // Navigation Properties
     public Lead Lead { get; private set; } = null!;
@@ -98,6 +100,25 @@ public class BookingContract : BaseEntity
     {
         Status = ContractStatus.Cancelled;
         CancellationReason = reason;
+        SetUpdated();
+    }
+
+    public void LinkQuote(Guid quoteId) { QuoteId = quoteId; SetUpdated(); }
+
+    public void SnapshotCommissionRate(decimal rate) { CommissionRateSnapshot ??= rate; SetUpdated(); }
+
+    public void MarkDisputed()
+    {
+        if (Status is not (ContractStatus.Confirmed or ContractStatus.Completed or ContractStatus.PendingVerification))
+            throw new DomainException("Chỉ có thể mở tranh chấp với hợp đồng đang hiệu lực.");
+        Status = ContractStatus.Disputed; SetUpdated();
+    }
+
+    public void ResolveDispute(bool cancelContract, string note)
+    {
+        if (Status != ContractStatus.Disputed) return;
+        Status = cancelContract ? ContractStatus.Cancelled : ContractStatus.Confirmed;
+        if (cancelContract) CancellationReason = $"Hủy sau tranh chấp: {note}";
         SetUpdated();
     }
 }

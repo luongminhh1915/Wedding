@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
+import { QuickLogin } from "../../journey/planner/QuickLogin";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -129,6 +130,7 @@ export default function LoginForm() {
             )}
           </button>
         </form>
+        <QuickLogin />
 
         {/* Quick Test Accounts Box */}
         {import.meta.env.DEV && (

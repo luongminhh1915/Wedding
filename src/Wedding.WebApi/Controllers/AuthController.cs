@@ -56,6 +56,24 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// P1 – Gửi mã OTP đăng nhập qua SĐT/email (kênh SMS/Zalo đang mock, mã trả về ở DevCode).
+    /// </summary>
+    [HttpPost("otp/request")]
+    public async Task<IActionResult> RequestOtp([FromBody] RequestOtpCommand command) => Ok(await _mediator.Send(command));
+
+    /// <summary>
+    /// P1 – Xác thực OTP; tự tạo tài khoản Customer nếu chưa có.
+    /// </summary>
+    [HttpPost("otp/verify")]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpCommand command) => Ok(await _mediator.Send(command));
+
+    /// <summary>
+    /// P1 – Đăng nhập Google (mock, chưa verify id_token – xem P7).
+    /// </summary>
+    [HttpPost("google")]
+    public async Task<IActionResult> Google([FromBody] GoogleLoginCommand command) => Ok(await _mediator.Send(command));
+
+    /// <summary>
     /// Lấy thông tin tài khoản đang đăng nhập
     /// </summary>
     [Authorize]

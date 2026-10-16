@@ -21,6 +21,21 @@ public interface IApplicationDbContext
     DbSet<BudgetItem> BudgetItems { get; }
     DbSet<ChecklistTask> ChecklistTasks { get; }
     DbSet<ChatMessage> ChatMessages { get; }
+    // Weddy journey (P0–P6)
+    DbSet<AuditLog> AuditLogs { get; }
+    DbSet<AdvancePayment> AdvancePayments { get; }
+    DbSet<OtpCode> OtpCodes { get; }
+    DbSet<WeddingProfile> WeddingProfiles { get; }
+    DbSet<AppointmentType> AppointmentTypes { get; }
+    DbSet<Appointment> Appointments { get; }
+    DbSet<ComboTemplate> ComboTemplates { get; }
+    DbSet<ComboTemplateItem> ComboTemplateItems { get; }
+    DbSet<ComboOrder> ComboOrders { get; }
+    DbSet<ComboOrderItem> ComboOrderItems { get; }
+    DbSet<Quote> Quotes { get; }
+    DbSet<CommissionSettlement> CommissionSettlements { get; }
+    DbSet<VendorVerification> VendorVerifications { get; }
+    DbSet<Dispute> Disputes { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

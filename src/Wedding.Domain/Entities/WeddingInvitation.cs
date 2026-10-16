@@ -19,6 +19,9 @@ public class WeddingInvitation : BaseEntity
     public string TemplateStyle { get; private set; } = "ClassicRose";
     public string? BankInfo { get; private set; } // Thông tin mừng cưới online / STK
     public bool IsPublished { get; private set; } = true;
+    public bool IsPremium { get; private set; } // P2: gói Premium 130.000đ (thanh toán mock)
+    public DateTime? PremiumActivatedAt { get; private set; }
+    public string? PremiumPaymentRef { get; private set; }
 
     // Navigation Properties
     public User Customer { get; private set; } = null!;
@@ -71,4 +74,11 @@ public class WeddingInvitation : BaseEntity
         BankInfo = bankInfo;
         SetUpdated();
     }
+
+    public void ActivatePremium(string paymentRef)
+    {
+        IsPremium = true; PremiumActivatedAt = DateTime.UtcNow; PremiumPaymentRef = paymentRef; SetUpdated();
+    }
+
+    public void SetPublished(bool published) { IsPublished = published; SetUpdated(); }
 }

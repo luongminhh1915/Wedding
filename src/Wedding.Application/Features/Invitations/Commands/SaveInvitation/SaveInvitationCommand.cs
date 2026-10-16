@@ -126,7 +126,8 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
             AttendingCount: attending,
             NotAttendingCount: notAttending,
             TotalAccompanying: totalAccompanying,
-            EstimatedTables: Math.Max(estimatedTables, 1)
+            EstimatedTables: Math.Max(estimatedTables, 1),
+            IsPremium: invitation.IsPremium
         );
     }
 

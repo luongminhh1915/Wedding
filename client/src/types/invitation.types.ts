@@ -20,6 +20,7 @@ export interface WeddingInvitation {
   notAttendingCount: number;
   totalAccompanying: number;
   estimatedTables: number;
+  isPremium?: boolean; // P2
 }
 
 export interface SaveInvitationRequest {

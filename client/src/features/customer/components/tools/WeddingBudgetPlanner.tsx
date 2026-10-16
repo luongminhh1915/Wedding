@@ -160,15 +160,19 @@ export function WeddingBudgetPlanner() {
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <p className="text-3xl font-black text-rose-600 break-all" data-testid="budget-total">
+              {Math.round(totalPlanned).toLocaleString("vi-VN")}đ
+            </p>
+            <div className="flex items-center gap-2 mt-2">
               <input
-                type="number"
-                step="5000000"
-                value={totalPlanned}
+                type="text"
+                inputMode="numeric"
+                aria-label="Chỉnh tổng ngân sách dự kiến"
+                value={totalPlanned ? Math.round(totalPlanned).toLocaleString("vi-VN") : ""}
                 onChange={(e) =>
-                  setCustomTotalBudget(Math.max(0, Number(e.target.value)))
+                  setCustomTotalBudget(Math.max(0, Number(e.target.value.replace(/\D/g, "")) || 0))
                 }
-                className="w-full text-2xl font-black text-rose-600 bg-white border border-rose-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="min-w-0 flex-1 text-base font-bold text-rose-600 bg-white border border-rose-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
               <span className="text-sm font-bold text-slate-600">đ</span>
             </div>

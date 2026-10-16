@@ -51,7 +51,7 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
         contract.CompleteContract();
 
         var existingCommissionsTotal = contract.Commissions.Sum(c => c.CommissionAmount);
-        var commissionRate = contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m;
+        var commissionRate = contract.CommissionRateSnapshot ?? (contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m); // P4: dùng tỷ lệ đã chốt
         var totalCommission = Math.Round(contract.ContractValue * commissionRate, 0);
         var remainderCommission = totalCommission - existingCommissionsTotal;
 

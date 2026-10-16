@@ -19,6 +19,10 @@ const VendorDashboard = lazy(
   () => import("../features/vendor-portal/VendorDashboard"),
 );
 const AdminDashboard = lazy(() => import("../features/admin/AdminDashboard"));
+// Hành trình cặp đôi kiểu Weddy (P1–P6)
+const SetupWizard = lazy(() => import("../features/journey/planner/SetupWizard"));
+const ComboBuilderPage = lazy(() => import("../features/journey/combo/ComboBuilderPage"));
+const ArticlesPage = lazy(() => import("../features/journey/ArticlesPage"));
 const PublicInvitationPage = lazy(
   () =>
     import("../features/customer/components/invitation/PublicInvitationPage"),
@@ -45,10 +49,13 @@ export default function AppRoutes() {
           <Route path="/listings/:id" element={<ListingDetailPage />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
+          <Route path="/combo" element={<ComboBuilderPage />} />
+          <Route path="/cam-nang" element={<ArticlesPage />} />
 
           {/* Customer Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={["Customer"]} />}>
             <Route path="/planner" element={<CustomerDashboard />} />
+            <Route path="/planner/setup" element={<SetupWizard />} />
             <Route path="/customer/dashboard" element={<CustomerDashboard />} />
             <Route path="/customer/contracts" element={<CustomerDashboard />} />
           </Route>

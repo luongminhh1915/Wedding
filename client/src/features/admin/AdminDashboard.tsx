@@ -6,7 +6,16 @@ import {
   Layers,
   ShieldCheck,
   Users,
+  BadgeCheck,
+  Gavel,
+  Receipt,
 } from "lucide-react";
+import {
+  AdminKpiPanel,
+  DisputeDesk,
+  SettlementsPanel,
+  VerificationQueue,
+} from "../journey/admin/AdminJourneyPanels";
 import { useAuthStore } from "../../store/authStore";
 import ModerationQueue from "./ModerationQueue";
 import UserManagement from "./UserManagement";
@@ -15,6 +24,13 @@ import FinancialDashboard from "./FinancialDashboard";
 import { usePendingListings } from "../vendor-portal/hooks/useListings";
 
 const tabs = [
+  {
+    id: "overview",
+    label: "Tổng quan",
+    icon: Activity,
+    description: "KPI vận hành: GMV, chuyển đổi Lead → HĐ, SLA, tranh chấp, nhật ký thao tác.",
+    roles: ["SuperAdmin", "Finance", "Moderator", "CustomerCare"],
+  },
   {
     id: "moderation",
     label: "Kiểm duyệt",
@@ -40,17 +56,35 @@ const tabs = [
     description: "Tổng hợp hợp đồng, tiền cọc và hoa hồng của nhà cung cấp.",
   },
   {
-    id: "analytics",
-    label: "Báo cáo GMV",
-    icon: Activity,
-    description: "Báo cáo hoạt động của nền tảng.",
+    id: "settlements",
+    label: "Bảng kê tháng",
+    icon: Receipt,
+    description: "Chốt bảng kê hoa hồng theo kỳ (hạn ngày 25), thu qua VietQR, hóa đơn điện tử (giả lập).",
+    roles: ["SuperAdmin", "Finance"],
+  },
+  {
+    id: "verifications",
+    label: "Xác minh NCC",
+    icon: BadgeCheck,
+    description: "Duyệt hồ sơ pháp lý để cấp huy hiệu “Đã xác minh”.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "disputes",
+    label: "Tranh chấp",
+    icon: Gavel,
+    description: "Xử lý sự cố hợp đồng giữa cặp đôi và nhà cung cấp trong 72 giờ.",
+    roles: ["SuperAdmin", "CustomerCare"],
   },
 ] as const;
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] =
-    useState<(typeof tabs)[number]["id"]>("moderation");
+    useState<(typeof tabs)[number]["id"]>("overview");
+  const visibleTabs = tabs.filter(
+    (tab) => !("roles" in tab) || (tab.roles as readonly string[]).includes(user?.role ?? ""),
+  );
   const { data: pendingListings = [] } = usePendingListings();
   const current = tabs.find((tab) => tab.id === activeTab)!;
   return (
@@ -66,7 +100,7 @@ export default function AdminDashboard() {
         <span>{user?.role}</span>
       </div>
       <nav className="planner-tabs" aria-label="Quản trị hệ thống">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {visibleTabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             className={activeTab === id ? "active" : ""}
@@ -92,22 +126,10 @@ export default function AdminDashboard() {
         {activeTab === "published-listings" && <AllListingsManager />}
         {activeTab === "users" && <UserManagement />}
         {activeTab === "finance" && <FinancialDashboard />}
-        {activeTab === "analytics" && (
-          <div className="overview-panel text-center py-16">
-            <Activity size={30} className="text-rose-300 mx-auto mb-5" />
-            <h2>Báo cáo đang được phát triển</h2>
-            <p>
-              Hiện tại, bạn có thể xem tổng hợp giao dịch tại Tài chính & đối
-              soát.
-            </p>
-            <button
-              onClick={() => setActiveTab("finance")}
-              className="wm-button small mt-6"
-            >
-              Xem dữ liệu tài chính
-            </button>
-          </div>
-        )}
+        {activeTab === "overview" && <AdminKpiPanel />}
+        {activeTab === "settlements" && <SettlementsPanel />}
+        {activeTab === "verifications" && <VerificationQueue />}
+        {activeTab === "disputes" && <DisputeDesk />}
       </div>
     </main>
   );

@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "S0IR+SCqjofzxIvKXsRs4hu/TVZddzUWtAeD8PaO/tg=",
+  "Hash": "qwyn99UkkGK+5xyb9uEWIWzJVQMvOZt8tlMaQG+SSmI=",
   "Source": "Wedding.WebApi",
   "BasePath": "_content/Wedding.WebApi",
   "Mode": "Default",
@@ -8,19 +8,19 @@
   "ReferencedProjectsConfiguration": [],
   "DiscoveryPatterns": [
     {
-      "Name": "Wedding.WebApi\\wwwroot",
+      "Name": "Wedding.WebApi/wwwroot",
       "Source": "Wedding.WebApi",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "Pattern": "**"
     }
   ],
   "Assets": [
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\0208609371eb4991868446e6629ac5b9.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/0208609371eb4991868446e6629ac5b9.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/0208609371eb4991868446e6629ac5b9.jpg",
       "AssetKind": "All",
@@ -33,13 +33,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\0208609371eb4991868446e6629ac5b9.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/0208609371eb4991868446e6629ac5b9.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\0d44f6ae6a454149ba44ff0aa1c6628f.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/0d44f6ae6a454149ba44ff0aa1c6628f.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/0d44f6ae6a454149ba44ff0aa1c6628f.jpg",
       "AssetKind": "All",
@@ -52,13 +52,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\0d44f6ae6a454149ba44ff0aa1c6628f.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/0d44f6ae6a454149ba44ff0aa1c6628f.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\0f03d6aa3a064f26b1833edb382dcc32.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/0f03d6aa3a064f26b1833edb382dcc32.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/0f03d6aa3a064f26b1833edb382dcc32.jpg",
       "AssetKind": "All",
@@ -71,13 +71,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\0f03d6aa3a064f26b1833edb382dcc32.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/0f03d6aa3a064f26b1833edb382dcc32.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\2a1bbc94cb134f9cbdcb4f7efad91570.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/2a1bbc94cb134f9cbdcb4f7efad91570.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/2a1bbc94cb134f9cbdcb4f7efad91570.jpg",
       "AssetKind": "All",
@@ -90,13 +90,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\2a1bbc94cb134f9cbdcb4f7efad91570.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/2a1bbc94cb134f9cbdcb4f7efad91570.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\3ab582236fca451888078b9a4188bbb2.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/3ab582236fca451888078b9a4188bbb2.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/3ab582236fca451888078b9a4188bbb2.jpg",
       "AssetKind": "All",
@@ -109,13 +109,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\3ab582236fca451888078b9a4188bbb2.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/3ab582236fca451888078b9a4188bbb2.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\412f02c9178744be8f5f1584fc133d0f.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/412f02c9178744be8f5f1584fc133d0f.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/412f02c9178744be8f5f1584fc133d0f.jpg",
       "AssetKind": "All",
@@ -128,13 +128,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\412f02c9178744be8f5f1584fc133d0f.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/412f02c9178744be8f5f1584fc133d0f.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\55ad051ce8a440fc95c6ad1b034dcb8c.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/55ad051ce8a440fc95c6ad1b034dcb8c.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/55ad051ce8a440fc95c6ad1b034dcb8c.jpg",
       "AssetKind": "All",
@@ -147,13 +147,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\55ad051ce8a440fc95c6ad1b034dcb8c.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/55ad051ce8a440fc95c6ad1b034dcb8c.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\6e6d7a632481410b864361e62686d1be.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/6e6d7a632481410b864361e62686d1be.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/6e6d7a632481410b864361e62686d1be.jpg",
       "AssetKind": "All",
@@ -166,13 +166,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\6e6d7a632481410b864361e62686d1be.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/6e6d7a632481410b864361e62686d1be.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\6f32219e999d4b589123b7b0d6fbf354.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/6f32219e999d4b589123b7b0d6fbf354.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/6f32219e999d4b589123b7b0d6fbf354.jpg",
       "AssetKind": "All",
@@ -185,13 +185,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\6f32219e999d4b589123b7b0d6fbf354.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/6f32219e999d4b589123b7b0d6fbf354.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\7d39e379640942aba3a70c4e8764915c.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/7d39e379640942aba3a70c4e8764915c.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/7d39e379640942aba3a70c4e8764915c.jpg",
       "AssetKind": "All",
@@ -204,13 +204,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\7d39e379640942aba3a70c4e8764915c.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/7d39e379640942aba3a70c4e8764915c.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\a284ec6b6c714b2fadde13afc8b6f482.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/a284ec6b6c714b2fadde13afc8b6f482.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/a284ec6b6c714b2fadde13afc8b6f482.jpg",
       "AssetKind": "All",
@@ -223,13 +223,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\a284ec6b6c714b2fadde13afc8b6f482.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/a284ec6b6c714b2fadde13afc8b6f482.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\caf9d42a62bb49e697c91e251879c714.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/caf9d42a62bb49e697c91e251879c714.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/caf9d42a62bb49e697c91e251879c714.jpg",
       "AssetKind": "All",
@@ -242,13 +242,13 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\caf9d42a62bb49e697c91e251879c714.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/caf9d42a62bb49e697c91e251879c714.jpg"
     },
     {
-      "Identity": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\uploads\\listings\\e7b1885fc3924d8f91e77ac946ec3291.jpg",
+      "Identity": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/uploads/listings/e7b1885fc3924d8f91e77ac946ec3291.jpg",
       "SourceId": "Wedding.WebApi",
       "SourceType": "Discovered",
-      "ContentRoot": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.WebApi\\wwwroot\\",
+      "ContentRoot": "/workspace/Wedding/src/Wedding.WebApi/wwwroot/",
       "BasePath": "_content/Wedding.WebApi",
       "RelativePath": "uploads/listings/e7b1885fc3924d8f91e77ac946ec3291.jpg",
       "AssetKind": "All",
@@ -261,7 +261,7 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\uploads\\listings\\e7b1885fc3924d8f91e77ac946ec3291.jpg"
+      "OriginalItemSpec": "wwwroot/uploads/listings/e7b1885fc3924d8f91e77ac946ec3291.jpg"
     }
   ]
 }

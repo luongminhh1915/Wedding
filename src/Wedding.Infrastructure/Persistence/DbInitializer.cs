@@ -42,6 +42,7 @@ public static class DbInitializer
 
             if (await context.Users.AnyAsync())
             {
+                await WeddyJourneySeeder.SeedAsync(context, hasher);
                 logger?.LogInformation("Database already contains users. Demo seed was skipped.");
                 return;
             }
@@ -520,6 +521,7 @@ public static class DbInitializer
             }
 
             await context.SaveChangesAsync();
+            await WeddyJourneySeeder.SeedAsync(context, hasher);
             logger?.LogInformation("===> [DB Seeder] Đã nạp thành công bộ dữ liệu mẫu với mật khẩu mặc định 123456 cho toàn bộ users!");
         }
         catch (Exception ex)

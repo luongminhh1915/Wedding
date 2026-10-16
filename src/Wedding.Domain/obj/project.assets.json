@@ -8,19 +8,19 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Admin\\.nuget\\packages\\": {}
+    "/home/box/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj",
+      "projectUniqueName": "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj",
       "projectName": "Wedding.Domain",
-      "projectPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\Wedding.Domain.csproj",
-      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "D:\\Gitgithubhub\\Wedding\\src\\Wedding.Domain\\obj\\",
+      "projectPath": "/workspace/Wedding/src/Wedding.Domain/Wedding.Domain.csproj",
+      "packagesPath": "/home/box/.nuget/packages/",
+      "outputPath": "/workspace/Wedding/src/Wedding.Domain/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/home/box/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -38,6 +38,11 @@
         "warnAsError": [
           "NU1605"
         ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
       }
     },
     "frameworks": {
@@ -59,7 +64,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/home/box/.dotnet/sdk/8.0.426/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

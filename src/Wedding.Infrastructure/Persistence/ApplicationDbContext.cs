@@ -28,6 +28,21 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<BudgetItem> BudgetItems => Set<BudgetItem>();
     public DbSet<ChecklistTask> ChecklistTasks => Set<ChecklistTask>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    // Weddy journey (P0–P6)
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<AdvancePayment> AdvancePayments => Set<AdvancePayment>();
+    public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
+    public DbSet<WeddingProfile> WeddingProfiles => Set<WeddingProfile>();
+    public DbSet<AppointmentType> AppointmentTypes => Set<AppointmentType>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<ComboTemplate> ComboTemplates => Set<ComboTemplate>();
+    public DbSet<ComboTemplateItem> ComboTemplateItems => Set<ComboTemplateItem>();
+    public DbSet<ComboOrder> ComboOrders => Set<ComboOrder>();
+    public DbSet<ComboOrderItem> ComboOrderItems => Set<ComboOrderItem>();
+    public DbSet<Quote> Quotes => Set<Quote>();
+    public DbSet<CommissionSettlement> CommissionSettlements => Set<CommissionSettlement>();
+    public DbSet<VendorVerification> VendorVerifications => Set<VendorVerification>();
+    public DbSet<Dispute> Disputes => Set<Dispute>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

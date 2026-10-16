@@ -50,7 +50,9 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             contract.Voucher.Redeem();
         }
 
-        var commissionRate = contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m;
+        // P4: chốt (snapshot) tỷ lệ hoa hồng tại thời điểm khách xác nhận – thay đổi tỷ lệ sau này không ảnh hưởng HĐ cũ
+        contract.SnapshotCommissionRate(contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m);
+        var commissionRate = contract.CommissionRateSnapshot!.Value;
         var totalCommission = Math.Round(contract.ContractValue * commissionRate, 0);
 
         // BR-007: Hạn thanh toán hoa hồng là ngày 25 của chu kỳ đối soát

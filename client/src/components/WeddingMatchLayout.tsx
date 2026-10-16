@@ -95,7 +95,8 @@ export function WeddingMatchHeader() {
           Thiệp mời <ChevronDown size={13} />
         </Link>
         <NavLink to="/browse">Dịch vụ</NavLink>
-        <Link to="/#cong-cu">Công cụ cưới</Link>
+        <NavLink to="/combo">Combo cưới</NavLink>
+        <NavLink to="/cam-nang">Cẩm nang</NavLink>
       </nav>
       <div className="wm-header-actions">
         {token && user ? (

@@ -1,3 +1,4 @@
+import { usePlannerOverview } from "../../../journey/api";
 import { useState, useEffect } from "react";
 import {
   Save,
@@ -47,21 +48,18 @@ export function InvitationBuilder() {
   const { invitation, isLoading, saveInvitation, isSaving } = useMyInvitation();
   const { data: rsvps = [] } = useInvitationRsvps();
 
-  const [formData, setFormData] = useState<SaveInvitationRequest>({
-    slug: "long-thu-2026",
-    groomName: "Hoàng Long",
-    brideName: "Minh Thư",
-    eventDate: "2026-11-15T18:00",
-    venueName: "White Palace - Sảnh Grand Ballroom",
-    venueAddress: "194 Hoàng Văn Thụ, Q. Phú Nhuận, TP.HCM",
-    mapUrl: "https://maps.google.com",
+  const { data: planner } = usePlannerOverview();
+  const profile = planner?.profile;
+  const slugify = (v: string) =>
+    v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const blank: SaveInvitationRequest = {
+    slug: "", groomName: "", brideName: "", eventDate: "", venueName: "", venueAddress: "", mapUrl: "",
     loveStory:
       "Hạnh phúc không phải là điểm đến, mà là hành trình chúng mình cùng nhau đi qua. Rất mong được đón tiếp bạn trong ngày vui trọng đại của chúng mình!",
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1519741497674-611481863552?w=800",
-    templateStyle: "rustic",
-    bankInfo: "MBBank - 0338889999 - HOANG LONG (Mừng cưới)",
-  });
+    coverImageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=800",
+    templateStyle: "rustic", bankInfo: "",
+  };
+  const [formData, setFormData] = useState<SaveInvitationRequest>(blank);
 
   const [isCopied, setIsCopied] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -69,25 +67,32 @@ export function InvitationBuilder() {
   useEffect(() => {
     if (invitation) {
       setFormData({
-        slug: invitation.slug || "long-thu-2026",
-        groomName: invitation.groomName || "Hoàng Long",
-        brideName: invitation.brideName || "Minh Thư",
-        eventDate: invitation.eventDate
-          ? invitation.eventDate.substring(0, 16)
-          : "2026-11-15T18:00",
-        venueName: invitation.venueName || "White Palace - Sảnh Grand Ballroom",
-        venueAddress:
-          invitation.venueAddress || "194 Hoàng Văn Thụ, Q. Phú Nhuận, TP.HCM",
+        slug: invitation.slug || "",
+        groomName: invitation.groomName || "",
+        brideName: invitation.brideName || "",
+        eventDate: invitation.eventDate ? invitation.eventDate.substring(0, 16) : "",
+        venueName: invitation.venueName || "",
+        venueAddress: invitation.venueAddress || "",
         mapUrl: invitation.mapUrl || "",
         loveStory: invitation.loveStory || "",
-        coverImageUrl:
-          invitation.coverImageUrl ||
-          "https://images.unsplash.com/photo-1519741497674-611481863552?w=800",
+        coverImageUrl: invitation.coverImageUrl || blank.coverImageUrl,
         templateStyle: invitation.templateStyle || "rustic",
         bankInfo: invitation.bankInfo || "",
       });
+    } else if (profile) {
+      // Chưa có thiệp: điền sẵn từ hồ sơ cưới của chính người dùng (không dùng dữ liệu mẫu của cặp khác).
+      const d = profile.weddingDate ? profile.weddingDate.substring(0, 10) : "";
+      setFormData((f) => ({
+        ...f,
+        groomName: profile.groomName || "",
+        brideName: profile.brideName || "",
+        eventDate: d ? `${d}T18:00` : "",
+        slug: slugify(`${profile.groomName}-${profile.brideName}-${d.substring(0, 4)}`),
+        venueAddress: profile.city || "",
+      }));
     }
-  }, [invitation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitation, profile]);
 
   const handleSave = async () => {
     try {
@@ -102,7 +107,7 @@ export function InvitationBuilder() {
     }
   };
 
-  const invitationUrl = `${window.location.origin}/invitation/${formData.slug || "long-thu-2026"}`;
+  const invitationUrl = `${window.location.origin}/invitation/${formData.slug || "ten-cap-doi"}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(invitationUrl);
@@ -259,7 +264,7 @@ export function InvitationBuilder() {
                     setFormData((f) => ({ ...f, slug: e.target.value }))
                   }
                   className="bg-transparent font-bold text-slate-900 focus:outline-none flex-1 font-mono ml-0.5"
-                  placeholder="long-thu-2026"
+                  placeholder="VD: minh-lan-2027"
                 />
               </div>
             </div>
@@ -277,7 +282,7 @@ export function InvitationBuilder() {
                     setFormData((f) => ({ ...f, groomName: e.target.value }))
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 font-semibold"
-                  placeholder="Hoàng Long"
+                  placeholder="Tên chú rể"
                 />
               </div>
               <div>
@@ -291,7 +296,7 @@ export function InvitationBuilder() {
                     setFormData((f) => ({ ...f, brideName: e.target.value }))
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 font-semibold"
-                  placeholder="Minh Thư"
+                  placeholder="Tên cô dâu"
                 />
               </div>
             </div>

@@ -1,179 +1,69 @@
-using System.Collections.Concurrent;
-using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
+using Wedding.Domain.Entities;
 
 namespace Wedding.Infrastructure.Services;
 
+/// <summary>
+/// P0: Lưu thông báo tạm ứng hoa hồng vào DB (bảng AdvancePayments) thay cho ConcurrentDictionary + file JSON,
+/// đồng thời ghi AuditLog khi Finance/SuperAdmin duyệt hoặc từ chối.
+/// </summary>
 public class AdvancePaymentService : IAdvancePaymentService
 {
-    private readonly ConcurrentDictionary<Guid, AdvancePaymentNoticeDto> _store = new();
-    private readonly string _filePath;
-    private readonly object _fileLock = new();
+    private readonly IApplicationDbContext _context;
+    private readonly IAuditLogger _audit;
 
-    public AdvancePaymentService()
+    public AdvancePaymentService(IApplicationDbContext context, IAuditLogger audit)
     {
-        _filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "advance_payments.json");
-        LoadFromFile();
-
-        // Nếu chưa có thông báo nào, khởi tạo mẫu 1 thông báo chuyển tiền 20.000.000 đ cho hợp đồng HD-20260930-8202
-        if (_store.IsEmpty)
-        {
-            var demoContractId = Guid.Parse("da6fa15c-c59a-45a7-94e0-552563e0eb96");
-            var demoNotice = new AdvancePaymentNoticeDto(
-                Id: Guid.NewGuid(),
-                ContractId: demoContractId,
-                ContractCode: "HD-20260930-8202",
-                VendorId: Guid.Parse("e595124a-bc7b-42f7-9172-8ef8fcc25df0"),
-                VendorBrandName: "White Palace Convention Center",
-                Amount: 20000000m,
-                Reason: "Yêu cầu thanh toán trước một phần hoa hồng qua chuyển khoản",
-                BankName: "MB Bank (Quân Đội)",
-                BankAccountNumber: "0338889999",
-                BankAccountName: "WHITE PALACE CONVENTION CENTER",
-                Note: "Đã chuyển 20 triệu qua VietQR với nội dung: HH E59512 T09",
-                Status: "PendingApproval",
-                RequestedAt: DateTime.UtcNow.AddMinutes(-30)
-            );
-            _store.TryAdd(demoNotice.Id, demoNotice);
-            SaveToFile();
-        }
+        _context = context;
+        _audit = audit;
     }
 
-    private void LoadFromFile()
+    private static AdvancePaymentNoticeDto Map(AdvancePayment p) => new(
+        p.Id, p.ContractId, p.ContractCode, p.VendorId, p.VendorBrandName, p.Amount, p.Reason, p.BankName,
+        p.BankAccountNumber, p.BankAccountName, p.Note, p.Status, p.CreatedAt, p.ProcessedAt, p.AdminNote);
+
+    public async Task<AdvancePaymentNoticeDto> CreateRequestAsync(Guid contractId, string contractCode, Guid vendorId,
+        string vendorBrandName, decimal amount, string reason, string? bankName = null, string? bankAccountNumber = null,
+        string? bankAccountName = null, string? note = null)
     {
-        try
-        {
-            if (File.Exists(_filePath))
-            {
-                var json = File.ReadAllText(_filePath);
-                var list = JsonSerializer.Deserialize<List<AdvancePaymentNoticeDto>>(json);
-                if (list != null)
-                {
-                    foreach (var item in list)
-                    {
-                        _store[item.Id] = item;
-                    }
-                }
-            }
-        }
-        catch
-        {
-            // fallback gracefully
-        }
+        var entity = AdvancePayment.Create(contractId, contractCode, vendorId, vendorBrandName, amount, reason,
+            bankName, bankAccountNumber, bankAccountName, note);
+        _context.AdvancePayments.Add(entity);
+        await _context.SaveChangesAsync();
+        return Map(entity);
     }
 
-    private void SaveToFile()
+    public async Task<List<AdvancePaymentNoticeDto>> GetAllAsync()
+        => (await _context.AdvancePayments.AsNoTracking().ToListAsync()).OrderByDescending(p => p.CreatedAt).Select(Map).ToList();
+
+    public async Task<List<AdvancePaymentNoticeDto>> GetByContractIdAsync(Guid contractId)
+        => (await _context.AdvancePayments.AsNoTracking().Where(p => p.ContractId == contractId).ToListAsync())
+            .OrderByDescending(p => p.CreatedAt).Select(Map).ToList();
+
+    public async Task<AdvancePaymentNoticeDto?> GetPendingByContractIdAsync(Guid contractId)
+        => (await GetByContractIdAsync(contractId)).FirstOrDefault(p => p.Status == "PendingApproval");
+
+    public async Task<AdvancePaymentNoticeDto?> GetByIdAsync(Guid id)
     {
-        lock (_fileLock)
-        {
-            try
-            {
-                var list = _store.Values.ToList();
-                var json = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(_filePath, json);
-            }
-            catch
-            {
-                // ignore write error
-            }
-        }
-    }
-
-    public Task<AdvancePaymentNoticeDto> CreateRequestAsync(
-        Guid contractId,
-        string contractCode,
-        Guid vendorId,
-        string vendorBrandName,
-        decimal amount,
-        string reason,
-        string? bankName = null,
-        string? bankAccountNumber = null,
-        string? bankAccountName = null,
-        string? note = null)
-    {
-        var notice = new AdvancePaymentNoticeDto(
-            Id: Guid.NewGuid(),
-            ContractId: contractId,
-            ContractCode: contractCode,
-            VendorId: vendorId,
-            VendorBrandName: vendorBrandName,
-            Amount: amount,
-            Reason: reason,
-            BankName: bankName,
-            BankAccountNumber: bankAccountNumber,
-            BankAccountName: bankAccountName,
-            Note: note,
-            Status: "PendingApproval",
-            RequestedAt: DateTime.UtcNow
-        );
-
-        _store[notice.Id] = notice;
-        SaveToFile();
-
-        return Task.FromResult(notice);
-    }
-
-    public Task<List<AdvancePaymentNoticeDto>> GetAllAsync()
-    {
-        var list = _store.Values.OrderByDescending(n => n.RequestedAt).ToList();
-        return Task.FromResult(list);
-    }
-
-    public Task<List<AdvancePaymentNoticeDto>> GetByContractIdAsync(Guid contractId)
-    {
-        var list = _store.Values
-            .Where(n => n.ContractId == contractId)
-            .OrderByDescending(n => n.RequestedAt)
-            .ToList();
-        return Task.FromResult(list);
-    }
-
-    public Task<AdvancePaymentNoticeDto?> GetPendingByContractIdAsync(Guid contractId)
-    {
-        var notice = _store.Values
-            .Where(n => n.ContractId == contractId && n.Status == "PendingApproval")
-            .OrderByDescending(n => n.RequestedAt)
-            .FirstOrDefault();
-        return Task.FromResult(notice);
-    }
-
-    public Task<AdvancePaymentNoticeDto?> GetByIdAsync(Guid id)
-    {
-        _store.TryGetValue(id, out var notice);
-        return Task.FromResult(notice);
+        var p = await _context.AdvancePayments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        return p == null ? null : Map(p);
     }
 
     public Task<AdvancePaymentNoticeDto?> ApproveAsync(Guid id, string? adminNote = null)
-    {
-        if (_store.TryGetValue(id, out var existing))
-        {
-            var updated = existing with
-            {
-                Status = "Approved",
-                ProcessedAt = DateTime.UtcNow,
-                AdminNote = adminNote ?? "Admin đã xác nhận nhận tiền thành công."
-            };
-            _store[id] = updated;
-            SaveToFile();
-            return Task.FromResult<AdvancePaymentNoticeDto?>(updated);
-        }
-        return Task.FromResult<AdvancePaymentNoticeDto?>(null);
-    }
+        => ProcessAsync(id, true, adminNote ?? "Admin đã xác nhận nhận tiền thành công.");
 
     public Task<AdvancePaymentNoticeDto?> RejectAsync(Guid id, string? reason = null)
+        => ProcessAsync(id, false, reason ?? "Admin đã từ chối/báo chưa nhận được tiền.");
+
+    private async Task<AdvancePaymentNoticeDto?> ProcessAsync(Guid id, bool approved, string note)
     {
-        if (_store.TryGetValue(id, out var existing))
-        {
-            var updated = existing with
-            {
-                Status = "Rejected",
-                ProcessedAt = DateTime.UtcNow,
-                AdminNote = reason ?? "Admin đã từ chối/báo chưa nhận được tiền."
-            };
-            _store[id] = updated;
-            SaveToFile();
-            return Task.FromResult<AdvancePaymentNoticeDto?>(updated);
-        }
-        return Task.FromResult<AdvancePaymentNoticeDto?>(null);
+        var p = await _context.AdvancePayments.FirstOrDefaultAsync(x => x.Id == id);
+        if (p == null) return null;
+        p.Process(approved, note);
+        await _audit.LogAsync(approved ? "AdvancePayment.Approve" : "AdvancePayment.Reject", nameof(AdvancePayment), id.ToString(),
+            new { p.Amount, p.ContractCode, note });
+        await _context.SaveChangesAsync();
+        return Map(p);
     }
 }

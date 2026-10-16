@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePublicListingDetail } from "./hooks/useBrowse";
 import { SendLeadModal } from "./components/SendLeadModal";
+import { BookAppointmentModal } from "../journey/appointments/BookAppointmentModal";
 import { ReviewModal } from "./components/reviews/ReviewModal";
 import { ReviewList } from "./components/reviews/ReviewList";
 import { useListingReviews } from "./hooks/useReviews";
@@ -29,6 +30,7 @@ export default function ListingDetailPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isBookingOpen, setIsBookingOpen] = useState(false); // P3: đặt lịch hẹn
   const [shareStatus, setShareStatus] = useState("");
   const { data: reviews = [], refetch: refetchReviews } = useListingReviews(
     id ?? "",
@@ -283,6 +285,12 @@ export default function ListingDetailPage() {
               >
                 💌 Nhận Tư Vấn &amp; Ưu Đãi Ngay
               </button>
+              <button
+                onClick={() => setIsBookingOpen(true)}
+                className="wd btn btn-outline w-full mt-3"
+              >
+                📅 Đặt lịch hẹn xem trực tiếp
+              </button>
               <p className="text-center text-[11px] text-slate-400 mt-2">
                 Miễn phí · Không ràng buộc · Phản hồi trong 2h
               </p>
@@ -337,6 +345,14 @@ export default function ListingDetailPage() {
           </div>
         </div>
       </div>
+
+      {isBookingOpen && (
+        <BookAppointmentModal
+          vendorId={listing.vendorId}
+          vendorName={listing.vendorBrandName}
+          onClose={() => setIsBookingOpen(false)}
+        />
+      )}
 
       {/* Modal gửi Lead & sinh Voucher 8 ký tự */}
       <SendLeadModal
