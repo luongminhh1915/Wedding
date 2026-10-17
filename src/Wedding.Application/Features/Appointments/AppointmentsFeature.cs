@@ -171,7 +171,7 @@ public class BookAppointmentCommandHandler(IApplicationDbContext context, ICurre
             var type = await context.AppointmentTypes.Include(t => t.Vendor).ThenInclude(v => v.User).FirstOrDefaultAsync(t => t.Id == r.AppointmentTypeId && t.IsActive && t.Vendor.IsActive, token) ?? throw new NotFoundException("Loại lịch hẹn không tồn tại.");
             var customer = await context.Users.FirstAsync(u => u.Id == uid, token);
             if (customer.PhoneNumber.Length < 9 || customer.PhoneNumber.Any(c => !char.IsDigit(c) && c != '+')) throw new DomainException("Vui lòng cập nhật số điện thoại hợp lệ trước khi đặt hẹn.");
-            if (r.LeadId.HasValue && !await context.Leads.AnyAsync(l => l.Id == r.LeadId && l.CustomerId == uid && l.VendorId == type.VendorId, token)) throw new DomainException("Lead không thuộc tài khoản/NCC này.");
+            if (r.LeadId.HasValue && !await context.Leads.AnyAsync(l => l.Id == r.LeadId && l.CustomerId == uid && l.VendorId == type.VendorId && l.Status != LeadStatus.Cancelled && l.Status != LeadStatus.Expired, token)) throw new DomainException("Lead không thuộc tài khoản/NCC này hoặc đã rút/hết hạn.");
             var open = (await context.Appointments.Where(a => a.CustomerId == uid).ToListAsync(token)).Where(a => AppointmentScheduling.Holds(a, DateTime.UtcNow)).ToList();
             if (open.Count >= 5) throw new DomainException("Bạn chỉ được có tối đa 5 lịch hẹn đang mở.");
             if (open.Any(a => a.VendorId == type.VendorId && a.AppointmentTypeId == type.Id)) throw new DomainException("Bạn đã có lịch hẹn đang mở với loại hẹn và nhà cung cấp này.");

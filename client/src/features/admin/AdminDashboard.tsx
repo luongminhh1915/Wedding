@@ -9,6 +9,7 @@ import {
   BadgeCheck,
   Gavel,
   Receipt,
+  RefreshCw,
 } from "lucide-react";
 import {
   AdminKpiPanel,
@@ -24,6 +25,7 @@ import UserManagement from "./UserManagement";
 import AllListingsManager from "./AllListingsManager";
 import FinancialDashboard from "./FinancialDashboard";
 import { usePendingListings } from "../vendor-portal/hooks/useListings";
+import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
 
 const tabs = [
   {
@@ -82,6 +84,7 @@ const tabs = [
     description: "Xử lý sự cố hợp đồng giữa cặp đôi và nhà cung cấp trong 72 giờ.",
     roles: ["SuperAdmin", "CustomerCare", "Finance"],
   },
+  { id: "change-requests", label: "Yêu cầu thay đổi / hủy", icon: RefreshCw, description: "Tiếp nhận đề nghị sau khi NCC phản hồi; không tự thay hợp đồng hoặc hoàn tiền.", roles: ["SuperAdmin", "Finance"] },
   { id: "cms", label: "Cẩm nang CMS", icon: FileCheck, description: "Tạo, chỉnh sửa, xuất bản và ghim dịch vụ vào bài viết.", roles: ["SuperAdmin", "Moderator"] },
   { id: "combos", label: "Combo & ưu đãi", icon: Layers, description: "Mẫu combo, duyệt dịch vụ và cấu hình giảm giá.", roles: ["SuperAdmin", "Moderator"] },
   { id: "emergency", label: "Hỗ trợ khẩn cấp", icon: ShieldCheck, description: "Tạo yêu cầu NCC thay thế cho hợp đồng đang tranh chấp.", roles: ["SuperAdmin", "CustomerCare"] },
@@ -94,7 +97,7 @@ export default function AdminDashboard() {
   const visibleTabs = tabs.filter(
     (tab) => !("roles" in tab) || (tab.roles as readonly string[]).includes(user?.role ?? ""),
   );
-  const { data: pendingListings = [] } = usePendingListings();
+  const { data: pendingListings = [] } = usePendingListings(user?.role === "SuperAdmin" || user?.role === "Moderator");
   const current = tabs.find((tab) => tab.id === activeTab)!;
   return (
     <main className="portal-shell">
@@ -139,6 +142,7 @@ export default function AdminDashboard() {
         {activeTab === "settlements" && <SettlementsPanel />}
         {activeTab === "verifications" && <VerificationQueue />}
         {activeTab === "disputes" && <DisputeDesk />}
+        {activeTab === "change-requests" && <OrderRequestInbox audience="finance" />}
         {activeTab === "cms" && <ArticleCms />}
         {activeTab === "emergency" && <EmergencyMatchingPanel />}
         {activeTab === "combos" && <ComboAdministration />}

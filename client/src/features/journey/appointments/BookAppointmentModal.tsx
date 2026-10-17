@@ -5,6 +5,7 @@ import { apiError, useAppointmentAction, useBookAppointment, useNextAvailableDat
 import { ErrorText, StatusPill } from "../ui";
 import { vnd, vnDateTime } from "../format";
 import { useAuthStore } from "../../../store/authStore";
+import ContactPhoneForm from "../../auth/components/ContactPhoneForm";
 
 const ymd = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 
@@ -55,6 +56,8 @@ export function BookAppointmentModal({ vendorId, vendorName, onClose }: { vendor
             )}
             <div className="pt-2"><Link to="/customer/dashboard?tab=appointments" className="btn btn-outline" onClick={onClose}>Xem lịch hẹn của tôi</Link></div>
           </div>
+        ) : user.role === 'Customer' && !/^0\d{9}$/.test(user.phoneNumber || '') ? (
+          <section><h3 className="font-semibold mb-3">Bổ sung liên hệ trước khi đặt lịch</h3><ContactPhoneForm onClose={onClose} /></section>
         ) : isLoading ? (
           <p className="muted text-sm">Đang tải...</p>
         ) : types.length === 0 ? (

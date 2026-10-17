@@ -6,6 +6,7 @@ using Wedding.Application.Features.Contracts.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.Application.Features.Contracts.Commands.CreateContractDraft;
 
@@ -62,6 +63,8 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
         {
             throw new DomainException("Bạn không phải nhà cung cấp được chỉ định cho yêu cầu tư vấn này.");
         }
+
+        CustomerOrderJourney.EnsureActiveLead(lead);
 
         // Kiểm tra xem Lead này đã có hợp đồng nào đang chờ xác nhận hoặc đã xác nhận chưa
         var existingContract = await _context.BookingContracts

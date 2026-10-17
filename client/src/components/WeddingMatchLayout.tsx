@@ -18,11 +18,12 @@ import {
   Wallet,
   CheckCheck,
   FileCheck2,
+  KeyRound,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { useQueryClient } from "@tanstack/react-query";
 import { dashboardPath } from "../utils/navigation";
 import AuthModal from "../features/auth/components/AuthModal";
+import ChangePasswordDialog from "../features/auth/components/ChangePasswordDialog";
 import NotificationBell from "./NotificationBell";
 import ComboCartLink from "./ComboCartLink";
 import "../styles/combo-builder.css";
@@ -45,8 +46,8 @@ export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
 
 export function WeddingMatchHeader() {
   const [authOpen, setAuthOpen] = useState(false);
+  const [securityToken, setSecurityToken] = useState<string | null>(null);
   const { user, token, logout } = useAuthStore();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
@@ -64,7 +65,7 @@ export function WeddingMatchHeader() {
         <NavLink to="/" end>
           Trang chủ
         </NavLink>
-        <details
+        {user && user.role !== "Customer" ? <NavLink to={dashboardPath(user)}>{user.role === "VendorOwner" ? "Quản lý nhà cung cấp" : "Không gian quản trị"}</NavLink> : <details
           className="wm-nav-menu"
           data-active={
             location.pathname.startsWith("/customer/") &&
@@ -88,8 +89,8 @@ export function WeddingMatchHeader() {
               <FileCheck2 size={17} /> Hợp đồng & tư vấn
             </Link>
           </div>
-        </details>
-        <Link
+        </details>}
+        {(!user || user.role === "Customer") && <Link
           className={
             location.pathname.startsWith("/customer/") &&
             location.search.includes("tab=invitations")
@@ -99,7 +100,7 @@ export function WeddingMatchHeader() {
           to="/invitation"
         >
           Thiệp mời <ChevronDown size={13} />
-        </Link>
+        </Link>}
         <NavLink to="/browse">Dịch vụ</NavLink>
         <NavLink to="/combo">Combo cưới</NavLink>
         <NavLink to="/cam-nang">Cẩm nang</NavLink>
@@ -109,19 +110,24 @@ export function WeddingMatchHeader() {
         {token && user ? (
           <>
             <NotificationBell />
-            <Link className="wm-account" to={dashboardPath(user)}>
+            <Link
+              className="wm-account"
+              to={dashboardPath(user)}
+              aria-label={`Tài khoản ${user.fullName}`}
+            >
               <span>{user.fullName.slice(0, 1)}</span>
               <span className="account-name">
                 {user.vendorBrandName || user.fullName}
               </span>
             </Link>
+            <button type="button" className="wm-logout" aria-label="Bảo mật và liên hệ" title="Bảo mật và số liên hệ" onClick={() => setSecurityToken(token)}><KeyRound size={17} /></button>
             <button
               className="wm-logout"
               aria-label="Đăng xuất"
               onClick={() => {
                 logout();
-                queryClient.clear();
-                navigate("/");
+                setAuthOpen(false);
+                navigate("/login", { replace: true });
               }}
             >
               <LogOut size={17} />
@@ -134,6 +140,7 @@ export function WeddingMatchHeader() {
         )}
       </div>
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+      {securityToken === token && token && user && <ChangePasswordDialog key={token} onClose={() => setSecurityToken(null)} />}
     </header>
   );
 }
@@ -197,7 +204,12 @@ function MobileNavigation() {
   const { user } = useAuthStore();
   const { pathname, search } = useLocation();
   const tab = new URLSearchParams(search).get("tab");
-  const items = [
+  const items = user && user.role !== "Customer" ? [
+    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
+    { to: dashboardPath(user), label: user.role === "VendorOwner" ? "Quản lý NCC" : "Quản trị", icon: PanelsTopLeft, active: pathname === dashboardPath(user) },
+    { to: "/browse", label: "Dịch vụ", icon: Star, active: pathname === "/browse" || pathname.startsWith("/listings") },
+    { to: "/cam-nang", label: "Cẩm nang", icon: FileCheck2, active: pathname === "/cam-nang" },
+  ] : [
     { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
     {
       to: "/customer/dashboard",

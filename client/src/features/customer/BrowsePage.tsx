@@ -59,7 +59,7 @@ export default function BrowsePage() {
       </section>
       <div className="browse-content space-y-6">
         <section className="browse-combo-banner">
-          <div><h2>Ghép dịch vụ thành combo của riêng bạn</h2><p>Chọn theo danh mục, đổi từng dịch vụ và giữ mọi lựa chọn trong một giỏ. Có thể dùng một NCC trọn gói hoặc kết hợp nhiều NCC.</p></div>
+          <div><h2>Chọn combo riêng của nhà cung cấp</h2><p>Chọn combo của một NCC, tùy chỉnh dịch vụ trong cùng NCC rồi bấm “Bước tiếp theo” để kiểm tra và xin báo giá. Chưa thanh toán.</p></div>
           <Link to={`/combo${filter.categoryId ? `?category=${filter.categoryId}` : ""}`} className="combo-primary">Mở giỏ combo →</Link>
         </section>
         {catLoading ? (

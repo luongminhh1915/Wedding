@@ -3,9 +3,10 @@ import {
   X, PlusCircle, Loader2, AlertCircle, Send, CheckCircle2,
   Sparkles, UploadCloud, Image as ImageIcon, Trash2, Star, Plus
 } from 'lucide-react';
-import { useCreateListing, useUpdateListing, useSubmitListing } from '../hooks/useListings';
+import { useCreateListing, useUpdateListing, useSubmitListing, useListingDetail } from '../hooks/useListings';
 import axiosClient from '../../../services/axiosClient';
 import type { ListingSummaryDto } from '../../../types/listing.types';
+import { EMPTY_LISTING_FORM, hydrateListingEditor, isListingImageReference, listingImagePreview, listingUpdatePayload, moveListingCover, uploadedListingImages, type ListingEditorState, type ListingImageItem } from './listingEditModel';
 
 interface Props {
   editing?: ListingSummaryDto;
@@ -13,24 +14,32 @@ interface Props {
   onClose: () => void;
 }
 
-interface ImageItem {
-  id: string;
-  preview: string; // ObjectURL hoặc URL hiển thị chính xác ảnh người dùng chọn
-  url: string;     // URL lưu trữ để gửi lên server
+export default function ListingForm(props: Props) {
+  const detail = useListingDetail(props.editing?.id ?? '');
+  let initial: ListingEditorState | undefined;
+  let loadError = '';
+  if (props.editing && detail.data) {
+    try { initial = hydrateListingEditor(detail.data, props.editing.id, import.meta.env.VITE_API_URL || ''); }
+    catch (error) { loadError = (error as Error).message; }
+  }
+  if (props.editing && !initial) return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="Tải bài đăng để chỉnh sửa">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex justify-between items-center mb-4"><h2 className="font-bold">Chỉnh sửa gói dịch vụ</h2><button onClick={props.onClose} aria-label="Đóng"><X size={20} /></button></div>
+        {detail.isPending || detail.isFetching ? <p role="status" className="flex gap-2 text-sm text-slate-600"><Loader2 className="animate-spin" size={18} />Đang tải mô tả và toàn bộ ảnh đã lưu...</p> : <><p role="alert" className="text-sm text-red-700">{loadError || 'Không tải được bài đăng. Chưa có thay đổi nào được lưu; vui lòng thử lại.'}</p><button type="button" className="mt-4 px-4 py-2 rounded-xl bg-slate-800 text-white text-sm" onClick={() => void detail.refetch()}>Thử lại</button></>}
+      </div>
+    </div>
+  );
+  return <ListingEditor key={props.editing?.id ?? 'new-listing'} {...props} initial={initial} />;
 }
 
-const INITIAL_FORM = {
-  categoryId: '',
-  title: '',
-  minPrice: '',
-  maxPrice: '',
-  description: '',
-  location: '',
-};
-
-export default function ListingForm({ editing, categories, onClose }: Props) {
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [images, setImages] = useState<ImageItem[]>([]);
+function ListingEditor({ editing, categories, onClose, initial }: Props & { initial?: ListingEditorState }) {
+  // The keyed editor mounts only after a complete detail response. Never hydrate through an effect:
+  // a cache refresh or mutation invalidation must not replace text/images the vendor is editing.
+  const [form, setForm] = useState(() => initial?.form ?? { ...EMPTY_LISTING_FORM });
+  const [images, setImages] = useState<ListingImageItem[]>(() => initial?.images ?? []);
+  const originalImages = useRef(initial?.images ?? []);
+  const previewUrls = useRef(new Set<string>());
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -48,24 +57,9 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
   const isLoading = createMutation.isPending || updateMutation.isPending || isUploading;
 
   useEffect(() => {
-    if (editing) {
-      setForm({
-        categoryId: editing.categoryName, // display only
-        title: editing.title,
-        minPrice: String(editing.minPrice),
-        maxPrice: String(editing.maxPrice),
-        description: '',
-        location: editing.location,
-      });
-      if (editing.primaryImageUrl) {
-        setImages([{
-          id: 'initial-1',
-          preview: editing.primaryImageUrl,
-          url: editing.primaryImageUrl,
-        }]);
-      }
-    }
-  }, [editing]);
+    const urls = previewUrls.current;
+    return () => { for (const url of urls) URL.revokeObjectURL(url); urls.clear(); };
+  }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -78,9 +72,9 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     if (!form.description.trim()) e.description = 'Mô tả không được để trống';
 
     // Ràng buộc hình ảnh: Bắt buộc tối thiểu 1 ảnh, nhiều nhất là 10 bức ảnh
-    if (images.length === 0) {
+    if (images.length === 0 && (!editing || originalImages.current.length > 0)) {
       e.images = 'Bắt buộc phải tải lên ít nhất 1 hình ảnh dịch vụ.';
-    } else if (images.length > 10) {
+    } else if (images.length > 10 && (!editing || images.length !== originalImages.current.length)) {
       e.images = 'Số lượng ảnh tối đa là 10 bức ảnh.';
     }
 
@@ -103,11 +97,10 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     setIsUploading(true);
 
     // Tạo preview trực tiếp từ file trên máy người dùng (hiển thị ngay lập tức, 100% đúng ảnh)
-    const newItems: ImageItem[] = files.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      preview: URL.createObjectURL(file),
-      url: '', // sẽ được cập nhật sau khi server upload xong
-    }));
+    const newItems: ListingImageItem[] = files.map(file => {
+      const preview = URL.createObjectURL(file); previewUrls.current.add(preview);
+      return { id: crypto.randomUUID(), preview, url: '' };
+    });
 
     try {
       const formData = new FormData();
@@ -120,15 +113,13 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
       });
 
       const serverUrls: string[] = res.data.urls || [];
-      newItems.forEach((item, idx) => {
-        item.url = serverUrls[idx] || item.preview;
-      });
-
-      setImages(prev => [...prev, ...newItems].slice(0, 10));
+      const uploaded = uploadedListingImages(newItems, serverUrls, import.meta.env.VITE_API_URL || '');
+      setImages(prev => [...prev, ...uploaded]);
       if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setUploadError(error.response?.data?.message || 'Tải ảnh lên thất bại. Vui lòng thử lại.');
+      for (const image of newItems) { URL.revokeObjectURL(image.preview); previewUrls.current.delete(image.preview); }
+      setUploadError(error.response?.data?.message || (err as Error).message || 'Tải ảnh lên thất bại. Vui lòng thử lại.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -138,6 +129,8 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
   const handleAddUrl = () => {
     const url = urlInput.trim();
     if (!url) return;
+    if (!isListingImageReference(url)) { setUploadError('Dùng ảnh HTTP(S) hợp lệ hoặc tải ảnh từ thiết bị; không dùng đường dẫn tạm hay đường dẫn chứa mã lệnh.'); return; }
+    if (images.some(image => image.url === url)) { setUploadError('Ảnh này đã có trong album.'); return; }
     if (images.length >= 10) {
       setUploadError('Đã đạt số lượng tối đa 10 bức ảnh.');
       return;
@@ -145,13 +138,15 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     setUploadError('');
     setImages(prev => [
       ...prev,
-      { id: Math.random().toString(36).substring(7), preview: url, url },
+      { id: crypto.randomUUID(), preview: listingImagePreview(url, import.meta.env.VITE_API_URL || ''), url },
     ]);
     setUrlInput('');
     if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
   };
 
   const handleRemoveImage = (index: number) => {
+    const preview = images[index]?.preview;
+    if (preview && previewUrls.current.has(preview)) { URL.revokeObjectURL(preview); previewUrls.current.delete(preview); }
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -164,11 +159,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
       if (editing) {
         await updateMutation.mutateAsync({
           id: editing.id,
-          title: form.title,
-          minPrice: Number(form.minPrice),
-          maxPrice: Number(form.maxPrice),
-          description: form.description,
-          location: form.location,
+          ...listingUpdatePayload(form, images, originalImages.current),
         });
         onClose();
       } else {
@@ -189,6 +180,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
       const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const msg = error.response?.data?.message
         || Object.values(error.response?.data?.errors ?? {}).flat().join(', ')
+        || (err as Error).message
         || 'Đã xảy ra lỗi. Vui lòng thử lại.';
       setApiError(msg);
     }
@@ -209,7 +201,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     onClose();
   };
 
-  const set = (field: keyof typeof INITIAL_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const set = (field: keyof typeof EMPTY_LISTING_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
@@ -390,6 +382,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               type="text"
               value={form.location}
               onChange={set('location')}
+              maxLength={200}
               placeholder="Vd: Quận 1, TP. Hồ Chí Minh"
               className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${errors.location ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
             />
@@ -406,10 +399,10 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               onChange={set('description')}
               placeholder="Mô tả chi tiết về gói dịch vụ, điểm nổi bật, tiện ích đi kèm..."
               rows={4}
-              maxLength={5000}
+              maxLength={4000}
               className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition resize-none ${errors.description ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
             />
-            <div className="text-right text-xs text-slate-400 mt-1">{form.description.length}/5000</div>
+            <div className="text-right text-xs text-slate-400 mt-1">{form.description.length}/4000</div>
             {errors.description && <FieldError msg={errors.description} />}
           </div>
 
@@ -511,7 +504,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
                     className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-xs"
                   >
                     <img
-                      src={item.preview}
+                      src={item.preview || undefined}
                       alt={`Ảnh ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -537,6 +530,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
+                    {idx > 0 && <button type="button" disabled={isLoading} onClick={() => setImages(current => moveListingCover(current, idx))} className="absolute bottom-0 inset-x-0 py-1.5 bg-white/90 text-slate-800 text-[10px] font-semibold hover:bg-white" aria-label={`Đặt ảnh ${idx + 1} làm ảnh bìa`}>Đặt làm ảnh bìa</button>}
                   </div>
                 ))}
               </div>

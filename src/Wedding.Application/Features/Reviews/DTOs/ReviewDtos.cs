@@ -1,5 +1,29 @@
 namespace Wedding.Application.Features.Reviews.DTOs;
 
+// Public reviews deliberately have no customer account ID or contract identifiers.
+// The richer ReviewDto below remains for the submitting customer and moderation endpoints.
+public record PublicReviewDto(
+    Guid Id,
+    Guid ListingId,
+    string ListingTitle,
+    string CustomerName,
+    Guid VendorId,
+    string VendorBrandName,
+    int Rating,
+    string Content,
+    string? PhotosJson,
+    bool IsVerifiedBuyer,
+    string Status,
+    string? VendorReply,
+    DateTime? VendorRepliedAt,
+    DateTime CreatedAt,
+    int? QualityRating = null,
+    int? ServiceRating = null,
+    int? PunctualityRating = null,
+    int? ValueRating = null,
+    decimal AverageRating = 0
+);
+
 public record ReviewDto(
     Guid Id,
     Guid? BookingContractId,

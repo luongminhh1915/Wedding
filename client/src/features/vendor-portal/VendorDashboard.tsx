@@ -8,6 +8,7 @@ import {
   CalendarClock,
   FileText,
   BadgeCheck,
+  RefreshCw,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/authStore";
@@ -19,11 +20,13 @@ import { SettlementDashboard } from "./components/SettlementDashboard";
 import { VendorAppointments } from "../journey/vendor/VendorAppointments";
 import { VendorQuotes } from "../journey/vendor/VendorQuotes";
 import { VendorVerificationPanel } from "../journey/vendor/VendorVerificationPanel";
+import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
 
 const tabs = [
   { id: "listings", label: "Gói dịch vụ", icon: LayoutList },
   { id: "leads", label: "Yêu cầu tư vấn", icon: MessageSquare },
   { id: "quotes", label: "Báo giá", icon: FileText },
+  { id: "change-requests", label: "Thay đổi & hủy", icon: RefreshCw },
   { id: "appointments", label: "Lịch hẹn", icon: CalendarClock },
   {
     id: "contracts-couple",
@@ -75,6 +78,7 @@ export default function VendorDashboard() {
         {activeTab === "listings" && <ListingTable categories={categories} />}
         {activeTab === "leads" && <LeadInbox />}
         {activeTab === "quotes" && <VendorQuotes />}
+        {activeTab === "change-requests" && <OrderRequestInbox audience="vendor" />}
         {activeTab === "appointments" && <VendorAppointments />}
         {activeTab === "verification" && <VendorVerificationPanel />}
         {activeTab === "contracts-couple" && <ContractList />}

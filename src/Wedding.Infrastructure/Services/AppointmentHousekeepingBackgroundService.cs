@@ -67,9 +67,7 @@ public class AppointmentHousekeepingBackgroundService : BackgroundService
                             await notify.SendAsync("Email", a.Vendor.User.Email, $"Lịch hẹn {a.Code} còn dưới 1 giờ.", ct); a.MarkReminder("vendor1");
                         }
                     }
-                    var expiredCombos = await context.ComboOrders.Where(o => o.PriceLockUntil <= now &&
-                        (o.Status == ComboOrderStatus.Submitted || o.Status == ComboOrderStatus.InProgress || o.Status == ComboOrderStatus.PartiallyQuoted || o.Status == ComboOrderStatus.Quoted)).ToListAsync(ct);
-                    foreach (var order in expiredCombos) order.ExpirePriceLock();
+                    await ExpireComboLocksAsync(context, now, ct);
                     await context.SaveChangesAsync(ct); return stale.Count;
                 }, stoppingToken);
             }
@@ -81,4 +79,22 @@ public class AppointmentHousekeepingBackgroundService : BackgroundService
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
     }
+
+    public static Task<int> ExpireComboLocksAsync(IApplicationDbContext context, DateTime now, CancellationToken cancellationToken)
+        => context.ExecuteSerializableAsync(async ct =>
+        {
+            var orders = await context.ComboOrders.Include(o => o.Items).Where(o => o.PriceLockUntil <= now &&
+                (o.Status == ComboOrderStatus.Submitted || o.Status == ComboOrderStatus.InProgress || o.Status == ComboOrderStatus.PartiallyQuoted || o.Status == ComboOrderStatus.Quoted)).ToListAsync(ct);
+            foreach (var order in orders)
+            {
+                order.ExpirePriceLock();
+                foreach (var item in order.Items)
+                {
+                    // Expiring an indicative quote is not cancellation of a real contract/deposit obligation.
+                    if (item.LeadId.HasValue && await Wedding.Application.Features.CustomerOrders.CustomerOrderJourney.WithdrawalBlockAsync(context, new[] { item.LeadId.Value }, ct) != null) continue;
+                    await Wedding.Application.Features.Combos.ComboBudgetSynchronization.ReleaseAsync(context, item, ct);
+                }
+            }
+            await context.SaveChangesAsync(ct); return orders.Count;
+        }, cancellationToken);
 }

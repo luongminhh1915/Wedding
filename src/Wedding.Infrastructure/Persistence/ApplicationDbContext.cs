@@ -66,6 +66,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ArticleListingPin> ArticleListingPins => Set<ArticleListingPin>();
     public DbSet<EmergencyMatch> EmergencyMatches => Set<EmergencyMatch>();
     public DbSet<InvitationTemplate> InvitationTemplates => Set<InvitationTemplate>();
+    public DbSet<CustomerOrderState> CustomerOrderStates => Set<CustomerOrderState>();
+    public DbSet<OrderChangeRequest> OrderChangeRequests => Set<OrderChangeRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

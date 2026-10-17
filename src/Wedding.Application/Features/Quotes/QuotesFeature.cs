@@ -5,6 +5,7 @@ using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.Application.Features.Quotes;
 
@@ -92,6 +93,7 @@ public class RespondQuoteCommandHandler : IRequestHandler<RespondQuoteCommand, Q
             .Include(q => q.Lead).ThenInclude(l => l.Listing)
             .FirstOrDefaultAsync(q => q.Id == r.Id && q.CustomerId == uid, ct) ?? throw new NotFoundException("Báo giá không tồn tại.");
         Guid? contractId = null;
+        CustomerOrderJourney.EnsureActiveLead(quote.Lead);
         if (!r.Accept) quote.Reject(r.Note);
         else
         {

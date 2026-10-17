@@ -16,11 +16,10 @@ public static class DependencyInjection
         IConfiguration configuration,
         IHostEnvironment hostEnvironment)
     {
-        var databaseProvider = configuration["Database:Provider"]
-            ?? configuration["DatabaseProvider"]
-            ?? "Sqlite";
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
-            ?? "Data Source=WeddingPlatformDb.db";
+        var databasePolicy = DatabaseStartupPolicy.FromConfiguration(configuration, hostEnvironment);
+        services.AddSingleton(databasePolicy);
+        var databaseProvider = databasePolicy.Provider;
+        var connectionString = databasePolicy.ConnectionString;
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {

@@ -59,8 +59,30 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Đổi mật khẩu và thu hồi mọi phiên đăng nhập của tài khoản hiện tại.</summary>
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command, CancellationToken ct)
+    {
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
+    /// <summary>Cập nhật số liên hệ của khách hàng, không tự xác minh quyền sở hữu số điện thoại.</summary>
+    [Authorize(Roles = "Customer")]
+    [HttpPatch("contact")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateContact([FromBody] UpdateContactCommand command, CancellationToken ct)
+        => Ok(await _mediator.Send(command, ct));
+
     /// <summary>
-    /// P1 – Gửi mã OTP đăng nhập qua SĐT/email (kênh SMS/Zalo đang mock, mã trả về ở DevCode).
+    /// Gửi mã đăng nhập qua email khi SMTP đã được cấu hình; không trả mã trong API.
     /// </summary>
     [HttpPost("otp/request")]
     public async Task<IActionResult> RequestOtp([FromBody] RequestOtpCommand command) => Ok(await _mediator.Send(command));
@@ -72,7 +94,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpCommand command) => Ok(await _mediator.Send(command));
 
     /// <summary>
-    /// P1 – Đăng nhập Google (mock, chưa verify id_token – xem P7).
+    /// Đăng nhập khách hàng bằng Google ID token đã xác thực chữ ký, ứng dụng và hạn dùng.
     /// </summary>
     [HttpPost("google")]
     public async Task<IActionResult> Google([FromBody] GoogleLoginCommand command) => Ok(await _mediator.Send(command));

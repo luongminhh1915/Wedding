@@ -18,7 +18,7 @@ const PRIORITIES = ["Ẩm thực", "Ảnh & video", "Trang phục", "Trang trí"
 export default function SetupWizard() {
   const overview = usePlannerOverview();
   const location = useLocation();
-  useEffect(() => { const from = safeReturnPath((location.state as { from?: string } | null)?.from); if (from && from !== "/planner/setup") useIntentStore.getState().remember(from); }, [location.state]);
+  useEffect(() => { const from = roleAwareReturnPath("Customer", safeReturnPath((location.state as { from?: string } | null)?.from)); if (from && from !== "/planner/setup") useIntentStore.getState().remember(from); }, [location.state]);
   const members = useMembers();
   if (overview.isLoading || members.isLoading) return <main className="wd wd-page"><p className="container muted">Đang tải hồ sơ...</p></main>;
   if (overview.isError || members.isError) return <main className="wd wd-page"><div className="container card p-6" role="alert"><h1 className="serif text-2xl">Chưa tải được hồ sơ hiện có</h1><p className="text-sm muted my-3">Không khởi tạo hồ sơ trống khi dữ liệu chưa tải thành công.</p><button className="btn btn-primary" onClick={() => { void overview.refetch(); void members.refetch(); }}>Thử lại</button></div></main>;
@@ -57,6 +57,7 @@ function WizardForm({ profile: p, viewer }: { profile: ExtendedProfile | null; v
       {step === 9 && <><p className="text-sm muted">Điều gì quan trọng nhất với hai bạn?</p><div className="flex flex-wrap gap-3">{PRIORITIES.map(e => <button type="button" key={e} className={`chip ${f.priorities.includes(e) ? "active" : ""}`} aria-pressed={f.priorities.includes(e)} onClick={() => toggle("priorities", e)}>{e}</button>)}</div><div className="p-4 bg-[var(--bg)] rounded-xl text-sm">{f.groomName} & {f.brideName} · {f.city}<br />{f.guestCount} khách · {vnd(f.totalBudget)}<br />35 công việc · 14 hạng mục ngân sách</div></>}
       <ErrorText>{save.isError ? apiError(save.error) : ""}</ErrorText>
       <div className="flex justify-between pt-3"><button type="button" className="btn btn-ghost" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={14} /> Quay lại</button>{step < 9 ? <button type="button" className="btn btn-primary" disabled={!canNext} onClick={() => setStep(step + 1)}>Tiếp tục <ArrowRight size={14} /></button> : <button type="button" className="btn btn-primary" disabled={save.isPending || !f.groomName.trim() || !f.brideName.trim()} onClick={submit}><Sparkles size={14} />{save.isPending ? "Đang lưu..." : "Tạo kế hoạch"}</button>}</div>
-    </fieldset><p className="text-center text-xs muted mt-4 flex items-center justify-center gap-1"><CalendarHeart size={14} />Có thể quay lại để cập nhật bất cứ lúc nào.</p>
+    </fieldset><p className="text-center text-xs muted mt-4 flex items-center justify-center gap-1"><CalendarHeart size={14} />Hoàn tất 10 bước để mở Tổng quan kế hoạch cưới của hai bạn.</p>
   </div></main>;
 }
+import { roleAwareReturnPath } from "../../auth/authNavigation";

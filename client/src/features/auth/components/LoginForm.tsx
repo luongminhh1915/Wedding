@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
+import { Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { QuickLogin } from "../../journey/planner/QuickLogin";
 import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
 
 export default function LoginForm({ embedded = false, onComplete }: { embedded?: boolean; onComplete?: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { login, isLoggingIn } = useAuth();
   const navigate = useNavigate();
@@ -15,13 +16,14 @@ export default function LoginForm({ embedded = false, onComplete }: { embedded?:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoggingIn) return;
     setErrorMessage("");
 
     try {
-      const res = await login({ email, password });
+      await login({ email: email.trim(), password });
       onComplete?.();
       const returnTo = safeReturnPath((location.state as { from?: string } | null)?.from) ?? useIntentStore.getState().returnTo;
-      navigate(res.user.role === "VendorOwner" ? "/vendor/dashboard" : res.user.role !== "Customer" ? "/admin/dashboard" : "/auth/continue", { replace: true, state: { from: returnTo } });
+      navigate("/auth/continue", { replace: true, state: { from: returnTo } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
@@ -49,15 +51,16 @@ export default function LoginForm({ embedded = false, onComplete }: { embedded?:
       <div className="auth-card">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <h2>Hẹn gặp lại, hai bạn!</h2>
+          <h2>Chào mừng bạn trở lại!</h2>
           <p className="text-xs text-slate-400 mt-3">
-            Đăng nhập để mở không gian cưới của bạn
+            Một tài khoản, đúng không gian theo vai trò của bạn
           </p>
         </div>
 
         {/* Error Alert */}
+        {(location.state as { passwordChanged?: boolean } | null)?.passwordChanged && <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Đã đổi mật khẩu. Vui lòng đăng nhập lại bằng mật khẩu mới.</p>}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-sm">
+          <div role="alert" className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
@@ -74,6 +77,7 @@ export default function LoginForm({ embedded = false, onComplete }: { embedded?:
                 type="email"
                 aria-label="Email đăng nhập"
                 autoComplete="username"
+                maxLength={150}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -90,15 +94,16 @@ export default function LoginForm({ embedded = false, onComplete }: { embedded?:
             <div className="relative">
               <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 aria-label="Mật khẩu"
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition"
+                className="w-full pl-11 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition"
               />
+              <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} aria-pressed={showPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
             </div>
           </div>
 
@@ -118,6 +123,7 @@ export default function LoginForm({ embedded = false, onComplete }: { embedded?:
           </button>
         </form>
         <QuickLogin onComplete={onComplete} />
+        <p className="text-xs text-slate-500 mt-4 leading-relaxed">Khách hàng, nhà cung cấp và nhân sự dùng chung trang đăng nhập. Tài khoản kiểm duyệt, kế toán, CSKH do quản trị viên cấp; không đăng ký quyền nội bộ tại đây.</p>
 
         {/* Quick Test Accounts Box */}
         {import.meta.env.DEV && (

@@ -41,10 +41,11 @@ public class GetPublicListingsQueryHandler : IRequestHandler<GetPublicListingsQu
     public async Task<PublicListingsResult> Handle(GetPublicListingsQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Listings
+            .AsNoTracking()
             .Include(l => l.Category)
             .Include(l => l.Vendor)
             .Include(l => l.Media)
-            .Where(l => l.Status == ListingStatus.Active);
+            .PubliclyVisible();
 
         // ── Lọc theo ngành hàng ──────────────────────────────────────────────
         if (request.CategoryId.HasValue)
@@ -98,7 +99,7 @@ public class GetPublicListingsQueryHandler : IRequestHandler<GetPublicListingsQu
             l.MaxPrice,
             l.Location,
             l.Status.ToString(),
-            l.RejectionReason,
+            null, // Moderation notes are not public, even when an approved listing kept an old note.
             l.Category.Name,
             l.Vendor.BrandName,
             l.ViewCount,

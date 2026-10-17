@@ -26,9 +26,11 @@ public class ComboTemplate : BaseEntity
     public static ComboTemplate Create(string name, string tier, string style, string? description, string? imageUrl, int sortOrder)
         => new() { Name = name.Trim(), Tier = tier, Style = style, Description = description, ImageUrl = imageUrl, SortOrder = sortOrder };
 
-    public void Update(string name, string tier, string style, string? description, string? imageUrl, bool isActive)
+    public void Update(string name, string tier, string style, string? description, string? imageUrl, bool isActive, int? sortOrder = null)
     {
-        Name = name.Trim(); Tier = tier; Style = style; Description = description; ImageUrl = imageUrl; IsActive = isActive; SetUpdated();
+        Name = name.Trim(); Tier = tier; Style = style; Description = description; ImageUrl = imageUrl; IsActive = isActive;
+        if (sortOrder.HasValue) SortOrder = sortOrder.Value;
+        SetUpdated();
     }
     public void SetScope(Guid? ownerVendorId, string? region, decimal? singleVendorDiscount, bool approved)
     {
@@ -36,7 +38,12 @@ public class ComboTemplate : BaseEntity
         OwnerVendorId = ownerVendorId; Region = region; SingleVendorDiscount = singleVendorDiscount;
         ModerationStatus = approved ? "Approved" : "Pending"; IsActive = approved && IsActive; SetUpdated();
     }
-    public void Review(bool approve) { ModerationStatus = approve ? "Approved" : "Rejected"; IsActive = approve; SetUpdated(); }
+    public void Review(bool approve)
+    {
+        if (ModerationStatus != "Pending") throw new DomainException("Chỉ duyệt combo đang chờ. Combo đã ẩn cần được NCC chỉnh sửa và gửi lại.");
+        ModerationStatus = approve ? "Approved" : "Rejected"; IsActive = approve; SetUpdated();
+    }
+    public void Archive() { IsActive = false; ModerationStatus = "Archived"; SetUpdated(); }
 }
 
 public class ComboTemplateItem : BaseEntity
@@ -88,6 +95,8 @@ public class ComboOrder : BaseEntity
         IReadOnlyList<(Guid ListingId, Guid VendorId, Guid CategoryId, string Title, decimal Price)> lines)
     {
         if (lines.Count == 0) throw new DomainException("Combo phải có ít nhất 1 hạng mục.");
+        if (lines.Select(l => l.VendorId).Distinct().Count() != 1)
+            throw new DomainException("Mỗi combo chỉ được chứa dịch vụ của một nhà cung cấp.");
         if (lines.Select(l => l.CategoryId).Distinct().Count() != lines.Count)
             throw new DomainException("Mỗi hạng mục chỉ được chọn 1 dịch vụ.");
         var order = new ComboOrder
@@ -121,6 +130,7 @@ public class ComboOrder : BaseEntity
     }
     public void SetPricing(decimal discountPercent, string region, bool draft)
     {
+        if (Items.Select(i => i.VendorId).Distinct().Count() != 1) throw new DomainException("Mỗi combo chỉ được chứa dịch vụ của một nhà cung cấp.");
         if (discountPercent < 0 || discountPercent > 0.30m) throw new DomainException("Mức giảm giá không hợp lệ.");
         Region = region; DiscountPercent = discountPercent; DiscountAmount = Math.Round(Subtotal * discountPercent, 0); Total = Subtotal - DiscountAmount;
         var sorted = Items.OrderBy(i => i.Id).ToList();
@@ -131,6 +141,7 @@ public class ComboOrder : BaseEntity
     public void SubmitDraft()
     {
         if (Status != ComboOrderStatus.Draft) throw new DomainException("Đơn không ở trạng thái nháp.");
+        if (Items.Select(i => i.VendorId).Distinct().Count() != 1) throw new DomainException("Không thể gửi lại bản nháp cũ chứa nhiều nhà cung cấp.");
         Status = ComboOrderStatus.Submitted; PriceLockUntil = DateTime.UtcNow.AddDays(7); SetUpdated();
     }
     public void ExpirePriceLock() { if (Status is not (ComboOrderStatus.Completed or ComboOrderStatus.Cancelled or ComboOrderStatus.Draft)) { Status = ComboOrderStatus.Expired; SetUpdated(); } }

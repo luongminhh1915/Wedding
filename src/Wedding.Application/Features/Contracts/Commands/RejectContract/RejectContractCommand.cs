@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.Application.Features.Contracts.Commands.RejectContract;
 
@@ -29,7 +30,8 @@ public class RejectContractCommandHandler : IRequestHandler<RejectContractComman
         _currentUserService = currentUserService;
     }
 
-    public async Task<bool> Handle(RejectContractCommand request, CancellationToken cancellationToken)
+    public Task<bool> Handle(RejectContractCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => RejectAsync(request, ct), cancellationToken);
+    private async Task<bool> RejectAsync(RejectContractCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để thao tác.");
@@ -47,6 +49,11 @@ public class RejectContractCommandHandler : IRequestHandler<RejectContractComman
         {
             throw new DomainException("Chỉ có thể báo sai lệch với hợp đồng đang chờ xác nhận.");
         }
+
+        var lead = await _context.Leads.SingleAsync(l => l.Id == contract.LeadId, cancellationToken);
+        CustomerOrderJourney.EnsureActiveLead(lead);
+        if (await CustomerOrderJourney.HasMoneyAsync(_context, new[] { lead.Id }, cancellationToken))
+            throw new DomainException("Đã có cọc/chuyển khoản hoặc nghĩa vụ tài chính. Hãy gửi đề nghị thay đổi để NCC/Tài chính phối hợp, không trả về nháp trực tiếp.");
 
         // Chuyển hợp đồng về trạng thái Draft để NCC chỉnh sửa lại
         contract.RejectByCustomer(request.Reason);

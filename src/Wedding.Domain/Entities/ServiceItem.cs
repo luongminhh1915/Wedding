@@ -51,7 +51,7 @@ public class ServiceItem : BaseEntity
         if (!approve && string.IsNullOrWhiteSpace(note)) throw new DomainException("Vui lòng nhập lý do từ chối.");
         ModerationStatus = approve ? "Approved" : "Rejected"; ReviewNote = note; SetUpdated();
     }
-    public bool Serves(string region) => Regions.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Any(r => r == "*" || r.Equals(region.Trim(), StringComparison.OrdinalIgnoreCase));
+    public bool Serves(string region) => RegionRules.Serves(Regions, region);
     public static int QuantityFor(string unit, int guests, int requestedHours = 1) => unit switch
     {
         "Table" => (int)Math.Ceiling(guests / 10m), "Guest" => guests,

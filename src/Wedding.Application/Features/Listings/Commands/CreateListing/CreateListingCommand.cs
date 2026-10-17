@@ -26,12 +26,14 @@ public class CreateListingCommandValidator : AbstractValidator<CreateListingComm
         RuleFor(x => x.MinPrice).GreaterThanOrEqualTo(0).WithMessage("Giá tối thiểu không hợp lệ.");
         RuleFor(x => x.MaxPrice).GreaterThanOrEqualTo(x => x.MinPrice)
             .WithMessage("Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu.");
-        RuleFor(x => x.Description).NotEmpty().WithMessage("Mô tả không được để trống.").MaximumLength(5000);
-        RuleFor(x => x.Location).NotEmpty().WithMessage("Địa điểm không được để trống.").MaximumLength(300);
+        RuleFor(x => x.Description).NotEmpty().WithMessage("Mô tả không được để trống.").MaximumLength(4000);
+        RuleFor(x => x.Location).NotEmpty().WithMessage("Địa điểm không được để trống.").MaximumLength(200);
         RuleFor(x => x.ImageUrls)
             .NotNull().WithMessage("Bắt buộc phải có ít nhất 1 hình ảnh dịch vụ.")
             .Must(x => x != null && x.Count >= 1).WithMessage("Bắt buộc phải có ít nhất 1 hình ảnh dịch vụ.")
             .Must(x => x != null && x.Count <= 10).WithMessage("Số lượng ảnh tối đa là 10 bức ảnh.");
+        RuleForEach(x => x.ImageUrls).Must(ListingImageReferences.IsValid)
+            .WithMessage("Ảnh cần đường dẫn HTTP(S) hoặc ảnh dịch vụ đã tải lên hợp lệ, tối đa 500 ký tự.");
     }
 }
 
@@ -48,6 +50,7 @@ public class CreateListingCommandHandler : IRequestHandler<CreateListingCommand,
 
     public async Task<Guid> Handle(CreateListingCommand request, CancellationToken cancellationToken)
     {
+        var imageUrls = ListingImageReferences.NormalizeRequired(request.ImageUrls);
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Không xác định được người dùng.");
 
@@ -82,13 +85,13 @@ public class CreateListingCommandHandler : IRequestHandler<CreateListingCommand,
 
         _context.Listings.Add(listing);
 
-        if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+        if (imageUrls.Count > 0)
         {
-            for (int i = 0; i < request.ImageUrls.Count; i++)
+            for (int i = 0; i < imageUrls.Count; i++)
             {
                 var media = ListingMedia.Create(
                     listing.Id,
-                    request.ImageUrls[i],
+                    imageUrls[i],
                     thumbnailUrl: null,
                     mediaType: "image",
                     displayOrder: i,

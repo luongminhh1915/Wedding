@@ -16,8 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { MyContracts } from "./components/MyContracts";
-import { CustomerLeads } from "./components/CustomerLeads";
+import { ContractWorkspace } from "./components/ContractWorkspace";
 import { InvitationBuilder } from "./components/invitation/InvitationBuilder";
 import { WeddingBudgetPlanner } from "./components/tools/WeddingBudgetPlanner";
 import { WeddingChecklist } from "./components/tools/WeddingChecklist";
@@ -28,8 +27,6 @@ import { usePlannerOverview } from "../journey/api";
 import { PremiumUpgrade } from "../journey/planner/PremiumUpgrade";
 import { MyAppointments } from "../journey/appointments/MyAppointments";
 import { MyCombos } from "../journey/combo/MyCombos";
-import { MyQuotes } from "../journey/quotes/MyQuotes";
-import { CustomerDisputes } from "../journey/quotes/CustomerDisputes";
 import { GuestsPlanner } from "../journey/planner/GuestsPlanner";
 import { WeddingMembers } from "../journey/planner/WeddingMembers";
 import { useMembers } from "../journey/planner/plannerApi";
@@ -141,12 +138,7 @@ export default function CustomerDashboard() {
         {activeTab === "guests" && <GuestsPlanner />}
         {activeTab === "combos" && <MyCombos />}
         {activeTab === "contracts" && (
-          <>
-            <CustomerLeads />
-            <MyQuotes />
-            <MyContracts />
-            <CustomerDisputes />
-          </>
+          <ContractWorkspace />
         )}
         {activeTab === "invitations" && (
           <>

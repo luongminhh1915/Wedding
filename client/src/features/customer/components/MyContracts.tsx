@@ -1,22 +1,52 @@
-import { useState, useEffect } from "react";
+import { useEffect, useId, useState } from "react";
 import {
+  Archive,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
   FileText,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  X,
-  ExternalLink,
-  Gift,
-  ShieldCheck,
-  Building2,
-  Calendar,
-  Loader2,
-  Sparkles,
+  Pencil,
+  RefreshCw,
+  RotateCcw,
+  Square,
 } from "lucide-react";
 import type { Contract } from "../../../types/contract.types";
 import { useCustomerContracts } from "../hooks/useCustomerContracts";
+import { apiError } from "../../journey/api";
+import { vnd, vnDate, vnDateTime } from "../../journey/format";
+import { ComboDialog } from "../../journey/combo/ComboDialog";
+import { comboMediaSources } from "../../journey/combo/comboMedia";
+import {
+  OrderActionDialog,
+  OrderCard,
+  OrderFilterBar,
+  OrderPhoto,
+  OrderServiceRow,
+  OrderStatus,
+} from "../../journey/customerOrders/OrderUi";
+import {
+  OrderGallery,
+  type OrderGallerySelection,
+} from "../../journey/customerOrders/OrderGallery";
+import { orderMediaPhotos } from "../../journey/customerOrders/orderMedia";
+import {
+  useCustomerOrderJourney,
+  type OrderJourneyItem,
+} from "../../journey/customerOrders/customerOrderApi";
+import {
+  groupCustomerOrders,
+  matchesOrderFilter,
+  orderCapability,
+} from "../../journey/customerOrders/orderPresentation";
+import {
+  CustomerOrderActionDialog,
+  CustomerOrderRequestHistory,
+  type CustomerOrderIntent,
+} from "./CustomerOrderActionDialog";
 
 export function MyContracts() {
+  const [page, setPage] = useState(1);
   const {
     contracts,
     isLoading,
@@ -27,593 +57,507 @@ export function MyContracts() {
     isConfirming,
     rejectContract,
     isRejecting,
-  } = useCustomerContracts();
-
-  const [activeTab, setActiveTab] = useState<"pending" | "confirmed" | "all">(
-    "pending",
+  } = useCustomerContracts(page, 50);
+  const journey = useCustomerOrderJourney();
+  const [filter, setFilter] = useState("all");
+  const [now, setNow] = useState(() => Date.now());
+  const [dialog, setDialog] = useState<{
+    item: OrderJourneyItem;
+    intent: CustomerOrderIntent;
+  } | null>(null);
+  const [verification, setVerification] = useState<{
+    contract: Contract;
+    type: "confirm" | "reject";
+  } | null>(null);
+  const [reason, setReason] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [gallery, setGallery] = useState<OrderGallerySelection | null>(null);
+  const [preview, setPreview] = useState<Contract | null>(null);
+  const reasonId = useId();
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  const metadata = new Map(
+    (journey.data ?? [])
+      .filter((item) => item.kind === "contract")
+      .map((item) => [item.id, item]),
   );
-  const [selectedContractForPreview, setSelectedContractForPreview] =
-    useState<Contract | null>(null);
-  const [rejectingContract, setRejectingContract] = useState<Contract | null>(
-    null,
+  const rows = contracts.map((contract) => ({
+    ...contract,
+    isArchived: metadata.get(contract.id)?.isArchived,
+    comboOrderId: metadata.get(contract.id)?.comboOrderId,
+  }));
+  const groups = groupCustomerOrders(
+    rows.filter((row) => matchesOrderFilter(row, filter)),
   );
-  const [rejectReason, setRejectReason] = useState("");
-  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
-  const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
-
-  // Lọc theo tab
-  const pendingContracts = contracts.filter(
-    (c) => c.status === "PendingVerification",
-  );
-  const confirmedContracts = contracts.filter(
-    (c) => c.status === "Confirmed" || c.status === "Completed",
-  );
-
-  const displayedContracts =
-    activeTab === "pending"
-      ? pendingContracts
-      : activeTab === "confirmed"
-        ? confirmedContracts
-        : contracts;
-
-  const handleConfirm = async (contractId: string) => {
-    const contract = contracts.find(c => c.id === contractId);
-    if (!window.confirm(`Xác nhận giá trị, cọc và chính sách hủy sau đây?\n\n${contract?.cancellationPolicySnapshot ?? "Vui lòng đối chiếu chính sách hủy trong hợp đồng với nhà cung cấp trước khi xác nhận."}`)) return;
-    try {
-      setActionErrorMsg(null);
-      const res = await confirmContract(contractId);
-      setActionSuccessMsg(
-        res.message ||
-          "Xác nhận hợp đồng thành công! Ưu đãi sàn đã được áp dụng.",
-      );
-      setTimeout(() => setActionSuccessMsg(null), 5000);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setActionErrorMsg(e.message || "Không thể xác nhận hợp đồng.");
-    }
-  };
-
-  const handleRejectSubmit = async () => {
-    if (!rejectingContract || !rejectReason.trim()) return;
-    try {
-      setActionErrorMsg(null);
-      await rejectContract({
-        contractId: rejectingContract.id,
-        reason: rejectReason.trim(),
-      });
-      setActionSuccessMsg(
-        "Đã gửi phản hồi sai lệch cho Nhà cung cấp để điều chỉnh lại.",
-      );
-      setRejectingContract(null);
-      setRejectReason("");
-      setTimeout(() => setActionSuccessMsg(null), 5000);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setActionErrorMsg(e.message || "Không thể gửi báo cáo sai lệch.");
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-500">
-        <Loader2 className="w-8 h-8 animate-spin text-rose-500 mb-3" />
-        <p className="text-sm font-semibold">
-          Đang tải danh sách hợp đồng cưới của bạn...
-        </p>
-      </div>
-    );
+  function showVerification(contract: Contract, type: "confirm" | "reject") {
+    setReason("");
+    setActionError("");
+    setNotice("");
+    setVerification({ contract, type });
   }
-
-  if (isError) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-3xl p-8 text-center max-w-lg mx-auto">
-        <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
-        <h3 className="font-bold text-slate-800 text-base">
-          Không thể tải hợp đồng
-        </h3>
-        <p className="text-xs text-slate-600 mt-1">
-          {(error as Error)?.message || "Vui lòng thử lại sau."}
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800"
-        >
-          Tải lại
-        </button>
-      </div>
-    );
+  async function submitVerification() {
+    if (!verification) return;
+    if (verification.type === "reject" && !reason.trim()) {
+      setActionError("Vui lòng chỉ rõ thông tin cần NCC điều chỉnh.");
+      return;
+    }
+    setActionError("");
+    try {
+      if (verification.type === "confirm") {
+        await confirmContract(verification.contract.id);
+        setNotice(
+          "Đã xác nhận hợp đồng. Ngân sách và công việc liên quan được cập nhật theo hệ thống.",
+        );
+      } else {
+        await rejectContract({
+          contractId: verification.contract.id,
+          reason: reason.trim(),
+        });
+        setNotice(
+          "Đã trả hợp đồng về bản nháp để NCC sửa và gửi bạn xác nhận lại.",
+        );
+      }
+      setVerification(null);
+    } catch (e) {
+      setActionError(apiError(e));
+    }
   }
-
+  const previewUrl = comboMediaSources([preview?.contractImageUrl])[0];
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-rose-900 text-white p-7 shadow-lg">
-        <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-rose-100 text-xs font-bold uppercase tracking-wider mb-3">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Xác nhận hợp đồng từ hai phía
-          </div>
-          <h2
-            className="text-2xl md:text-3xl font-extrabold tracking-tight"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            Hợp Đồng Cưới Của Bạn
-          </h2>
-          <p className="text-rose-100/90 text-sm mt-2 leading-relaxed">
-            Nhà cung cấp đã gửi thông tin ký kết & hóa đơn cọc. Bạn có{" "}
-            <strong className="text-amber-300">72 giờ</strong> để kiểm tra và
-            bấm [Xác Nhận] để nhận bảo trợ dịch vụ và phần quà tri ân từ sàn
-            Wedding Match!
+    <section className="co-section">
+      <header className="co-section-heading">
+        <div>
+          <p className="co-eyebrow">THỎA THUẬN RÕ RÀNG, NGÀY VUI AN TÂM</p>
+          <h2>Hợp đồng dịch vụ</h2>
+          <p>
+            Kiểm tra giá trị, cọc và chính sách hủy trước khi xác nhận. Sau khi
+            chốt, hãy gửi đề nghị thay đổi thay vì sửa trực tiếp thỏa thuận đã
+            ký.
           </p>
         </div>
-      </div>
-
-      {/* Thông báo thành công / lỗi */}
-      {actionSuccessMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-between text-sm shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span className="font-semibold">{actionSuccessMsg}</span>
-          </div>
-          <button
-            onClick={() => setActionSuccessMsg(null)}
-            className="text-emerald-500 hover:text-emerald-800"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          className="co-button secondary"
+          onClick={() => {
+            void refetch();
+            void journey.refetch();
+          }}
+        >
+          <RefreshCw size={14} /> Làm mới
+        </button>
+      </header>
+      <OrderFilterBar
+        label="Lọc hợp đồng"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { id: "all", label: "Tất cả" },
+          {
+            id: "pending",
+            label: "Cần kiểm tra",
+            count: rows.filter((r) => matchesOrderFilter(r, "pending")).length,
+          },
+          { id: "confirmed", label: "Đang hiệu lực" },
+          { id: "closed", label: "Đã kết thúc" },
+          {
+            id: "archived",
+            label: "Lưu trữ",
+            count: rows.filter((r) => matchesOrderFilter(r, "archived")).length,
+          },
+        ]}
+      />
+      {notice && (
+        <p className="co-summary-note" role="status">
+          {notice}
+        </p>
       )}
-
-      {actionErrorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-center justify-between text-sm shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
-            <span className="font-semibold">{actionErrorMsg}</span>
-          </div>
-          <button
-            onClick={() => setActionErrorMsg(null)}
-            className="text-red-500 hover:text-red-800"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+      {(isError || journey.isError) && (
+        <p className="co-error" role="alert">
+          {apiError(error || journey.error)}{" "}
+          {journey.isError &&
+            "Chưa thể xác định quyền thao tác. Vui lòng làm mới."}
+        </p>
       )}
-
-      {/* Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-        <button
-          onClick={() => setActiveTab("pending")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition ${
-            activeTab === "pending"
-              ? "bg-rose-500 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          Cần Duyệt (72h)
-          {pendingContracts.length > 0 && (
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "pending" ? "bg-white text-rose-600 font-extrabold" : "bg-rose-100 text-rose-700"}`}
-            >
-              {pendingContracts.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab("confirmed")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition ${
-            activeTab === "confirmed"
-              ? "bg-rose-500 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          Đã Xác Thực
-          {confirmedContracts.length > 0 && (
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "confirmed" ? "bg-white text-rose-600" : "bg-slate-200 text-slate-700"}`}
-            >
-              {confirmedContracts.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab("all")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition ${
-            activeTab === "all"
-              ? "bg-rose-500 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          Tất Cả ({contracts.length})
-        </button>
-      </div>
-
-      {/* Danh sách thẻ hợp đồng */}
-      {displayedContracts.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center text-slate-400">
-          <FileText className="w-12 h-12 mx-auto mb-3 opacity-30 text-rose-500" />
-          <h4 className="text-base font-bold text-slate-700">
-            Chưa có hợp đồng nào trong mục này
-          </h4>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            Khi bạn đồng ý dịch vụ với Nhà cung cấp, họ sẽ gửi hợp đồng và hóa
-            đơn cọc lên sàn để bạn xác thực tại đây.
+      {isLoading ? (
+        <div className="co-loading">
+          <p>Đang tải hợp đồng...</p>
+        </div>
+      ) : !groups.length ? (
+        <div className="co-empty">
+          <FileText size={28} />
+          <h3>Chưa có hợp đồng trong mục này</h3>
+          <p>
+            Khi hai bên thống nhất dịch vụ, NCC sẽ gửi hợp đồng để bạn kiểm tra.
+            Hồ sơ đã lưu trữ vẫn có thể khôi phục.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {displayedContracts.map((contract) => (
-            <ContractItemCard
-              key={contract.id}
-              contract={contract}
-              onConfirm={() => handleConfirm(contract.id)}
-              onReject={() => setRejectingContract(contract)}
-              onPreviewImage={() => setSelectedContractForPreview(contract)}
-              isConfirming={isConfirming}
-            />
-          ))}
+        <div className="co-card-list">
+          {groups.map((group) => {
+            const first = group.items[0];
+            const firstMeta = metadata.get(first.id);
+            return (
+              <OrderCard
+                key={group.key}
+                title={first.vendorBrandName}
+                eyebrow={
+                  firstMeta?.comboOrderCode
+                    ? `COMBO ${firstMeta.comboOrderCode}`
+                    : "HỢP ĐỒNG DỊCH VỤ"
+                }
+                imageSources={[
+                  firstMeta?.media.vendorCoverImageUrl,
+                  firstMeta?.media.imageUrl,
+                  firstMeta?.media.vendorLogoUrl,
+                ]}
+                subtitle={`${group.items.length} hợp đồng · Mỗi thỏa thuận được xác nhận riêng`}
+                status={
+                  group.items.length === 1 ? (
+                    first.status
+                  ) : (
+                    <OrderStatus
+                      status="InProgress"
+                      label="Theo dõi từng dịch vụ"
+                    />
+                  )
+                }
+              >
+                {group.items.map((contract) => {
+                  const item = metadata.get(contract.id);
+                  const caps = journey.isError ? undefined : item?.capabilities;
+                  const pending = contract.status === "PendingVerification";
+                  const expired =
+                    new Date(contract.verificationDeadline).getTime() <= now;
+                  const title =
+                    item?.media.items?.[0]?.title ||
+                    item?.media.title ||
+                    contract.contractCode;
+                  const photos = orderMediaPhotos(item?.media);
+                  return (
+                    <OrderServiceRow
+                      key={contract.id}
+                      title={title}
+                      photoSources={photos}
+                      onPhotoClick={
+                        photos.length
+                          ? () => setGallery({ title, sources: photos })
+                          : undefined
+                      }
+                      subtitle={
+                        <>
+                          {contract.contractCode} ·{" "}
+                          <OrderStatus status={contract.status} />
+                        </>
+                      }
+                      amount={
+                        <>
+                          {vnd(contract.contractValue)}
+                          <br />
+                          <small className="muted">Giá trị HĐ</small>
+                        </>
+                      }
+                    >
+                      {pending && (
+                        <p className="co-summary-note">
+                          {expired
+                            ? "Đã quá hạn xác nhận; chờ hệ thống cập nhật trạng thái."
+                            : `Vui lòng kiểm tra trước ${vnDateTime(contract.verificationDeadline)}.`}
+                        </p>
+                      )}
+                      <div className="customer-order-actions">
+                        {orderCapability(caps, "canConfirm") && (
+                          <button
+                            className="co-button primary"
+                            disabled={expired || isConfirming}
+                            onClick={() =>
+                              showVerification(contract, "confirm")
+                            }
+                          >
+                            <Check size={14} /> Xác nhận hợp đồng
+                          </button>
+                        )}
+                        {orderCapability(caps, "canRequestChanges") && (
+                          <button
+                            className="co-button secondary"
+                            disabled={isRejecting}
+                            onClick={() => showVerification(contract, "reject")}
+                          >
+                            <Pencil size={14} /> Báo sai lệch / cần sửa
+                          </button>
+                        )}
+                        {orderCapability(caps, "canStopPending") && item && (
+                          <button
+                            className="co-button danger"
+                            onClick={() =>
+                              setDialog({ item, intent: "stop-pending" })
+                            }
+                          >
+                            <Square size={13} /> Dừng chờ xác nhận
+                          </button>
+                        )}
+                        {orderCapability(caps, "canRequestChange") &&
+                          !orderCapability(caps, "canRequestChanges") &&
+                          item && (
+                            <button
+                              className="co-button secondary"
+                              onClick={() =>
+                                setDialog({ item, intent: "change" })
+                              }
+                            >
+                              <Pencil size={14} /> Đề nghị điều chỉnh
+                            </button>
+                          )}
+                        {orderCapability(caps, "canRequestCancellation") &&
+                          item && (
+                            <button
+                              className="co-button danger"
+                              onClick={() =>
+                                setDialog({ item, intent: "cancellation" })
+                              }
+                            >
+                              Đề nghị hủy
+                            </button>
+                          )}
+                        {orderCapability(caps, "canArchive") && item && (
+                          <button
+                            className="co-button secondary"
+                            onClick={() =>
+                              setDialog({ item, intent: "archive" })
+                            }
+                          >
+                            <Archive size={14} /> Lưu trữ
+                          </button>
+                        )}
+                        {orderCapability(caps, "canRestore") && item && (
+                          <button
+                            className="co-button secondary"
+                            onClick={() =>
+                              setDialog({ item, intent: "restore" })
+                            }
+                          >
+                            <RotateCcw size={14} /> Khôi phục
+                          </button>
+                        )}
+                      </div>
+                      <details className="customer-order-details">
+                        <summary>Điều khoản, cọc & chứng từ</summary>
+                        <div className="customer-order-facts">
+                          <span>
+                            <CalendarDays size={13} /> Ngày cưới{" "}
+                            {vnDate(contract.weddingDate)}
+                          </span>
+                          <span>Tạo {vnDate(contract.createdAt)}</span>
+                          <span>Bản sửa {contract.revisionCount ?? 0}</span>
+                        </div>
+                        <dl className="co-detail-summary">
+                          <div>
+                            <dt>Giá trị hợp đồng</dt>
+                            <dd>{vnd(contract.contractValue)}</dd>
+                          </div>
+                          <div>
+                            <dt>Cọc ghi trong hợp đồng</dt>
+                            <dd>{vnd(contract.depositAmount)}</dd>
+                          </div>
+                          <div>
+                            <dt>Giá trị còn lại theo HĐ</dt>
+                            <dd>
+                              {vnd(
+                                Math.max(
+                                  0,
+                                  contract.contractValue -
+                                    contract.depositAmount,
+                                ),
+                              )}
+                            </dd>
+                          </div>
+                        </dl>
+                        <p className="co-summary-note">
+                          Số cọc trên hợp đồng không thay thế xác minh tiền thực
+                          nhận. Đối chiếu phiếu thu với NCC trước khi chuyển
+                          thêm.
+                        </p>
+                        {!!contract.appointmentDepositCredit && (
+                          <p>
+                            Đã tính cọc lịch hẹn{" "}
+                            {vnd(contract.appointmentDepositCredit)}; cọc HĐ bổ
+                            sung theo số ghi tối đa{" "}
+                            {vnd(
+                              Math.max(
+                                0,
+                                contract.depositAmount -
+                                  contract.appointmentDepositCredit,
+                              ),
+                            )}
+                            . Không chuyển lại khoản đã cọc lịch.
+                          </p>
+                        )}
+                        <h4 className="font-semibold mt-3">
+                          Chính sách hủy / hoàn cọc đã chốt
+                        </h4>
+                        <p className="whitespace-pre-wrap mt-2">
+                          {contract.cancellationPolicySnapshot ||
+                            "Vui lòng đối chiếu văn bản hợp đồng đã thống nhất với NCC."}
+                        </p>
+                        {contract.rejectReason && (
+                          <p className="co-summary-note">
+                            Thông tin cần sửa: {contract.rejectReason}
+                          </p>
+                        )}
+                        {contract.cancellationReason && (
+                          <p className="co-summary-note">
+                            Lý do dừng / hủy: {contract.cancellationReason}
+                          </p>
+                        )}
+                        {caps?.blockedReason && (
+                          <p className="co-summary-note">
+                            {caps.blockedReason}
+                          </p>
+                        )}
+                        {contract.voucherCode && (
+                          <p className="co-summary-note">
+                            Mã ưu đãi liên quan: {contract.voucherCode}. Giá trị
+                            cuối cùng theo thỏa thuận đã xác nhận, không tự trừ
+                            thêm lần nữa.
+                          </p>
+                        )}
+                        {contract.contractImageUrl ? (
+                          <button
+                            className="co-button secondary"
+                            onClick={() => setPreview(contract)}
+                          >
+                            Xem chứng từ đính kèm
+                          </button>
+                        ) : (
+                          <p className="co-summary-note">
+                            NCC chưa đính kèm ảnh chứng từ.
+                          </p>
+                        )}
+                      </details>
+                      <CustomerOrderRequestHistory item={item} />
+                    </OrderServiceRow>
+                  );
+                })}
+              </OrderCard>
+            );
+          })}
         </div>
       )}
-
-      {/* Modal Báo Sai Lệch */}
-      {rejectingContract && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl p-6 border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-rose-600 font-bold text-base">
-                <AlertTriangle className="w-5 h-5" />
-                Báo Sai Lệch Hợp Đồng
-              </div>
-              <button
-                onClick={() => setRejectingContract(null)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="my-4 text-xs text-slate-600 space-y-2">
-              <p>
-                Mã HĐ:{" "}
-                <strong className="font-mono text-slate-800">
-                  {rejectingContract.contractCode}
-                </strong>{" "}
-                • Đối tác: <strong>{rejectingContract.vendorBrandName}</strong>
-              </p>
-              <p className="text-slate-500 leading-relaxed">
-                Vui lòng chỉ rõ thông tin chưa chính xác (Ví dụ:{" "}
-                <em>
-                  Số tiền cọc thực tế đã chuyển là 15 triệu thay vì 10 triệu
-                </em>
-                , hoặc <em>Ngày cưới ghi nhầm</em>) để Nhà cung cấp sửa lại:
-              </p>
-
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Nhập chi tiết sai lệch cần NCC điều chỉnh..."
-                rows={4}
-                className="w-full mt-2 p-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setRejectingContract(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleRejectSubmit}
-                disabled={isRejecting || !rejectReason.trim()}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {isRejecting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : null}
-                Gửi Báo Sai Lệch
-              </button>
-            </div>
-          </div>
-        </div>
+      {(page > 1 || contracts.length === 50) && (
+        <nav className="customer-order-pagination" aria-label="Trang hợp đồng">
+          <button
+            className="co-button secondary"
+            aria-label="Trang trước"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <span>Trang {page} · Lọc trong trang hiện tại</span>
+          <button
+            className="co-button secondary"
+            aria-label="Trang tiếp"
+            disabled={contracts.length < 50}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            <ChevronRight size={15} />
+          </button>
+        </nav>
       )}
-
-      {/* Modal Preview Ảnh Hóa Đơn / Phiếu Thu */}
-      {selectedContractForPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
-              <div>
-                <h4 className="font-bold text-sm">
-                  Ảnh Phiếu Thu / Hóa Đơn Cọc
-                </h4>
-                <p className="text-xs text-slate-400 font-mono">
-                  Hợp đồng: {selectedContractForPreview.contractCode}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedContractForPreview(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex items-center justify-center bg-slate-100">
-              {selectedContractForPreview.contractImageUrl ? (
-                <img
-                  src={selectedContractForPreview.contractImageUrl}
-                  alt="Phiếu thu cọc"
-                  className="max-h-[70vh] object-contain rounded-xl shadow-md border border-slate-300"
+      {gallery && (
+        <OrderGallery {...gallery} onClose={() => setGallery(null)} />
+      )}
+      {dialog && (
+        <CustomerOrderActionDialog
+          key={`${dialog.item.id}:${dialog.intent}`}
+          {...dialog}
+          onClose={() => setDialog(null)}
+          onSuccess={() =>
+            setNotice(
+              "Đã ghi nhận thao tác. Đề nghị thay đổi / hủy chưa tự điều chỉnh hợp đồng hoặc thu, hoàn tiền.",
+            )
+          }
+        />
+      )}
+      {verification && (
+        <OrderActionDialog
+          title={
+            verification.type === "confirm"
+              ? "Xác nhận thỏa thuận với NCC"
+              : "Yêu cầu NCC sửa hợp đồng"
+          }
+          confirmLabel={
+            verification.type === "confirm"
+              ? "Tôi đồng ý & xác nhận"
+              : "Trả về để NCC sửa"
+          }
+          onConfirm={() => void submitVerification()}
+          onClose={() => setVerification(null)}
+          busy={isConfirming || isRejecting}
+          confirmDisabled={verification.type === "reject" && !reason.trim()}
+          error={actionError}
+          description={
+            verification.type === "confirm"
+              ? "Chỉ xác nhận sau khi đã kiểm tra giá, cọc, ngày cưới và chính sách hủy. Đây không phải lệnh thanh toán."
+              : "NCC sẽ nhận lại bản nháp để sửa và gửi bạn xác nhận lại. Không dùng thao tác này thay cho đề nghị hủy."
+          }
+        >
+          <div className="customer-order-form">
+            <p>
+              <strong>{verification.contract.contractCode}</strong> ·{" "}
+              {verification.contract.vendorBrandName}
+            </p>
+            <p>
+              Giá trị {vnd(verification.contract.contractValue)} · Cọc ghi{" "}
+              {vnd(verification.contract.depositAmount)}
+            </p>
+            <p className="whitespace-pre-wrap">
+              {verification.contract.cancellationPolicySnapshot ||
+                "Hãy đối chiếu chính sách hủy trong hợp đồng với NCC trước khi xác nhận."}
+            </p>
+            {verification.type === "reject" && (
+              <label htmlFor={reasonId}>
+                <span className="label">Thông tin cần điều chỉnh</span>
+                <textarea
+                  id={reasonId}
+                  className="input"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={4}
+                  maxLength={500}
+                  required
                 />
-              ) : (
-                <div className="text-center py-12 text-slate-400">
-                  <p className="text-sm font-semibold">
-                    Chưa có ảnh hóa đơn cọc đính kèm
-                  </p>
-                </div>
-              )}
-            </div>
+              </label>
+            )}
           </div>
-        </div>
+        </OrderActionDialog>
       )}
-    </div>
-  );
-}
-
-// Subcomponent: Thẻ chi tiết từng hợp đồng
-function ContractItemCard({
-  contract,
-  onConfirm,
-  onReject,
-  onPreviewImage,
-  isConfirming,
-}: {
-  contract: Contract;
-  onConfirm: () => void;
-  onReject: () => void;
-  onPreviewImage: () => void;
-  isConfirming: boolean;
-}) {
-  const isPending = contract.status === "PendingVerification";
-  const isConfirmed =
-    contract.status === "Confirmed" || contract.status === "Completed";
-
-  return (
-    <div
-      className={`bg-white rounded-3xl border transition-all duration-200 overflow-hidden shadow-xs hover:shadow-md ${
-        isPending ? "border-rose-300 ring-2 ring-rose-100" : "border-slate-200"
-      }`}
-    >
-      {/* Top Banner Status & Countdown */}
-      <div
-        className={`px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-xs font-bold border-b ${
-          isPending
-            ? "bg-rose-50/70 border-rose-100 text-rose-900"
-            : "bg-slate-50 border-slate-100 text-slate-600"
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-slate-200 text-slate-800">
-            {contract.contractCode}
-          </span>
-          <span className="text-slate-400">•</span>
-          <span>
-            Khởi tạo: {new Date(contract.createdAt).toLocaleDateString("vi-VN")}
-          </span>
-        </div>
-
-        <div>
-          {isPending ? (
-            <CountdownTimer deadline={contract.verificationDeadline} />
-          ) : isConfirmed ? (
-            <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {contract.status === "Completed"
-                ? "Đã Hoàn Tất Dịch Vụ Cưới"
-                : "Đã Xác Thực 2 Chiều"}
-            </span>
-          ) : (
-            <span className="text-slate-500 bg-slate-200 px-2.5 py-0.5 rounded-full">
-              {contract.status}
-            </span>
+      {preview && (
+        <ComboDialog
+          title={`Chứng từ · ${preview.contractCode}`}
+          wide
+          onClose={() => setPreview(null)}
+        >
+          <div className="co-dialog-photo">
+            <OrderPhoto
+              sources={[preview.contractImageUrl]}
+              alt={`Chứng từ của hợp đồng ${preview.contractCode}`}
+            />
+          </div>
+          {previewUrl && (
+            <a
+              className="co-button secondary mt-3"
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mở ảnh gốc
+            </a>
           )}
-        </div>
-      </div>
-
-      {/* Main Content Body */}
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* Cột 1: Thông tin NCC & Dịch vụ */}
-        <div className="lg:col-span-5 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Building2 className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
-                Nhà Cung Cấp Dịch Vụ
-              </p>
-              <h3 className="text-lg font-black text-slate-900">
-                {contract.vendorBrandName}
-              </h3>
-              <p className="text-xs text-slate-500">
-                Khách hàng: <strong>{contract.customerName}</strong> (
-                {contract.customerPhone})
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs text-slate-600 pt-1">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-rose-500" />
-              <span>
-                Ngày cưới:{" "}
-                <strong>
-                  {contract.weddingDate
-                    ? new Date(contract.weddingDate).toLocaleDateString("vi-VN")
-                    : "Chưa định ngày"}
-                </strong>
-              </span>
-            </div>
-            {contract.voucherCode && (
-              <div className="flex items-center gap-1.5 bg-amber-50 text-amber-800 px-2 py-0.5 rounded-lg border border-amber-200">
-                <Gift className="w-3.5 h-3.5 text-amber-600" />
-                <span>
-                  Voucher:{" "}
-                  <strong className="font-mono">{contract.voucherCode}</strong>{" "}
-                  (-{contract.voucherDiscount?.toLocaleString("vi-VN")} đ)
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Cột 2: Giá trị hợp đồng & Tiền cọc */}
-        <div className="lg:col-span-4 bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500">Tổng Giá Trị Hợp Đồng:</span>
-            <span className="font-bold text-slate-900 text-sm">
-              {contract.contractValue.toLocaleString("vi-VN")} đ
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-200">
-            <span className="text-slate-500">Tiền Đã Đặt Cọc:</span>
-            <span className="font-extrabold text-rose-600 text-base">
-              {contract.depositAmount.toLocaleString("vi-VN")} đ
-            </span>
-          </div>
-
-          {/* Link xem ảnh phiếu thu cọc */}
-          {!!contract.appointmentDepositCredit && <p className="text-xs text-slate-600">Đã trừ cọc lịch hẹn {contract.appointmentDepositCredit.toLocaleString('vi-VN')} đ; phần cọc HĐ bổ sung tối đa {Math.max(0, contract.depositAmount - contract.appointmentDepositCredit).toLocaleString('vi-VN')} đ. Không chuyển lại khoản đã cọc lịch.</p>}
-          <details className="text-xs text-slate-600 py-2">
-            <summary className="font-semibold cursor-pointer">Chính sách hủy / hoàn cọc</summary>
-            <p className="mt-2 whitespace-pre-wrap">{contract.cancellationPolicySnapshot ?? "Xem bản hợp đồng đã thống nhất với NCC."}</p>
-          </details>
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] text-slate-500">
-              Hóa đơn / Phiếu cọc:
-            </span>
-            {contract.contractImageUrl ? (
-              <button
-                onClick={onPreviewImage}
-                className="inline-flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Xem Phiếu Thu
-              </button>
-            ) : (
-              <span className="text-[11px] text-slate-400 italic">
-                Không có ảnh
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Cột 3: Nút Thao tác khách hàng */}
-        <div className="lg:col-span-3 flex flex-col gap-2">
-          {isPending ? (
-            <>
-              <button
-                onClick={onConfirm}
-                disabled={isConfirming}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-              >
-                {isConfirming ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
-                )}
-                <span>Xác Nhận Hợp Đồng (Nhận Quà Sàn)</span>
-              </button>
-
-              <button
-                onClick={onReject}
-                className="w-full py-2 px-3 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition flex items-center justify-center gap-1"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                Báo Sai Lệch
-              </button>
-            </>
-          ) : isConfirmed ? (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-center">
-              <div className="inline-flex items-center gap-1 text-emerald-700 font-bold text-xs mb-1">
-                <ShieldCheck className="w-4 h-4" />
-                Hợp Đồng Đã Có Hiệu Lực
-              </div>
-              <p className="text-[11px] text-emerald-600">
-                Bạn đã được bảo trợ bởi Wedding Match
-              </p>
-            </div>
-          ) : (
-            <div className="text-center text-xs text-slate-400 py-2">
-              Trạng thái: {contract.status}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+        </ComboDialog>
+      )}
+    </section>
   );
 }
-
-// Subcomponent: Đồng hồ đếm ngược 72 giờ (BR-005)
-function CountdownTimer({ deadline }: { deadline: string }) {
-  const [timeLeft, setTimeLeft] = useState<{
-    hours: number;
-    minutes: number;
-    seconds: number;
-    isExpired: boolean;
-  }>({
-    hours: 72,
-    minutes: 0,
-    seconds: 0,
-    isExpired: false,
-  });
-
-  useEffect(() => {
-    const calculateTime = () => {
-      const target = new Date(deadline).getTime();
-      const now = new Date().getTime();
-      const diff = target - now;
-
-      if (diff <= 0) {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0, isExpired: true });
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      setTimeLeft({ hours, minutes, seconds, isExpired: false });
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [deadline]);
-
-  if (timeLeft.isExpired) {
-    return (
-      <span className="inline-flex items-center gap-1 text-red-600 bg-red-100 px-3 py-1 rounded-full text-xs font-bold">
-        <AlertTriangle className="w-3.5 h-3.5" />
-        Đã Quá Hạn 72 Giờ (Tự Hủy)
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1.5 text-amber-800 bg-amber-100 px-3 py-1 rounded-full text-xs font-extrabold animate-pulse">
-      <Clock className="w-3.5 h-3.5 text-amber-600" />
-      Còn lại: {timeLeft.hours}h{" "}
-      {timeLeft.minutes < 10 ? `0${timeLeft.minutes}` : timeLeft.minutes}m{" "}
-      {timeLeft.seconds < 10 ? `0${timeLeft.seconds}` : timeLeft.seconds}s
-    </span>
-  );
-}
-
 export default MyContracts;

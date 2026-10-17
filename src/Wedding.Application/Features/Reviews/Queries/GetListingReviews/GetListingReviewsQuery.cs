@@ -2,16 +2,18 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Reviews.DTOs;
+using Wedding.Application.Features.Listings;
 using Wedding.Domain.Enums;
+using Wedding.Domain.Exceptions;
 
 namespace Wedding.Application.Features.Reviews.Queries.GetListingReviews;
 
 public record GetListingReviewsQuery(
     Guid? ListingId = null,
     Guid? VendorId = null
-) : IRequest<List<ReviewDto>>;
+) : IRequest<List<PublicReviewDto>>;
 
-public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQuery, List<ReviewDto>>
+public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQuery, List<PublicReviewDto>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -20,14 +22,26 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
         _context = context;
     }
 
-    public async Task<List<ReviewDto>> Handle(GetListingReviewsQuery request, CancellationToken cancellationToken)
+    public async Task<List<PublicReviewDto>> Handle(GetListingReviewsQuery request, CancellationToken cancellationToken)
     {
+        var visibleListings = _context.Listings.PubliclyVisible();
+        if (request.ListingId is { } listingId && listingId != Guid.Empty)
+        {
+            if (!await visibleListings.AnyAsync(listing => listing.Id == listingId, cancellationToken))
+                throw new NotFoundException("Dịch vụ không tồn tại hoặc chưa được công khai.");
+        }
+        else if (request.VendorId is { } vendorId && vendorId != Guid.Empty)
+        {
+            if (!await _context.Vendors.AnyAsync(vendor => vendor.Id == vendorId && vendor.IsActive && vendor.User.IsActive, cancellationToken))
+                throw new NotFoundException("Nhà cung cấp không tồn tại hoặc chưa được công khai.");
+        }
+        else throw new NotFoundException("Không tìm thấy dịch vụ hoặc nhà cung cấp.");
+
         var query = _context.Reviews
             .Include(r => r.Customer)
             .Include(r => r.Vendor)
             .Include(r => r.Listing)
-            .Include(r => r.BookingContract)
-            .Where(r => r.Status == ReviewStatus.Approved);
+            .Where(r => r.Status == ReviewStatus.Approved && visibleListings.Select(listing => listing.Id).Contains(r.ListingId));
 
         if (request.ListingId.HasValue && request.ListingId.Value != Guid.Empty)
         {
@@ -45,13 +59,10 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return reviews.Select(r => new ReviewDto(
+        return reviews.Select(r => new PublicReviewDto(
             Id: r.Id,
-            BookingContractId: r.BookingContractId,
-            ContractCode: r.BookingContract?.ContractCode,
             ListingId: r.ListingId,
             ListingTitle: r.Listing.Title,
-            CustomerId: r.CustomerId,
             CustomerName: r.Customer.FullName,
             VendorId: r.VendorId,
             VendorBrandName: r.Vendor.BrandName,
@@ -63,8 +74,7 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
             VendorReply: r.VendorReply,
             VendorRepliedAt: r.VendorRepliedAt,
             CreatedAt: r.CreatedAt,
-            QualityRating: r.QualityRating, ServiceRating: r.ServiceRating, PunctualityRating: r.PunctualityRating, ValueRating: r.ValueRating, AverageRating: r.AverageRating,
-            ModerationFlag: null, ModerationDeadline: r.CreatedAt.AddHours(24)
+            QualityRating: r.QualityRating, ServiceRating: r.ServiceRating, PunctualityRating: r.PunctualityRating, ValueRating: r.ValueRating, AverageRating: r.AverageRating
         )).ToList();
     }
 }

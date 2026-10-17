@@ -55,6 +55,8 @@ public interface IApplicationDbContext
     DbSet<ArticleListingPin> ArticleListingPins { get; }
     DbSet<EmergencyMatch> EmergencyMatches { get; }
     DbSet<InvitationTemplate> InvitationTemplates { get; }
+    DbSet<CustomerOrderState> CustomerOrderStates { get; }
+    DbSet<OrderChangeRequest> OrderChangeRequests { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<T> ExecuteSerializableAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken = default);

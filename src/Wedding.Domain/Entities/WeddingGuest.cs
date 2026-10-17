@@ -31,6 +31,15 @@ public class WeddingGuest : BaseEntity
     }
     public void AssignTable(Guid? tableId) { TableId = tableId; SetUpdated(); }
     public void LinkRsvp(Guid rsvpId) { RsvpId = rsvpId; SetUpdated(); }
+    /// <summary>Move part of an unseated party into a separate seating row, preserving the total headcount and original RSVP link.</summary>
+    public WeddingGuest SplitParty(int people)
+    {
+        if (TableId.HasValue || people < 1 || people >= PartySize) throw new DomainException("Chỉ có thể tách một phần nhóm khách chưa xếp bàn.");
+        var split = Create(WeddingProfileId);
+        split.Update(Name, Phone, Group, Side, people, Status, Dietary, Notes);
+        PartySize -= people; SetUpdated();
+        return split;
+    }
 }
 
 public class SeatTable : BaseEntity

@@ -49,7 +49,7 @@ public class ListingsController : ControllerBase
     [Authorize(Roles = "VendorOwner")]
     public async Task<IActionResult> UpdateListing(Guid id, [FromBody] UpdateListingRequest request)
     {
-        var command = new UpdateListingCommand(id, request.Title, request.MinPrice, request.MaxPrice, request.Description, request.Location);
+        var command = new UpdateListingCommand(id, request.Title, request.MinPrice, request.MaxPrice, request.Description, request.Location, request.ImageUrls);
         await _mediator.Send(command);
         return Ok(new { message = "Cập nhật bài đăng thành công." });
     }
@@ -175,7 +175,8 @@ public record UpdateListingRequest(
     decimal MinPrice,
     decimal MaxPrice,
     string Description,
-    string Location
+    string Location,
+    List<string>? ImageUrls = null
 );
 
 public record RejectListingRequest(string Reason);

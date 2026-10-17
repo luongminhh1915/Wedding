@@ -4,6 +4,7 @@ using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Infrastructure.Persistence;
 using Wedding.Infrastructure.Services;
+using Wedding.Application.Features.Planner;
 
 // Deliberately NOT registered in application startup or migrations. Only the explicitly approved QA
 // database may be targeted. Nothing here can seed/update the user's production/local database.
@@ -16,7 +17,44 @@ await using var db = new ApplicationDbContext(options);
 if (!await db.Database.CanConnectAsync()) throw new InvalidOperationException("QA database does not exist or is unavailable. This utility will never create/migrate a database.");
 var existing = await db.ServiceItems.CountAsync(i => i.Vendor.Slug.StartsWith("qa-ui-"));
 Console.WriteLine($"QA target={approvedDatabase}; existing fictional catalog items={existing}; apply={apply}.");
-if (!apply || existing > 0) { Console.WriteLine(existing > 0 ? "QA fixture already present; left every existing record untouched." : "Dry run only. Expected append: 3 fictional vendors, 27 service items, 6 presets."); return; }
+if (args.Contains("--stamp-known-qa-plan", StringComparer.Ordinal))
+{
+    // This one account's 14 pristine rows were generated during this QA run before the provenance
+    // column existed. Human provenance is explicitly known here; no heuristic/backfill is permitted
+    // for any other account/database. Costs, actuals, notes and names are never changed.
+    const string qaEmail = "journey-cart-qa-20261016@example.invalid";
+    var owner = await db.Users.SingleAsync(u => u.Email == qaEmail);
+    var profile = await db.WeddingProfiles.SingleAsync(p => p.CustomerId == owner.Id);
+    var rows = await db.BudgetItems.Where(b => b.CustomerId == owner.Id).ToListAsync();
+    if (rows.Count != 14 || !profile.OnboardingCompletedAt.HasValue || rows.Any(b => b.ActualCost != 0 || b.IsPaid || b.ContractId.HasValue || b.Notes != null)
+        || await db.ComboOrderItems.AnyAsync(i => i.BudgetItemId.HasValue && rows.Select(b => b.Id).Contains(i.BudgetItemId.Value)))
+        throw new InvalidOperationException("Known QA wizard cohort is no longer pristine; refusing to infer or stamp provenance.");
+    foreach (var seed in PlannerBudgetSeeds.All)
+    {
+        var row = rows.SingleOrDefault(b => b.ItemName == seed.Name);
+        if (row == null || row.PlannedCost != Math.Round(profile.TotalBudget * seed.Ratio) ||
+            (row.PlanTemplateKey != null && row.PlanTemplateKey != seed.Key) ||
+            Math.Abs((row.CreatedAt - profile.OnboardingCompletedAt.Value).TotalMinutes) > 5)
+            throw new InvalidOperationException("Known QA wizard values/origin do not match; no changes were saved.");
+    }
+    if (!apply) { Console.WriteLine("Dry run: 14 explicitly known QA wizard rows eligible for provenance stamping."); return; }
+    await db.ExecuteSerializableAsync(async ct =>
+    {
+        foreach (var seed in PlannerBudgetSeeds.All)
+        {
+            var row = rows.Single(b => b.ItemName == seed.Name); if (row.PlanTemplateKey == seed.Key) continue;
+            row.MarkPlanTemplate(seed.Key);
+            if (seed.CategorySlug != null)
+            {
+                var category = await db.Categories.SingleOrDefaultAsync(c => c.Slug == seed.CategorySlug, ct);
+                if (category != null) row.AssignCategory(category.Id);
+            }
+        }
+        await db.SaveChangesAsync(ct); return true;
+    });
+    Console.WriteLine("Stamped provenance only for 14 explicitly known pristine QA wizard rows. No amounts/names/notes were changed."); return;
+}
+if (!apply || existing > 0) { Console.WriteLine(existing > 0 ? "QA fixture already present; left every existing record untouched (legacy mixed presets remain historical and are filtered by the API)." : "Dry run only. Expected append: 3 fictional vendors, 27 service items, 9 single-vendor presets."); return; }
 var categories = await db.Categories.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToListAsync();
 if (categories.Count != 7) throw new InvalidOperationException("QA fixture expects the existing seven service categories; no category will be created/updated.");
 var seeded = await db.ExecuteSerializableAsync(async ct =>
@@ -69,17 +107,15 @@ var seeded = await db.ExecuteSerializableAsync(async ct =>
     }
     for (var tier = 0; tier < 3; tier++)
     {
-        for (var mixed = 0; mixed < 2; mixed++)
+        foreach (var presetOwner in new[] { full, photo, decor })
         {
-            var template = ComboTemplate.Create($"[DEMO] {tierNames[tier]} · {(mixed == 0 ? "Mây trọn gói" : "Phối nhiều NCC")}", tierCodes[tier], "Hiện đại", "Combo QA hư cấu. Chọn làm giỏ ban đầu, sau đó thêm/bớt/đổi dịch vụ. Giá máy chủ tính theo số khách.", null, tier * 2 + mixed);
-            template.SetScope(mixed == 0 ? full.Id : null, "TP. Hồ Chí Minh", mixed == 0 ? new[] { .03m, .05m, .08m }[tier] : null, approved: true);
-            foreach (var category in categories)
+            var template = ComboTemplate.Create($"[DEMO] {tierNames[tier]} · {presetOwner.BrandName.Replace("[DEMO] ", "")}", tierCodes[tier], "Hiện đại", "Combo QA hư cấu, chỉ thuộc một NCC. Chỉnh thêm/bớt/đổi trong danh mục của NCC này. Giá máy chủ tính theo số khách.", null, tier * 3 + (presetOwner == full ? 0 : presetOwner == photo ? 1 : 2));
+            template.SetScope(presetOwner.Id, "TP. Hồ Chí Minh", new[] { .03m, .05m, .08m }[tier], approved: true);
+            foreach (var pair in byVendorCategoryTier.Where(p => p.Key.Vendor == presetOwner.Id && p.Key.Tier == tier))
             {
-                var index = categories.IndexOf(category);
-                var vendorId = mixed == 1 && index == 1 ? decor.Id : mixed == 1 && index == 2 ? photo.Id : full.Id;
-                var item = byVendorCategoryTier[(vendorId, category.Id, tier)];
-                var slot = ComboTemplateItem.Create(template.Id, category.Id, item.ListingId, false);
-                var replacements = byVendorCategoryTier.Where(p => p.Key.Category == category.Id && (mixed == 1 || p.Key.Vendor == full.Id)).Select(p => p.Value.Id).ToList();
+                var item = pair.Value;
+                var slot = ComboTemplateItem.Create(template.Id, item.CategoryId, item.ListingId, false);
+                var replacements = byVendorCategoryTier.Where(p => p.Key.Category == item.CategoryId && p.Key.Vendor == presetOwner.Id).Select(p => p.Value.Id).ToList();
                 slot.ConfigureItems(item.Id, JsonSerializer.Serialize(replacements)); template.Items.Add(slot);
             }
             db.ComboTemplates.Add(template);
@@ -87,4 +123,4 @@ var seeded = await db.ExecuteSerializableAsync(async ct =>
     }
     await db.SaveChangesAsync(ct); return byVendorCategoryTier.Count;
 });
-Console.WriteLine($"Appended {seeded} clearly marked fictional service items and six presets to {approvedDatabase}; no existing record was changed.");
+Console.WriteLine($"Appended {seeded} clearly marked fictional service items and nine single-vendor presets to {approvedDatabase}; no existing record was changed.");

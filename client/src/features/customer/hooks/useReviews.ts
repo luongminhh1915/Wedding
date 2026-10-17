@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Review, SubmitReviewRequest, EligibleContract } from '../../../types/review.types';
+import type { Review, PublicReview, SubmitReviewRequest, EligibleContract } from '../../../types/review.types';
 
 export function useListingReviews(listingId?: string) {
   return useQuery({
     queryKey: ['listing-reviews', listingId],
-    queryFn: async (): Promise<Review[]> => {
+    queryFn: async (): Promise<PublicReview[]> => {
       if (!listingId) return [];
       const res = await fetch(`/api/reviews/listing/${listingId}`);
       if (!res.ok) return [];
@@ -17,7 +17,7 @@ export function useListingReviews(listingId?: string) {
 export function useVendorReviews(vendorId?: string) {
   return useQuery({
     queryKey: ['vendor-reviews', vendorId],
-    queryFn: async (): Promise<Review[]> => {
+    queryFn: async (): Promise<PublicReview[]> => {
       if (!vendorId) return [];
       const res = await fetch(`/api/reviews/vendor/${vendorId}`);
       if (!res.ok) return [];

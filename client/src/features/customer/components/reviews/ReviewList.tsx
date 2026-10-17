@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Loader2,
 } from "lucide-react";
-import type { Review } from "../../../../types/review.types";
+import type { PublicReview } from "../../../../types/review.types";
 import { useAuth } from "../../../auth/hooks/useAuth";
 import {
   useVendorReplyReview,
@@ -16,7 +16,7 @@ import {
 } from "../../hooks/useReviews";
 
 interface ReviewListProps {
-  reviews: Review[];
+  reviews: PublicReview[];
   vendorId?: string;
   isVendorOwner?: boolean;
   onRefresh?: () => void;
@@ -133,11 +133,6 @@ export function ReviewList({
                 </div>
 
                 <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
-                  {review.contractCode && (
-                    <span className="font-mono text-slate-600">
-                      Hợp đồng: {review.contractCode}
-                    </span>
-                  )}
                   <span>
                     • {new Date(review.createdAt).toLocaleDateString("vi-VN")}
                   </span>
@@ -162,19 +157,6 @@ export function ReviewList({
                 · Chi phí {review.valueRating}/5
               </p>
             )}
-            {isModerator && review.moderationFlag && (
-              <p className="text-xs text-amber-800 mt-2">
-                Cần kiểm tra ngữ cảnh: {review.moderationFlag}
-              </p>
-            )}
-            {isModerator &&
-              review.status === "Pending" &&
-              review.moderationDeadline && (
-                <p className="text-xs text-slate-500">
-                  Hạn duyệt:{" "}
-                  {new Date(review.moderationDeadline).toLocaleString("vi-VN")}
-                </p>
-              )}
             <p className="text-xs text-slate-700 leading-relaxed my-3 whitespace-pre-line">
               "{review.content}"
             </p>

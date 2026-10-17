@@ -51,15 +51,6 @@ public class SaveWeddingProfileCommandHandler : IRequestHandler<SaveWeddingProfi
     private readonly ICurrentUserService _user;
     public SaveWeddingProfileCommandHandler(IApplicationDbContext context, ICurrentUserService user) { _context = context; _user = user; }
 
-    // Tỷ lệ ngân sách gợi ý theo hạng mục (tổng = 100%)
-    private static readonly (string Name, decimal Ratio)[] BudgetSplit =
-    {
-        ("Nhà hàng tiệc cưới", .40m), ("Chụp ảnh cưới", .08m), ("Váy cưới & vest", .07m), ("Trang điểm cô dâu", .04m),
-        ("Trang trí & hoa cưới", .08m), ("Nhẫn cưới", .08m), ("Thiệp cưới", .02m), ("Xe hoa", .025m),
-        ("Lễ ăn hỏi & gia tiên", .05m), ("MC & âm nhạc", .035m), ("Quà cảm ơn", .02m), ("Lưu trú & di chuyển", .02m),
-        ("Phí pháp lý & đăng ký", .005m), ("Dự phòng", .075m)
-    };
-
     // (tiêu đề, mốc, số tháng trước ngày cưới)
     private static readonly (string Title, string Milestone, int MonthsBefore)[] ChecklistTemplate =
     {
@@ -139,10 +130,11 @@ public class SaveWeddingProfileCommandHandler : IRequestHandler<SaveWeddingProfi
             p.CompleteOnboarding();
             var existingBudget = await _context.BudgetItems.Where(b => b.CustomerId == uid).Select(b => b.ItemName).ToListAsync(ct);
             if (r.TotalBudget > 0)
-                foreach (var (name, ratio) in BudgetSplit)
-                    if (!existingBudget.Contains(name)) {
-                        var item = BudgetItem.Create(uid, null, name, Math.Round(r.TotalBudget * ratio));
-                        item.AttachToWedding(p.Id); _context.BudgetItems.Add(item);
+                foreach (var seed in PlannerBudgetSeeds.All)
+                    if (!existingBudget.Contains(seed.Name)) {
+                        var categoryId = seed.CategorySlug == null ? (Guid?)null : await _context.Categories.Where(c => c.Slug == seed.CategorySlug).Select(c => (Guid?)c.Id).FirstOrDefaultAsync(ct);
+                        var item = BudgetItem.Create(uid, categoryId, seed.Name, Math.Round(r.TotalBudget * seed.Ratio));
+                        item.AttachToWedding(p.Id); item.MarkPlanTemplate(seed.Key); _context.BudgetItems.Add(item);
                     }
 
             var existingTasks = await _context.ChecklistTasks.Where(c => c.CustomerId == uid).Select(c => c.Title).ToListAsync(ct);

@@ -46,6 +46,7 @@ public class PlannerTests
         await Assert.ThrowsAsync<DomainException>(() => new SaveWeddingProfileCommandHandler(f.Db, viewer).Handle(new("Changed", "Names", DateTime.UtcNow.AddDays(10), "Hanoi", 1, 1, "Classic", null, false), default));
         await Assert.ThrowsAsync<DomainException>(() => new SaveWeddingGuestsHandler(f.Db, viewer).Handle(new([new(null, "Guest")]), default));
         await Assert.ThrowsAsync<DomainException>(() => new SaveSeatTableHandler(f.Db, viewer).Handle(new(null, "Bàn", 10), default));
+        await Assert.ThrowsAsync<DomainException>(() => new AutoAssignTablesHandler(f.Db, viewer).Handle(new(), default));
         await Assert.ThrowsAsync<DomainException>(() => new UpdateWeddingBudgetHandler(f.Db, viewer).Handle(new(999), default));
         await Assert.ThrowsAsync<DomainException>(() => new SaveInvitationCommandHandler(f.Db, viewer).Handle(new("partner-write", "Minh", "Anh", DateTime.UtcNow.AddDays(10), "Venue", "Address", null, null, null, null, "navy-cream", null), default));
         Assert.Empty(await f.Db.WeddingGuests.ToListAsync()); Assert.Empty(await f.Db.WeddingInvitations.ToListAsync());
@@ -106,7 +107,7 @@ public class PlannerTests
         f.Db.Entry(expired).Property(x => x.ExpiresAt).CurrentValue = DateTime.UtcNow.AddDays(-1); await f.Db.SaveChangesAsync();
         await Assert.ThrowsAsync<DomainException>(() => join.Handle(new(expired.Code), default));
     }
-    [Fact] public async Task SeatingNeverOverfillsAndPreservesUnassignedLargeGroups()
+    [Fact] public async Task SeatingNeverOverfillsAndSplitsOnlyUnassignedLargeGroups()
     {
         await using var f = await Fixture.Create(); var profile = await f.Profile(); var current = new Current(f.Owner.Id);
         var table = SeatTable.Create(profile.Id, "Bàn 1", 3); f.Db.SeatTables.Add(table); await f.Db.SaveChangesAsync();
@@ -116,7 +117,47 @@ public class PlannerTests
         Assert.Single(await f.Db.WeddingGuests.ToListAsync());
         await save.Handle(new([new(null, "Gia đình C", PartySize: 2, Status: "Attending")]), default);
         var count = await new AutoAssignTablesHandler(f.Db, current).Handle(new(), default);
-        Assert.Equal(0, count); Assert.Single(await f.Db.WeddingGuests.Where(g => g.TableId == null).ToListAsync());
+        Assert.Equal(1, count);
+        var guests = await f.Db.WeddingGuests.ToListAsync();
+        Assert.Equal(4, guests.Sum(g => g.PartySize));
+        Assert.Equal(3, guests.Where(g => g.TableId == table.Id).Sum(g => g.PartySize));
+        Assert.Equal(1, guests.Single(g => g.TableId == null).PartySize);
+    }
+    [Fact] public async Task AutoAssignFillsFourFreeSeatsThenSplitsAcrossNextTableWithoutDuplicatingRsvp()
+    {
+        await using var f = await Fixture.Create(); var profile = await f.Profile(); var current = new Current(f.Owner.Id);
+        var first = SeatTable.Create(profile.Id, "Bàn 1", 10); var second = SeatTable.Create(profile.Id, "Bàn 2", 10);
+        f.Db.SeatTables.AddRange(first, second);
+        var manual = WeddingGuest.Create(profile.Id); manual.Update("Đã xếp", "0900000002", "Gia đình", "Shared", 6, "Attending", "Ăn chay", "Giữ nguyên vị trí"); manual.AssignTable(first.Id); f.Db.WeddingGuests.Add(manual);
+        var invitation = WeddingInvitation.Create(f.Owner.Id, "seating-split", "Minh", "Anh", DateTime.UtcNow.AddDays(100), "Venue", "Address", null, null); f.Db.WeddingInvitations.Add(invitation);
+        var rsvp = GuestRSVP.Create(invitation.Id, "Gia đình Minh", "0900000003", RSVPStatus.Attending, 6, "Chúc mừng", "Dị ứng đậu"); f.Db.GuestRSVPs.Add(rsvp);
+        var party = WeddingGuest.Create(profile.Id); party.Update("Gia đình Minh", "0900000003", "Bạn bè", "Groom", 7, "Attending", "Dị ứng đậu", "Cần hỗ trợ di chuyển"); party.LinkRsvp(rsvp.Id); f.Db.WeddingGuests.Add(party);
+        await f.Db.SaveChangesAsync();
+        var handler = new AutoAssignTablesHandler(f.Db, current); Assert.Equal(7, await handler.Handle(new(), default));
+        var rows = await f.Db.WeddingGuests.ToListAsync(); var split = rows.Where(g => g.Name == "Gia đình Minh").ToList();
+        Assert.Equal(2, split.Count); Assert.Equal(7, split.Sum(g => g.PartySize)); Assert.Equal(4, split.Single(g => g.TableId == first.Id).PartySize); Assert.Equal(3, split.Single(g => g.TableId == second.Id).PartySize);
+        Assert.Equal(10, rows.Where(g => g.TableId == first.Id).Sum(g => g.PartySize)); Assert.Equal(3, rows.Where(g => g.TableId == second.Id).Sum(g => g.PartySize));
+        Assert.Equal(first.Id, manual.TableId); Assert.Equal(6, manual.PartySize); Assert.Equal("Giữ nguyên vị trí", manual.Notes);
+        Assert.All(split, g => { Assert.Equal("0900000003", g.Phone); Assert.Equal("Bạn bè", g.Group); Assert.Equal("Groom", g.Side); Assert.Equal("Dị ứng đậu", g.Dietary); Assert.Equal("Cần hỗ trợ di chuyển", g.Notes); });
+        Assert.Equal(party.Id, split.Single(g => g.RsvpId == rsvp.Id).Id); Assert.Single(await f.Db.GuestRSVPs.ToListAsync());
+        Assert.Equal(0, await handler.Handle(new(), default)); Assert.Equal(3, await f.Db.WeddingGuests.CountAsync()); Assert.Equal(13, (await f.Db.WeddingGuests.ToListAsync()).Sum(g => g.PartySize));
+    }
+    [Fact] public async Task AutoAssignLeavesOnlyUnseatedRemainderWhenOverallCapacityRunsOutAndCanResumeLater()
+    {
+        await using var f = await Fixture.Create(); var profile = await f.Profile(); var current = new Current(f.Owner.Id);
+        var table = SeatTable.Create(profile.Id, "Bàn 1", 10); f.Db.SeatTables.Add(table);
+        var manual = WeddingGuest.Create(profile.Id); manual.Update("Đã xếp", null, "Gia đình", "Shared", 6, "Attending", null, null); manual.AssignTable(table.Id);
+        var party = WeddingGuest.Create(profile.Id); party.Update("Nhóm 7", null, "Bạn bè", "Shared", 7, "Attending", null, null);
+        var pending = WeddingGuest.Create(profile.Id); pending.Update("Chưa xác nhận", null, "Bạn bè", "Shared", 2, "Pending", null, null);
+        f.Db.WeddingGuests.AddRange(manual, party, pending); await f.Db.SaveChangesAsync();
+        var handler = new AutoAssignTablesHandler(f.Db, current); Assert.Equal(4, await handler.Handle(new(), default));
+        var rows = await f.Db.WeddingGuests.ToListAsync(); Assert.Equal(10, rows.Where(g => g.TableId == table.Id).Sum(g => g.PartySize));
+        Assert.Equal(3, rows.Single(g => g.Id == party.Id).PartySize); Assert.Null(party.TableId); Assert.Null(pending.TableId);
+        Assert.Equal(0, await handler.Handle(new(), default)); Assert.Equal(4, await f.Db.WeddingGuests.CountAsync());
+        var extra = SeatTable.Create(profile.Id, "Bàn 2", 2); f.Db.SeatTables.Add(extra); await f.Db.SaveChangesAsync();
+        Assert.Equal(2, await handler.Handle(new(), default)); rows = await f.Db.WeddingGuests.ToListAsync();
+        Assert.Equal(2, rows.Where(g => g.TableId == extra.Id).Sum(g => g.PartySize)); Assert.Equal(1, rows.Single(g => g.Id == party.Id).PartySize); Assert.Null(party.TableId);
+        Assert.Equal(15, rows.Sum(g => g.PartySize)); Assert.Equal(0, await handler.Handle(new(), default));
     }
     [Fact] public async Task ReservedSlugIsRejectedAndHiddenInvitationCannotBeReadOrRsvped()
     {

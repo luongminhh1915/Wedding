@@ -2,6 +2,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Text;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Auth.DTOs;
 using Wedding.Domain.Entities;
@@ -24,13 +26,14 @@ public class RegisterVendorCommandValidator : AbstractValidator<RegisterVendorCo
 {
     public RegisterVendorCommandValidator()
     {
-        RuleFor(x => x.FullName).NotEmpty().WithMessage("Họ tên người đại diện không được để trống.");
-        RuleFor(x => x.Email).NotEmpty().WithMessage("Email không được để trống.").EmailAddress().WithMessage("Email không hợp lệ.");
-        RuleFor(x => x.PhoneNumber).NotEmpty().WithMessage("Hotline không được để trống.");
-        RuleFor(x => x.Password).NotEmpty().WithMessage("Mật khẩu không được để trống.").MinimumLength(6);
-        RuleFor(x => x.BrandName).NotEmpty().WithMessage("Tên thương hiệu không được để trống.").MaximumLength(200);
-        RuleFor(x => x.City).NotEmpty().WithMessage("Thành phố hoạt động không được để trống.");
-        RuleFor(x => x.CommissionRate).InclusiveBetween(0.03m, 0.15m).WithMessage("Tỷ lệ hoa hồng đối tác phải nằm trong khoảng 3% đến 15% (FM-001).");
+        RuleFor(x => x.FullName).Must(value => AuthInputRules.RequiredText(value, 150)).WithMessage("Họ tên người đại diện cần từ 1 đến 150 ký tự.");
+        RuleFor(x => x.Email).ValidEmail();
+        RuleFor(x => x.PhoneNumber).Phone();
+        RuleFor(x => x.Password).NewPassword();
+        RuleFor(x => x.BrandName).Must(value => AuthInputRules.RequiredText(value, 200)).WithMessage("Tên thương hiệu cần từ 1 đến 200 ký tự.");
+        RuleFor(x => x.City).Must(value => AuthInputRules.RequiredText(value, 100)).WithMessage("Thành phố cần từ 1 đến 100 ký tự.");
+        RuleFor(x => x.CommissionRate).Must(rate => rate is 0.03m or 0.08m or 0.10m or 0.12m)
+            .WithMessage("Tỷ lệ hoa hồng phải thuộc các mức 3%, 8%, 10% hoặc 12% của hệ thống.");
     }
 }
 
@@ -52,43 +55,48 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
 
     public async Task<AuthResponseDto> Handle(RegisterVendorCommand request, CancellationToken cancellationToken)
     {
-        var emailLower = request.Email.Trim().ToLowerInvariant();
-        if (await _context.Users.AnyAsync(u => u.Email == emailLower, cancellationToken))
-        {
-            throw new DomainException("Email đối tác này đã được sử dụng trên hệ thống.");
-        }
-
-        // Tạo User chủ với vai trò VendorOwner (BR-001)
+        var validation = new RegisterVendorCommandValidator().Validate(request);
+        if (!validation.IsValid) throw new DomainException(validation.Errors[0].ErrorMessage);
+        var emailLower = AuthInputRules.Email(request.Email);
         var passwordHash = _passwordHasher.Hash(request.Password);
-        var user = User.Create(request.FullName, emailLower, request.PhoneNumber, passwordHash, UserRole.VendorOwner);
-
-        // Tạo Slug cho thương hiệu
-        var baseSlug = GenerateSlug(request.BrandName);
-        var slug = baseSlug;
-        var counter = 1;
-        while (await _context.Vendors.AnyAsync(v => v.Slug == slug, cancellationToken))
+        return await _context.ExecuteSerializableAsync(async ct =>
         {
-            slug = $"{baseSlug}-{counter++}";
-        }
+            if (await _context.Users.AnyAsync(u => u.Email == emailLower, ct))
+                throw new DomainException("Email đối tác này đã được sử dụng trên hệ thống.");
 
-        // Tạo hồ sơ Vendor gắn liền 1-1
-        var vendor = Vendor.Create(user.Id, request.BrandName, slug, request.FullName, request.PhoneNumber, request.City, request.CommissionRate);
+            // Tạo User chủ với vai trò VendorOwner (BR-001)
+            var user = User.Create(request.FullName, emailLower, request.PhoneNumber, passwordHash, UserRole.VendorOwner);
 
-        _context.Users.Add(user);
-        _context.Vendors.Add(vendor);
-        await _context.SaveChangesAsync(cancellationToken);
+            // Tạo Slug cho thương hiệu
+            var baseSlug = GenerateSlug(request.BrandName);
+            var slug = baseSlug;
+            var counter = 1;
+            while (await _context.Vendors.AnyAsync(v => v.Slug == slug, ct))
+            {
+                slug = $"{baseSlug}-{counter++}";
+            }
 
-        var token = _jwtProvider.GenerateToken(user);
-        var userDto = new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber, user.Role.ToString(), user.AvatarUrl, vendor.Id, vendor.BrandName);
+            // Tạo hồ sơ Vendor gắn liền 1-1
+            var vendor = Vendor.Create(user.Id, request.BrandName, slug, request.FullName, request.PhoneNumber, request.City, request.CommissionRate);
 
-        return new AuthResponseDto(token, userDto);
+            _context.Users.Add(user);
+            _context.Vendors.Add(vendor);
+            await _context.SaveChangesAsync(ct);
+
+            var token = _jwtProvider.GenerateToken(user);
+            var userDto = new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber, user.Role.ToString(), user.AvatarUrl, vendor.Id, vendor.BrandName);
+
+            return new AuthResponseDto(token, userDto);
+        }, cancellationToken);
     }
 
     private static string GenerateSlug(string phrase)
     {
-        string str = phrase.ToLowerInvariant();
-        str = Regex.Replace(str, @"\s+", "-");
-        str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
-        return str.Trim('-', ' ');
+        var normalized = phrase.Trim().ToLowerInvariant().Replace('đ', 'd').Normalize(NormalizationForm.FormD);
+        var ascii = new string(normalized.Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark).ToArray());
+        var slug = Regex.Replace(ascii, @"[^a-z0-9]+", "-").Trim('-');
+        // Leave room for a uniqueness suffix, including non-Latin or emoji-only brands.
+        if (slug.Length == 0) slug = "doi-tac";
+        return slug[..Math.Min(slug.Length, 180)].TrimEnd('-');
     }
 }

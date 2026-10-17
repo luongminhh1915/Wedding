@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarClock, CheckCheck, FileCheck2, PackageCheck, Settings2, Users, Wallet } from "lucide-react";
+import { CalendarClock, CheckCheck, FileCheck2, PackageCheck, Users, Wallet } from "lucide-react";
 import { usePlannerOverview } from "../api";
 import { vnd } from "../format";
 
@@ -38,7 +38,6 @@ export function PlannerSnapshot() {
         </div>
         <div className="flex gap-2">
           <Link to="/combo" className="btn btn-gold"><PackageCheck size={14} /> Chọn combo</Link>
-          <Link to="/planner/setup" className="btn btn-outline"><Settings2 size={14} /> Sửa hồ sơ</Link>
         </div>
       </div>
       <div className="h-2 rounded-full bg-[var(--paper)] overflow-hidden mb-5" aria-label={`Tiến độ ${pct}%`}>

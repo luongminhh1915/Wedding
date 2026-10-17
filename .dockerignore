@@ -5,6 +5,16 @@
 **/*.db
 **/*.db-*
 **/.env
+**/App_Data/invitation-uploads
 .git
 REQ_EXE
 tests
+artifacts
+.deployment
+**/private
+**/wwwroot/uploads
+**/App_Data/listing-uploads
+**/*.bak
+**/*.bacpac
+**/*.publishsettings
+**/appsettings.Production.json

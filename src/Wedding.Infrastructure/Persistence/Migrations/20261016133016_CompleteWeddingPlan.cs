@@ -14,7 +14,9 @@ namespace Wedding.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM Reviews GROUP BY CustomerId, ListingId HAVING COUNT(*) > 1) THROW 51001, 'Duplicate historic reviews need manual review before migration. No records were deleted.', 1;");
-            migrationBuilder.Sql("CREATE OR ALTER TRIGGER [dbo].[TR_AuditLogs_AppendOnly] ON [dbo].[AuditLogs] INSTEAD OF UPDATE, DELETE AS BEGIN SET NOCOUNT ON; THROW 51002, 'Audit logs are append-only; retain at least 24 months.', 1; END;");
+            // EF idempotent scripts wrap this operation in IF NOT EXISTS. Trigger DDL
+            // must start its own SQL batch, so execute it dynamically inside that guard.
+            migrationBuilder.Sql("EXEC(N'CREATE OR ALTER TRIGGER [dbo].[TR_AuditLogs_AppendOnly] ON [dbo].[AuditLogs] INSTEAD OF UPDATE, DELETE AS BEGIN SET NOCOUNT ON; THROW 51002, ''Audit logs are append-only; retain at least 24 months.'', 1; END;');");
             migrationBuilder.DropIndex(
                 name: "IX_Reviews_CustomerId",
                 table: "Reviews");

@@ -25,6 +25,9 @@ export interface Review {
   moderationDeadline?: string;
 }
 
+export type PublicReview = Omit<Review,
+  "bookingContractId" | "contractCode" | "customerId" | "moderationFlag" | "moderationDeadline">;
+
 export interface SubmitReviewRequest {
   bookingContractId?: string;
   listingId: string;

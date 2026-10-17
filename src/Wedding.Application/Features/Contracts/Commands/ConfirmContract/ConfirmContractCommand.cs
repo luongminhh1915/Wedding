@@ -6,6 +6,7 @@ using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
 using Wedding.Application.Features.Planner;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.Application.Features.Contracts.Commands.ConfirmContract;
 
@@ -44,6 +45,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             throw new DomainException("Chỉ khách hàng của hợp đồng mới có quyền xác nhận giao dịch (BR-005).");
         }
         var weddingScope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
+        CustomerOrderJourney.EnsureActiveLead(contract.Lead);
 
         // Kiểm tra điều kiện và chuyển sang trạng thái Confirmed (nếu quá 72h sẽ throw exception)
         contract.ConfirmByCustomer();
@@ -80,14 +82,18 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         contract.Lead.MarkContracted();
         contract.Lead.UnlockPhone();
         var budget = await _context.BudgetItems.FirstOrDefaultAsync(b => b.ContractId == contract.Id, cancellationToken);
+        budget ??= await Wedding.Application.Features.Combos.ComboBudgetSynchronization.FindContractEstimateAsync(_context, contract.LeadId, weddingScope, cancellationToken);
         if (budget == null)
         {
-            budget = BudgetItem.Create(weddingScope.OwnerId, contract.Lead.Listing?.CategoryId, $"{contract.Vendor.BrandName} · {contract.ContractCode}", contract.ContractValue, contract.DepositAmount, "Tự đồng bộ từ hợp đồng đã xác nhận.");
+            var priorComboEstimate = await _context.ComboOrderItems.AnyAsync(i => i.LeadId == contract.LeadId && i.BudgetItemId.HasValue, cancellationToken);
+            var note = priorComboEstimate ? "Dự toán combo cũ đã được chỉnh sửa/đã chi hoặc không có đủ dấu vết tự động, nên hệ thống giữ nguyên và tạo khoản hợp đồng riêng. Hãy kiểm tra/gộp lại trong Planner để tránh trùng dự toán." : "Tự đồng bộ từ hợp đồng đã xác nhận.";
+            budget = BudgetItem.Create(weddingScope.OwnerId, contract.Lead.Listing?.CategoryId, $"{contract.Vendor.BrandName} · {contract.ContractCode}", contract.ContractValue, contract.DepositAmount, note);
+            if (priorComboEstimate) _context.Notifications.Add(Wedding.Domain.Entities.Notification.Create(userId, "InApp", "", $"Hợp đồng {contract.ContractCode}: {note}"));
             budget.LinkContract(contract.Id);
             if (weddingScope.ProfileId.HasValue) budget.AttachToWedding(weddingScope.ProfileId.Value);
             _context.BudgetItems.Add(budget);
         }
-        else budget.SynchronizeContract(contract.ContractValue, contract.DepositAmount);
+        else { budget.LinkContract(contract.Id); budget.SynchronizeContract(contract.ContractValue, contract.DepositAmount); }
         if (!await _context.ChecklistTasks.AnyAsync(t => t.ContractId == contract.Id, cancellationToken))
         {
             var task = ChecklistTask.Create(weddingScope.OwnerId, $"Thanh toán đợt 2 · {contract.Vendor.BrandName}", "Trước 1 tuần", contract.WeddingDate.Value.AddDays(-7), $"Còn {contract.ContractValue - contract.DepositAmount:N0} đ theo {contract.ContractCode}.");

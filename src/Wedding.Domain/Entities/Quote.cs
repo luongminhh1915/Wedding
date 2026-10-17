@@ -55,4 +55,5 @@ public class Quote : BaseEntity
 
     public void Reject(string? note) { if (Status != QuoteStatus.Sent) throw new DomainException("Báo giá không còn hiệu lực."); Status = QuoteStatus.Rejected; CustomerNote = note; SetUpdated(); }
     public void Supersede() { if (Status == QuoteStatus.Sent) { Status = QuoteStatus.Superseded; SetUpdated(); } }
+    public void Withdraw() { if (Status is QuoteStatus.Sent or QuoteStatus.Accepted) { Status = QuoteStatus.Superseded; SetUpdated(); } }
 }

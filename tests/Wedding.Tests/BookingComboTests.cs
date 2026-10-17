@@ -64,7 +64,8 @@ public class BookingComboTests
     [Fact]
     public void ComboDiscountAllocationPreservesDongAndNeverExceedsVendorConsent()
     {
-        var lines = Enumerable.Range(0, 7).Select(i => (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), $"Item{i}", 1000001m)).ToList();
+        var ownerVendorId = Guid.NewGuid();
+        var lines = Enumerable.Range(0, 7).Select(i => (Guid.NewGuid(), ownerVendorId, Guid.NewGuid(), $"Item{i}", 1000001m)).ToList();
         var order = ComboOrder.Create(Guid.NewGuid(), null, Start, 201, null, lines);
         order.SetPricing(.03m, "HCM", false);
         Assert.Equal(Math.Round(order.Subtotal * .03m), order.Items.Sum(i => i.DiscountShare));
@@ -72,6 +73,8 @@ public class BookingComboTests
         var vendor = Vendor.Create(Guid.NewGuid(), "Vendor", "vendor", "Owner", "0900000000", "HCM", .08m);
         Assert.False(vendor.AllowInCombos); vendor.ConfigureComboParticipation(true, .05m); Assert.Equal(.05m, vendor.MaxComboDiscount);
         Assert.Throws<DomainException>(() => vendor.ConfigureComboParticipation(true, .31m));
+        Assert.Throws<DomainException>(() => ComboOrder.Create(Guid.NewGuid(), null, Start, 201, null,
+            new List<(Guid, Guid, Guid, string, decimal)> { (Guid.NewGuid(), ownerVendorId, Guid.NewGuid(), "A", 1), (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "B", 1) }));
         var shares = ComboMoney.AllocateDiscount(new[] { 1m, 1m, 0m }, 1m);
         Assert.Equal(1m, shares.Sum()); Assert.Equal(0m, shares[2]); Assert.All(shares, share => Assert.True(share >= 0));
     }
@@ -99,26 +102,32 @@ public class BookingComboTests
         Assert.Equal(.02m, price.DiscountPercent); Assert.Equal(price.DiscountAmount, price.Lines.Sum(l => l.DiscountShare));
         await Assert.ThrowsAsync<DomainException>(() => ComboPricing.CalculateAsync(db, request with { Region = "Hanoi" }, null, default));
 
-        // Presets are editable carts: another approved vendor may replace a same-category item,
-        // and another category may be added even when it was absent from the preset slots.
+        // Presets are editable only within their owning vendor. Approved same-vendor replacements
+        // and extra categories work; detaching a template must never enable a mixed-vendor cart.
         var specialistOwner = User.Create("Specialist", "specialist@test.vn", "0900000002", "hash", UserRole.VendorOwner); db.Users.Add(specialistOwner);
         var specialist = Vendor.Create(specialistOwner.Id, "Specialist", "specialist", "Specialist", "0900000002", "HCM", .08m);
         specialist.SetVerified(true); specialist.ConfigureComboParticipation(true, .08m); db.Vendors.Add(specialist);
         var defaultItem = await db.ServiceItems.SingleAsync(i => i.Id == selections[0].ServiceItemId);
         var specialistListing = Listing.Create(specialist.Id, defaultItem.CategoryId, "Alternative", "alternative", 500000, 500000, "Alternative", "HCM"); specialistListing.Approve(); db.Listings.Add(specialistListing);
         var alternative = ServiceItem.Create(specialist.Id, specialistListing.Id, defaultItem.CategoryId, "Approved replacement", 500000, "Package", 1, 1000, "HCM", "Policy"); alternative.Submit(); alternative.Review(true, null); db.ServiceItems.Add(alternative);
-        var template = ComboTemplate.Create("Editable starter", "Popular", "Modern", null, null, 0); template.SetScope(null, "HCM", null, true);
+        var ownListing = Listing.Create(vendor.Id, defaultItem.CategoryId, "Own alternative", "own-alternative", 600000, 600000, "Own alternative", "HCM"); ownListing.Approve(); db.Listings.Add(ownListing);
+        var ownAlternative = ServiceItem.Create(vendor.Id, ownListing.Id, defaultItem.CategoryId, "Same vendor replacement", 600000, "Package", 1, 1000, "HCM", "Policy"); ownAlternative.Submit(); ownAlternative.Review(true, null); db.ServiceItems.Add(ownAlternative);
+        var template = ComboTemplate.Create("Editable starter", "Popular", "Modern", null, null, 0); template.SetScope(vendor.Id, "HCM", null, true);
         foreach (var selection in selections.Take(2))
         {
             var item = await db.ServiceItems.SingleAsync(i => i.Id == selection.ServiceItemId);
             var slot = ComboTemplateItem.Create(template.Id, item.CategoryId, item.ListingId, false); slot.ConfigureItems(item.Id, "[]"); template.Items.Add(slot);
         }
         db.ComboTemplates.Add(template); await db.SaveChangesAsync();
-        var edited = request with { TemplateId = template.Id, Selections = new() { new(alternative.Id, null, null), selections[1], selections[2] } };
+        var edited = request with { TemplateId = template.Id, Selections = new() { new(ownAlternative.Id, null, null), selections[1], selections[2] } };
         var editedPrice = await ComboPricing.CalculateAsync(db, edited, null, default);
-        Assert.Equal(3, editedPrice.Lines.Count); Assert.Contains(editedPrice.Lines, line => line.VendorId == specialist.Id);
+        Assert.Equal(3, editedPrice.Lines.Count); Assert.All(editedPrice.Lines, line => Assert.Equal(vendor.Id, line.VendorId));
+        var mixed = edited with { Selections = new() { new(alternative.Id, null, null), selections[1], selections[2] } };
+        await Assert.ThrowsAsync<DomainException>(() => ComboPricing.CalculateAsync(db, mixed, null, default));
+        await Assert.ThrowsAsync<DomainException>(() => ComboPricing.CalculateAsync(db, mixed with { TemplateId = null }, null, default));
+        var separateVendorCart = await ComboPricing.CalculateAsync(db, mixed with { TemplateId = null, Selections = new() { new(alternative.Id, null, null) } }, null, default);
+        Assert.Single(separateVendorCart.Lines); Assert.Equal(specialist.Id, separateVendorCart.Lines[0].VendorId);
         template.SetScope(vendor.Id, "HCM", .08m, true); await db.SaveChangesAsync();
-        await Assert.ThrowsAsync<DomainException>(() => ComboPricing.CalculateAsync(db, edited, null, default)); // UI must detach vendor preset when mixing vendors.
         Assert.Equal(3, (await ComboPricing.CalculateAsync(db, edited with { TemplateId = null }, null, default)).Lines.Count);
         vendor.ConfigureComboParticipation(true, .08m); await db.SaveChangesAsync();
         var removedSlot = await ComboPricing.CalculateAsync(db, request with { TemplateId = template.Id, Selections = new() { selections[1] } }, null, default);
@@ -159,7 +168,9 @@ public class BookingComboTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => failing.Handle(command with { SaveAsDraft = false, DraftId = draft.Id }, default));
         Assert.Equal(1, await db.ComboOrders.CountAsync()); Assert.Equal(0, await db.Leads.CountAsync()); Assert.Equal(0, await db.BudgetItems.CountAsync());
         var submitted = await handler.Handle(command with { SaveAsDraft = false, DraftId = draft.Id }, default);
-        Assert.Equal("Submitted", submitted.Status); Assert.Equal(1, await db.ComboOrders.CountAsync()); Assert.Equal(1, await db.Leads.CountAsync()); Assert.Equal(1, await db.BudgetItems.CountAsync());
+        Assert.Equal("Submitted", submitted.Status); Assert.Equal(2, await db.ComboOrders.CountAsync()); Assert.Equal(1, await db.Leads.CountAsync()); Assert.Equal(1, await db.BudgetItems.CountAsync());
+        Assert.Equal(ComboOrderStatus.Cancelled, (await db.ComboOrders.SingleAsync(o => o.Id == draft.Id)).Status); // Retain the original draft, never erase revision history.
+        Assert.Equal(submitted.Id, (await db.CustomerOrderStates.SingleAsync(s => s.Kind == "combo" && s.EntityId == draft.Id)).SupersededById);
         Assert.NotNull(submitted.Items.Single().VoucherCode);
     }
 

@@ -5,6 +5,7 @@ import WeddingMatchLayout from "../components/WeddingMatchLayout";
 import HomePage from "../features/home/HomePage";
 import CustomerOnboardingGuard from "./CustomerOnboardingGuard";
 import PostLoginRedirect from "./PostLoginRedirect";
+import PublicAuthRoute from "./PublicAuthRoute";
 
 const LoginForm = lazy(() => import("../features/auth/components/LoginForm"));
 const RegisterForm = lazy(
@@ -24,6 +25,7 @@ const AdminDashboard = lazy(() => import("../features/admin/AdminDashboard"));
 // Hành trình cặp đôi kiểu Weddy (P1–P6)
 const SetupWizard = lazy(() => import("../features/journey/planner/SetupWizard"));
 const ComboBuilderPage = lazy(() => import("../features/journey/combo/ComboBuilderPage"));
+const ComboDetailPage = lazy(() => import("../features/journey/combo/ComboDetailPage"));
 const ArticlesPage = lazy(() => import("../features/journey/ArticlesPage"));
 const ArticlePage = lazy(() => import("../features/journey/admin/OperationsPanels").then((m) => ({ default: m.ArticlePage })));
 const TemplateGallery = lazy(() => import("../features/journey/invitations/TemplateGallery"));
@@ -54,9 +56,12 @@ export default function AppRoutes() {
           <Route path="/browse" element={<BrowsePage />} />
           <Route path="/vendors" element={<BrowsePage />} />
           <Route path="/listings/:id" element={<ListingDetailPage />} />
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
+          <Route element={<PublicAuthRoute />}>
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/register" element={<RegisterForm />} />
+          </Route>
           <Route path="/combo" element={<ComboBuilderPage />} />
+          <Route path="/combo/:templateId" element={<ComboDetailPage />} />
           <Route path="/cam-nang" element={<ArticlesPage />} />
           <Route path="/wiki" element={<ArticlesPage />} />
           <Route path="/wiki/:slug" element={<ArticlePage />} />

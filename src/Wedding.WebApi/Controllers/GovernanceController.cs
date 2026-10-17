@@ -13,7 +13,7 @@ public class GovernanceController : ControllerBase
     private readonly IMediator _mediator;
     public GovernanceController(IMediator mediator) => _mediator = mediator;
 
-    public record ReviewBody(bool Approve, string? Note);
+    public record GovernanceReviewBody(bool Approve, string? Note);
 
     [HttpPost("verifications")]
     [Authorize(Roles = "VendorOwner")]
@@ -29,7 +29,7 @@ public class GovernanceController : ControllerBase
 
     [HttpPost("verifications/{id:guid}/review")]
     [Authorize(Roles = "Moderator,SuperAdmin")]
-    public async Task<IActionResult> Review(Guid id, [FromBody] ReviewBody body) => Ok(await _mediator.Send(new ReviewVerificationCommand(id, body.Approve, body.Note)));
+    public async Task<IActionResult> Review(Guid id, [FromBody] GovernanceReviewBody body) => Ok(await _mediator.Send(new ReviewVerificationCommand(id, body.Approve, body.Note)));
 
     [HttpPost("disputes")]
     [Authorize(Roles = "Customer,VendorOwner")]

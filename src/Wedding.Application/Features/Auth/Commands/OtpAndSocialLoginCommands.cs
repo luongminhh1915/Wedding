@@ -1,9 +1,9 @@
-using System.Net.Mail;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Auth.DTOs;
+using Wedding.Application.Features.Auth.Commands;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
@@ -16,8 +16,8 @@ public class RequestOtpCommandValidator : AbstractValidator<RequestOtpCommand>
 }
 internal static class OtpTarget
 {
-    public static string Normalize(string? target) => (target ?? "").Trim().ToLowerInvariant();
-    public static bool IsValid(string? target) => Normalize(target).Length <= 150 && MailAddress.TryCreate(Normalize(target), out var mail) && mail.Address == Normalize(target) && mail.Host.Contains('.');
+    public static string Normalize(string? target) => AuthInputRules.Email(target);
+    public static bool IsValid(string? target) => AuthInputRules.IsEmail(target);
 }
 public class RequestOtpCommandHandler(IApplicationDbContext context, IOtpDelivery delivery) : IRequestHandler<RequestOtpCommand, RequestOtpResponseDto>
 {
@@ -28,6 +28,10 @@ public class RequestOtpCommandHandler(IApplicationDbContext context, IOtpDeliver
         if (!OtpTarget.IsValid(target)) throw new DomainException("Vui lòng nhập email hợp lệ. OTP SMS chưa được cấu hình.");
         var pending = await context.ExecuteSerializableAsync(async token =>
         {
+            var account = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == target, token);
+            if (account != null && account.Role != UserRole.Customer)
+                throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
+            if (account is { IsActive: false }) throw new DomainException("Tài khoản đang bị khóa. Vui lòng liên hệ hỗ trợ.");
             var since = DateTime.UtcNow.AddMinutes(-1);
             if (await context.OtpCodes.AnyAsync(o => o.Target == target && o.CreatedAt > since, token)) throw new DomainException("Vui lòng đợi 60 giây trước khi gửi lại mã.");
             var hour = DateTime.UtcNow.AddHours(-1);
@@ -54,10 +58,21 @@ public class RequestOtpCommandHandler(IApplicationDbContext context, IOtpDeliver
     }
 }
 public record VerifyOtpCommand(string Target, string Code, string? FullName) : IRequest<AuthResponseDto>;
+public class VerifyOtpCommandValidator : AbstractValidator<VerifyOtpCommand>
+{
+    public VerifyOtpCommandValidator()
+    {
+        RuleFor(x => x.Target).Must(OtpTarget.IsValid).WithMessage("Vui lòng nhập email hợp lệ.");
+        RuleFor(x => x.Code).NotEmpty().Matches(@"^[0-9]{6}$").WithMessage("Mã OTP cần đúng 6 chữ số.");
+        RuleFor(x => x.FullName).Must(name => name == null || name.Trim().Length <= 150).WithMessage("Họ và tên tối đa 150 ký tự.");
+    }
+}
 public class VerifyOtpCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt) : IRequestHandler<VerifyOtpCommand, AuthResponseDto>
 {
     public async Task<AuthResponseDto> Handle(VerifyOtpCommand request, CancellationToken ct)
     {
+        var validation = new VerifyOtpCommandValidator().Validate(request);
+        if (!validation.IsValid) throw new DomainException(validation.Errors[0].ErrorMessage);
         var target = OtpTarget.Normalize(request.Target);
         var otp = await context.OtpCodes.Where(o => o.Target == target).OrderByDescending(o => o.CreatedAt).FirstOrDefaultAsync(ct)
             ?? throw new DomainException("Bạn chưa yêu cầu mã OTP.");
@@ -67,30 +82,48 @@ public class VerifyOtpCommandHandler(IApplicationDbContext context, IPasswordHas
             try { await context.SaveChangesAsync(ct); }
             catch (DbUpdateConcurrencyException) { throw new DomainException("Mã OTP đã được sử dụng. Vui lòng gửi lại mã."); }
         }
-        var user = await context.Users.Include(u => u.Vendor).FirstOrDefaultAsync(u => u.Email == target, ct);
-        if (user == null)
+        return await context.ExecuteSerializableAsync(async token =>
         {
-            user = User.Create(string.IsNullOrWhiteSpace(request.FullName) ? "Cặp đôi mới" : request.FullName, target, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
-            context.Users.Add(user);
-        }
-        if (user.Role != UserRole.Customer) throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
-        return await SocialLogin.IssueAsync(context, jwt, user, ct);
+            var user = await context.Users.Include(u => u.Vendor).FirstOrDefaultAsync(u => u.Email == target, token);
+            if (user == null)
+            {
+                user = User.Create(string.IsNullOrWhiteSpace(request.FullName) ? "Cặp đôi mới" : request.FullName, target, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
+                context.Users.Add(user);
+            }
+            if (user.Role != UserRole.Customer) throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
+            return await SocialLogin.IssueAsync(context, jwt, user, token);
+        }, ct);
     }
 }
 public record GoogleLoginCommand(string IdToken) : IRequest<AuthResponseDto>;
+public class GoogleLoginCommandValidator : AbstractValidator<GoogleLoginCommand>
+{
+    public GoogleLoginCommandValidator() => RuleFor(x => x.IdToken).NotEmpty().MaximumLength(16000).WithMessage("Google ID token không hợp lệ.");
+}
 public class GoogleLoginCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt, IGoogleIdentityVerifier google) : IRequestHandler<GoogleLoginCommand, AuthResponseDto>
 {
     public async Task<AuthResponseDto> Handle(GoogleLoginCommand request, CancellationToken ct)
     {
+        var validation = new GoogleLoginCommandValidator().Validate(request);
+        if (!validation.IsValid) throw new DomainException(validation.Errors[0].ErrorMessage);
         var identity = await google.VerifyAsync(request.IdToken, ct);
-        var user = await context.Users.FirstOrDefaultAsync(u => u.GoogleSubject == identity.Subject, ct);
-        if (user == null)
+        if (!AuthInputRules.IsEmail(identity.Email) || string.IsNullOrWhiteSpace(identity.Subject) || identity.Subject.Length > 255)
+            throw new DomainException("Thông tin tài khoản Google không hợp lệ.");
+        var email = AuthInputRules.Email(identity.Email);
+        var name = string.IsNullOrWhiteSpace(identity.Name) ? email : identity.Name.Trim();
+        if (name.Length > 150) name = name[..150];
+        return await context.ExecuteSerializableAsync(async token =>
         {
-            if (await context.Users.AnyAsync(u => u.Email == identity.Email, ct)) throw new DomainException("Email đã có tài khoản. Đăng nhập bằng mật khẩu/OTP rồi liên kết Google.");
-            user = User.Create(identity.Name, identity.Email, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
-            user.LinkGoogle(identity.Subject); user.UpdateProfile(identity.Name, identity.Picture); context.Users.Add(user);
-        }
-        return await SocialLogin.IssueAsync(context, jwt, user, ct);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.GoogleSubject == identity.Subject, token);
+            if (user == null)
+            {
+                if (await context.Users.AnyAsync(u => u.Email == email, token)) throw new DomainException("Email đã có tài khoản. Đăng nhập bằng mật khẩu/OTP rồi liên kết Google.");
+                user = User.Create(name, email, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
+                user.LinkGoogle(identity.Subject); user.UpdateProfile(name, identity.Picture?.Length <= 500 ? identity.Picture : null); context.Users.Add(user);
+            }
+            if (user.Role != UserRole.Customer) throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
+            return await SocialLogin.IssueAsync(context, jwt, user, token);
+        }, ct);
     }
 }
 internal static class SocialLogin

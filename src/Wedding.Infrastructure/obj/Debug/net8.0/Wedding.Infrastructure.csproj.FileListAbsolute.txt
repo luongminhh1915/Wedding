@@ -71,9 +71,9 @@ D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infr
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.AssemblyInfo.cs
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.csproj.CoreCompileInputs.cache
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.sourcelink.json
-D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding..DE49E7EB.Up2Date
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.dll
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\refint\Wedding.Infrastructure.dll
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.pdb
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.genruntimeconfig.cache
 D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\ref\Wedding.Infrastructure.dll
+D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\obj\Debug\net8.0\Wedding.Infrastructure.csproj.CopyComplete

@@ -11,7 +11,7 @@ export function CustomerDisputes() {
   const open = useOpenDispute();
   const [contractId, setContractId] = useState("");
   const [reason, setReason] = useState("");
-  const eligible = contracts.filter((c) => ["Confirmed", "Completed", "PendingVerification"].includes(c.status));
+  const eligible = contracts.filter((c) => ["Confirmed", "Completed"].includes(c.status));
   return (
     <Panel eyebrow="Hỗ trợ" title="Báo sự cố với hợp đồng">
       {disputes.length > 0 && (

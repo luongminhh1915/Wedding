@@ -12,6 +12,7 @@ using Wedding.Application.Features.Contracts.Queries.GetVendorContracts;
 using Wedding.Application.Features.Contracts;
 using Wedding.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.WebApi.Controllers;
 
@@ -129,8 +130,15 @@ public class ContractsController : ControllerBase
     [Authorize(Roles = "VendorOwner")]
     public async Task<IActionResult> Revise(Guid id, RevisionBody body, CancellationToken ct)
     {
-        var contract = await _db.BookingContracts.Include(c => c.Vendor).FirstOrDefaultAsync(c => c.Id == id && c.Vendor.UserId == _user.UserId, ct);
-        if (contract == null) return NotFound(); contract.Revise(body.ContractValue, body.DepositAmount, body.ContractImageUrl, body.WeddingDate, body.CancellationPolicy); await _audit.LogAsync("Contract.Revised", "BookingContract", id.ToString(), new { contract.RevisionCount }); await _db.SaveChangesAsync(ct); return Ok();
+        return await _db.ExecuteSerializableAsync<IActionResult>(async token =>
+        {
+            var contract = await _db.BookingContracts.Include(c => c.Vendor).Include(c => c.Lead).FirstOrDefaultAsync(c => c.Id == id && c.Vendor.UserId == _user.UserId, token);
+            if (contract == null) return NotFound();
+            CustomerOrderJourney.EnsureActiveLead(contract.Lead);
+            contract.Revise(body.ContractValue, body.DepositAmount, body.ContractImageUrl, body.WeddingDate, body.CancellationPolicy);
+            await _audit.LogAsync("Contract.Revised", "BookingContract", id.ToString(), new { contract.RevisionCount });
+            await _db.SaveChangesAsync(token); return Ok();
+        }, ct);
     }
     public record CancelFinancialBody(decimal RetainedDeposit, string Reason);
     [HttpPost("{id:guid}/cancel-financial")]

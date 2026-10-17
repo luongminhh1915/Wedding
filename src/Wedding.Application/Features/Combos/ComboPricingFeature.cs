@@ -8,11 +8,12 @@ using Wedding.Domain.Exceptions;
 namespace Wedding.Application.Features.Combos;
 
 public record ComboSelection(Guid ServiceItemId, List<Guid>? VariantIds, List<Guid>? AddOnIds, int Hours = 1);
-public record ComboPriceCommand(Guid? TemplateId, string Region, DateTime WeddingDate, int GuestCount, List<ComboSelection> Selections) : IRequest<ComboPriceDto>;
+public record ComboPriceCommand(Guid? TemplateId, string Region, DateTime WeddingDate, int GuestCount, List<ComboSelection> Selections, Guid? RevisionOfId = null) : IRequest<ComboPriceDto>;
 public record ComboPriceLineDto(Guid ServiceItemId, Guid ListingId, Guid VendorId, Guid CategoryId, string VendorName, string Title,
     string Unit, int Quantity, decimal Price, decimal DiscountShare, decimal Total, string CancellationPolicy, string Availability);
 public record ComboPriceDto(decimal Subtotal, decimal DiscountPercent, decimal DiscountAmount, decimal Total,
-    List<ComboPriceLineDto> Lines, List<string> Warnings, decimal? PlannerRemaining = null);
+    List<ComboPriceLineDto> Lines, List<string> Warnings, decimal? PlannerRemaining = null,
+    decimal? PlannerReservedBeforeCart = null, decimal? PlannerReplacedEstimate = null, decimal? PlannerBudgetTotal = null);
 public class ComboPriceCommandHandler(IApplicationDbContext context, ICurrentUserService user) : IRequestHandler<ComboPriceCommand, ComboPriceDto>
 {
     public Task<ComboPriceDto> Handle(ComboPriceCommand r, CancellationToken ct) => ComboPricing.CalculateAsync(context, r, user.UserId, ct);
@@ -30,16 +31,16 @@ public static class ComboPricing
             .Where(i => ids.Contains(i.Id)).ToListAsync(ct);
         if (items.Count != ids.Count || items.Any(i => !i.IsActive || i.ModerationStatus != "Approved" || !i.Vendor.IsVerified || !i.Vendor.IsActive || i.Listing.Status != ListingStatus.Active))
             throw new DomainException("Một dịch vụ chưa được duyệt/NCC chưa xác minh hoặc bài đăng không còn Active.");
+        var ownerVendorId = ComboVendorPolicy.RequireOneVendor(items.Select(i => i.VendorId));
         if (items.Select(i => i.CategoryId).Distinct().Count() != items.Count) throw new DomainException("Mỗi ngành chỉ chọn một dịch vụ.");
         if (items.Any(i => !i.Serves(r.Region) || r.GuestCount < i.MinGuests || r.GuestCount > i.MaxGuests)) throw new DomainException("Dịch vụ không phục vụ khu vực hoặc không phù hợp số khách.");
         var template = r.TemplateId.HasValue ? await context.ComboTemplates.Include(t => t.Items).FirstOrDefaultAsync(t => t.Id == r.TemplateId && t.IsActive && t.ModerationStatus == "Approved", ct) ?? throw new DomainException("Combo mẫu không còn khả dụng.") : null;
         if (template != null)
         {
-            if (!string.IsNullOrWhiteSpace(template.Region) && template.Region != "*" && !template.Region.Equals(r.Region, StringComparison.OrdinalIgnoreCase)) throw new DomainException("Combo mẫu không phục vụ khu vực đã chọn.");
-            // A preset is an editable starting cart, not a whitelist. Every replacement/new category
-            // is validated against the approved catalog above. Vendor-owned presets remain vendor-bound
-            // until the client deliberately detaches the preset to create a custom mixed-vendor cart.
-            if (template.OwnerVendorId.HasValue && items.Any(i => i.VendorId != template.OwnerVendorId)) throw new DomainException("Combo một NCC không được thêm dịch vụ bên ngoài.");
+            if (!await ComboVendorPolicy.IsOwnedTemplateAsync(context, template, ct)) throw new DomainException("Combo cũ không thuộc riêng một NCC hoặc chứa lựa chọn bên ngoài. Vui lòng chọn combo NCC hợp lệ.");
+            if (!string.IsNullOrWhiteSpace(template.Region) && !RegionRules.Serves(template.Region, r.Region)) throw new DomainException("Combo mẫu không phục vụ khu vực đã chọn.");
+            // Customers may swap/add approved services, but only inside this vendor's catalog.
+            if (template.OwnerVendorId != ownerVendorId) throw new DomainException(ComboVendorPolicy.SingleVendorMessage);
         }
         var vendors = items.Select(i => i.Vendor).DistinctBy(v => v.Id).ToList();
         if (vendors.Any(v => !v.AllowInCombos)) throw new DomainException("Có NCC chưa đồng ý tham gia combo.");
@@ -72,8 +73,20 @@ public static class ComboPricing
         {
             var share = shares[i]; lines[i] = lines[i] with { DiscountShare = share, Total = lines[i].Price - share };
         }
-        var profile = userId.HasValue ? await context.WeddingProfiles.AsNoTracking().FirstOrDefaultAsync(w => w.CustomerId == userId, ct) : null;
-        var paid = userId.HasValue ? (await context.BudgetItems.Where(b => b.CustomerId == userId).Select(b => b.ActualCost).ToListAsync(ct)).Sum() : 0;
-        return new(subtotal, percent, discount, subtotal - discount, lines, warnings, profile == null ? null : profile.TotalBudget - paid - (subtotal - discount));
+        if (r.RevisionOfId.HasValue)
+        {
+            if (!userId.HasValue) throw new DomainException("Bạn cần đăng nhập để tính giá phiên bản chỉnh sửa.");
+            var source = await context.ComboOrders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == r.RevisionOfId && o.CustomerId == userId, ct)
+                ?? throw new NotFoundException("Không tìm thấy combo gốc của bạn.");
+            await Wedding.Application.Features.CustomerOrders.CustomerOrderJourney.EnsureCanReplaceComboAsync(context, source, ct);
+            if (source.Items.First().VendorId != ownerVendorId) throw new DomainException("Phiên bản chỉnh sửa chỉ dùng dịch vụ cùng NCC của combo gốc.");
+        }
+        var projection = userId.HasValue ? await ComboBudgetSynchronization.ProjectAsync(context, userId.Value, lines.Select(line => line.CategoryId).ToList(), ct, r.RevisionOfId) : null;
+        if (projection != null) warnings.AddRange(projection.Warnings);
+        return new(subtotal, percent, discount, subtotal - discount, lines, warnings,
+            projection?.Profile == null ? null : projection.Profile.TotalBudget - projection.ReservedBeforeCart - (subtotal - discount),
+            projection?.Profile == null ? null : projection.ReservedBeforeCart,
+            projection?.Profile == null ? null : projection.ReplacedSeedEstimate,
+            projection?.Profile?.TotalBudget);
     }
 }

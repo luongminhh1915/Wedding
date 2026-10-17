@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useIntentStore } from "../store/intentStore";
 import { useOnboardingStatus } from "../features/journey/planner/useOnboarding";
-import { isJoinIntent, SETUP_PATH } from "../features/journey/planner/onboardingDecision";
+import { completedSetupDestination, isJoinIntent, SETUP_PATH } from "../features/journey/planner/onboardingDecision";
 import { usePlannerAction } from "../features/journey/planner/plannerApi";
 import { apiError } from "../features/journey/api";
 
@@ -19,6 +19,8 @@ export default function CustomerOnboardingGuard() {
   if (!token || user?.role !== "Customer" || ["/login", "/register", "/auth/continue"].includes(location.pathname)) return <Outlet />;
   if (status.isPending || status.isFetching && !status.data) return <main className="wd wd-page text-center" role="status">Đang kiểm tra kế hoạch cưới của bạn...</main>;
   if (status.isError || !status.data) return <OnboardingUnavailable retry={() => void status.refetch()} />;
+  const completedSetup = completedSetupDestination(status.data.completed, location.pathname);
+  if (completedSetup) return <Navigate to={completedSetup} replace />;
   if (status.data.completed || location.pathname === SETUP_PATH) return <Outlet />;
   const path = location.pathname + location.search;
   if (isJoinIntent(path)) return <JoinBeforeOnboarding code={new URLSearchParams(location.search).get("join")!} />;

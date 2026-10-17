@@ -35,7 +35,10 @@ export const useCreateListing = () => {
       const res = await axiosClient.post('/api/listings', data);
       return res.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: listingKeys.myListings }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: listingKeys.myListings });
+      qc.invalidateQueries({ queryKey: ['public-listings'] });
+    },
   });
 };
 
@@ -46,7 +49,14 @@ export const useUpdateListing = () => {
     mutationFn: async ({ id, ...data }) => {
       await axiosClient.put(`/api/listings/${id}`, data);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: listingKeys.myListings }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: listingKeys.myListings });
+      qc.invalidateQueries({ queryKey: listingKeys.detail(variables.id) });
+      qc.invalidateQueries({ queryKey: ['listing-detail', variables.id] });
+      qc.invalidateQueries({ queryKey: ['public-listings'] });
+      qc.invalidateQueries({ queryKey: ['admin-listings'] });
+      qc.invalidateQueries({ queryKey: ['combo-builder'] });
+    },
   });
 };
 
@@ -64,9 +74,10 @@ export const useSubmitListing = () => {
 // ─── MODERATOR QUERIES ────────────────────────────────────────────────────────
 
 /** Lấy danh sách bài chờ duyệt */
-export const usePendingListings = () =>
+export const usePendingListings = (enabled = true) =>
   useQuery<ListingDto[]>({
     queryKey: listingKeys.pending,
+    enabled,
     queryFn: async () => {
       const res = await axiosClient.get('/api/listings/pending');
       return res.data;

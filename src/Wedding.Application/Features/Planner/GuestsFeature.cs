@@ -97,13 +97,20 @@ public class AutoAssignTablesHandler(IApplicationDbContext db, ICurrentUserServi
         var wedding = await GuestMap.WeddingId(db, user, ct, true);
         var tables = await db.SeatTables.Where(t => t.WeddingProfileId == wedding).OrderBy(t => t.Name).ToListAsync(ct);
         var guests = await db.WeddingGuests.Where(g => g.WeddingProfileId == wedding).ToListAsync(ct);
-        // Keep manual assignments; groups remain together and larger parties are placed first.
-        var remaining = tables.ToDictionary(t => t.Id, t => t.Capacity - guests.Where(g => g.TableId == t.Id).Sum(g => g.PartySize));
+        // Preserve occupied seats. Split only unseated parties so every free seat can be used without exceeding capacity.
+        var remaining = tables.ToDictionary(t => t.Id, t => Math.Max(0, t.Capacity - guests.Where(g => g.TableId == t.Id).Sum(g => g.PartySize)));
         var placed = 0;
-        foreach (var g in guests.Where(g => g.TableId == null && g.Status == "Attending").OrderBy(g => g.Side).ThenBy(g => g.Group).ThenByDescending(g => g.PartySize))
+        foreach (var g in guests.Where(g => g.TableId == null && g.Status == "Attending").OrderBy(g => g.Side).ThenBy(g => g.Group).ThenByDescending(g => g.PartySize).ThenBy(g => g.Id).ToList())
         {
-            var table = tables.FirstOrDefault(t => remaining[t.Id] >= g.PartySize);
-            if (table == null) continue; g.AssignTable(table.Id); remaining[table.Id] -= g.PartySize; placed++;
+            foreach (var table in tables.Where(t => remaining[t.Id] > 0))
+            {
+                var people = Math.Min(remaining[table.Id], g.PartySize);
+                var seatingGroup = people == g.PartySize ? g : g.SplitParty(people);
+                seatingGroup.AssignTable(table.Id);
+                if (seatingGroup != g) db.WeddingGuests.Add(seatingGroup);
+                remaining[table.Id] -= people; placed += people;
+                if (seatingGroup == g) break;
+            }
         }
         await db.SaveChangesAsync(ct); return placed;
     }
