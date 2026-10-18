@@ -2,6 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "../../../services/axiosClient";
 import { useAuthStore } from "../../../store/authStore";
 
+export interface OrderGroupPage<T> { items: T[]; metadata: OrderJourneyItem[]; page: number; pageSize: number; totalCount: number; filter: string; focusFound: boolean }
+export function useCustomerOrderPage<T>(kind: "lead" | "quote" | "contract", page: number, pageSize: number, filter: string, focusId?: string) {
+  const user = useAuthStore(state => state.user);
+  return useQuery({
+    queryKey: ["customer-order-page", user?.id, kind, page, pageSize, filter, focusId],
+    enabled: user?.role === "Customer",
+    queryFn: async () => (await axios.get<OrderGroupPage<T>>("/api/customer-orders/page", { params: { kind, page, pageSize, filter, focusId } })).data,
+  });
+}
+
 export type OrderKind = "combo" | "lead" | "quote" | "contract";
 export interface OrderMediaItem {
   listingId: string;
@@ -75,13 +85,13 @@ export type CustomerOrderAction = {
 };
 export const orderJourneyKey = (kind: OrderKind, id: string) => `${kind}:${id}`;
 
-export function useCustomerOrderJourney() {
+export function useCustomerOrderJourney(comboIds?: string[]) {
   const user = useAuthStore((state) => state.user);
   return useQuery({
-    queryKey: ["customer-order-journey", user?.id],
-    enabled: user?.role === "Customer",
+    queryKey: ["customer-order-journey", user?.id, comboIds],
+    enabled: user?.role === "Customer" && (comboIds === undefined || comboIds.length > 0),
     queryFn: async () =>
-      (await axios.get<OrderJourneyItem[]>("/api/customer-orders")).data,
+      (await axios.get<OrderJourneyItem[]>("/api/customer-orders", { params: { comboIds }, paramsSerializer: { indexes: null } })).data,
   });
 }
 export function useCustomerOrderAction() {

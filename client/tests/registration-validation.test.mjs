@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration } from "../src/features/auth/components/registrationValidation.ts";
 
-const valid = { ...EMPTY_REGISTRATION, fullName: "Nguyễn Văn A", email: "customer@example.com", phoneNumber: "0912345678", password: "A long passphrase", confirmPassword: "A long passphrase", brandName: "Wedding QA" };
+const valid = { ...EMPTY_REGISTRATION, fullName: "Nguyễn Văn A", email: "customer@example.com", phoneNumber: "0912345678", password: "A long passphrase", confirmPassword: "A long passphrase", brandName: "Wedding QA", city: "Hồ Chí Minh" };
 
 test("registration trims identity fields without altering passwords", () => {
   const result = normalizeRegistration({ ...valid, fullName: " Nguyễn Văn A ", email: " Customer@Example.COM ", phoneNumber: " 0912345678 ", brandName: " Wedding QA ", city: " Hà Nội ", password: " pass phrase ", confirmPassword: " pass phrase " });
@@ -48,6 +48,16 @@ test("new password minimum, UTF8 BCrypt limit and matching confirmation are enfo
 test("vendor commission selection preserves supported category policy", () => {
   for (const commissionRate of ["0.03", "0.08", "0.1", "0.12"]) assert.equal(validateRegistration({ ...valid, commissionRate }, "vendor").commissionRate, undefined);
   assert.ok(validateRegistration({ ...valid, commissionRate: "0.01" }, "vendor").commissionRate);
+});
+
+test("vendor registration requires a current province while customer onboarding remains separate", () => {
+  assert.equal(EMPTY_REGISTRATION.city, "", "new partners must choose rather than silently default to another city");
+  for (const city of ["Huế", "Bắc Ninh", "Đồng Nai", "Hồ Chí Minh", "Tỉnh Đắk Lắk", "TP. HCM"])
+    assert.equal(validateRegistration({ ...valid, city }, "vendor").city, undefined, city);
+  for (const city of ["", "Ho Chi Minh arbitrary", "Bình Dương", "Nước ngoài"])
+    assert.ok(validateRegistration({ ...valid, city }, "vendor").city, city);
+  assert.equal(normalizeRegistration({ ...valid, city: " TP. HCM " }).city, "Hồ Chí Minh");
+  assert.equal(validateRegistration({ ...valid, city: "" }, "customer").city, undefined);
 });
 
 test("API validation dictionaries and arrays are flattened and deduplicated", () => {

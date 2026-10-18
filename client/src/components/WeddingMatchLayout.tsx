@@ -18,12 +18,11 @@ import {
   Wallet,
   CheckCheck,
   FileCheck2,
-  KeyRound,
+  UserRound,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { dashboardPath } from "../utils/navigation";
 import AuthModal from "../features/auth/components/AuthModal";
-import ChangePasswordDialog from "../features/auth/components/ChangePasswordDialog";
 import NotificationBell from "./NotificationBell";
 import ComboCartLink from "./ComboCartLink";
 import "../styles/combo-builder.css";
@@ -46,7 +45,6 @@ export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
 
 export function WeddingMatchHeader() {
   const [authOpen, setAuthOpen] = useState(false);
-  const [securityToken, setSecurityToken] = useState<string | null>(null);
   const { user, token, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,6 +83,8 @@ export function WeddingMatchHeader() {
             <Link to="/customer/dashboard?tab=budget">
               <Wallet size={17} /> Ngân sách cưới
             </Link>
+            <Link to="/combo"><Star size={17} /> Khám phá dịch vụ & combo</Link>
+            <Link to="/customer/dashboard?tab=combos"><PanelsTopLeft size={17} /> Lựa chọn của bạn</Link>
             <Link to="/customer/dashboard?tab=contracts">
               <FileCheck2 size={17} /> Hợp đồng & tư vấn
             </Link>
@@ -112,7 +112,7 @@ export function WeddingMatchHeader() {
             <NotificationBell />
             <Link
               className="wm-account"
-              to={dashboardPath(user)}
+              to="/account"
               aria-label={`Tài khoản ${user.fullName}`}
             >
               <span>{user.fullName.slice(0, 1)}</span>
@@ -120,7 +120,6 @@ export function WeddingMatchHeader() {
                 {user.vendorBrandName || user.fullName}
               </span>
             </Link>
-            <button type="button" className="wm-logout" aria-label="Bảo mật và liên hệ" title="Bảo mật và số liên hệ" onClick={() => setSecurityToken(token)}><KeyRound size={17} /></button>
             <button
               className="wm-logout"
               aria-label="Đăng xuất"
@@ -140,7 +139,6 @@ export function WeddingMatchHeader() {
         )}
       </div>
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
-      {securityToken === token && token && user && <ChangePasswordDialog key={token} onClose={() => setSecurityToken(null)} />}
     </header>
   );
 }
@@ -209,6 +207,7 @@ function MobileNavigation() {
     { to: dashboardPath(user), label: user.role === "VendorOwner" ? "Quản lý NCC" : "Quản trị", icon: PanelsTopLeft, active: pathname === dashboardPath(user) },
     { to: "/browse", label: "Dịch vụ", icon: Star, active: pathname === "/browse" || pathname.startsWith("/listings") },
     { to: "/cam-nang", label: "Cẩm nang", icon: FileCheck2, active: pathname === "/cam-nang" },
+    { to: "/account", label: "Tài khoản", icon: UserRound, active: pathname === "/account" },
   ] : [
     { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
     {
@@ -218,10 +217,10 @@ function MobileNavigation() {
       active: pathname.startsWith("/customer") && tab !== "invitations",
     },
     {
-      to: "/customer/dashboard?tab=invitations",
-      label: "Thiệp",
-      icon: Heart,
-      active: tab === "invitations",
+      to: "/combo",
+      label: "Combo",
+      icon: Star,
+      active: pathname === "/combo" || pathname.startsWith("/combo/"),
     },
     {
       to: "/browse",
@@ -230,12 +229,11 @@ function MobileNavigation() {
       active: pathname === "/browse" || pathname.startsWith("/listings"),
     },
     {
-      to: user ? dashboardPath(user) : "/login",
+      to: user ? "/account" : "/login",
       label: "Tài khoản",
-      icon: LayoutDashboard,
+      icon: UserRound,
       active:
-        pathname.includes("/admin") ||
-        pathname.includes("/vendor") ||
+        pathname === "/account" ||
         pathname === "/login",
     },
   ];

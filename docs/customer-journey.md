@@ -19,6 +19,14 @@
 
 ## Combo đã chọn, tư vấn và hợp đồng
 
+### Danh mục và phân trang (18/10/2026)
+
+- `/combo` gọi `GET /api/combos/catalog` với danh mục, NCC, từ khóa, thứ tự và trang; 6 mục trên desktop, 4 trên điện thoại. Dịch vụ được `Count/Skip/Take` tại DB. Ảnh, biến thể và tiện ích chỉ tải cho trang hiện tại cùng các dịch vụ đang nằm trong giỏ/preset. Không làm mất giỏ khi đổi trang/bộ lọc. Combo mẫu chỉ có sắp xếp đề xuất/mới nhất; dịch vụ có thêm giá tăng/giảm. Metadata slot JSON của combo mẫu cũ được kiểm tra quyền sở hữu trước khi phân trang, không cam kết đây là truy vấn tối ưu cho danh mục cực lớn.
+- `GET /api/combos/orders/my/page` áp dụng bộ lọc bản nháp/đang theo dõi/kết thúc/lưu trữ trước khi phân trang và luôn giới hạn chủ tài khoản. `/api/customer-orders?comboIds=...` tải ảnh/quyền thao tác chỉ cho các combo của trang, tối đa 10 ID; không cho xem combo của tài khoản khác.
+- `GET /api/customer-orders/page?kind=lead|quote|contract` lọc tại API rồi phân trang theo **nhóm cùng NCC + cùng combo**, không cắt đôi combo giữa hai trang. Số đếm là số nhóm; mỗi nhóm giữ đủ dòng dịch vụ phù hợp bộ lọc. Không còn bộ lọc chỉ chạy trong một trang 50 dòng như trước.
+- Liên kết thông báo có `focus` được API tìm đúng nhóm và trang, kể cả hồ sơ lưu trữ; UI cuộn/tô viền hồ sơ sau khi tải. Hồ sơ không thuộc tài khoản hoặc đã mất khả dụng chỉ hiện trạng thái an toàn. Khi người dùng tự đổi trang/bộ lọc, bỏ focus thông báo nhưng giữ bộ lọc hiện tại. Tab tư vấn/báo giá/hợp đồng nằm trong URL để mở trực tiếp.
+- Sidebar danh mục và giỏ desktop nằm dưới navbar theo `--wm-header-offset`, có giới hạn chiều cao/vùng chứa. Mobile dùng danh mục ngang, không ép cột sidebar vào màn hình nhỏ. Những thay đổi này không thêm migration, không reset dữ liệu và không sửa quy tắc một NCC/đặt cọc/hợp đồng.
+
 - **Combo của hai bạn** (`/customer/dashboard?tab=combos`) hiển thị thẻ gọn theo combo/NCC, ảnh bìa, ảnh từng dịch vụ, tổng đã lưu và tiến độ. Mặc định thu gọn các hạng mục dài; có xem thêm, chi tiết và album ảnh. Ảnh lấy từ combo/hồ sơ NCC/bài dịch vụ liên quan, không bịa ảnh cho mục chưa có. Album tư vấn, báo giá và hợp đồng cũng dùng ảnh NCC công bố; ảnh không thay thế phạm vi công việc trong báo giá/hợp đồng đã thống nhất.
 - **Hợp đồng & tư vấn** (`?tab=contracts`) có các tab Tư vấn, Báo giá, Hợp đồng và Hỗ trợ. Dữ liệu chỉ gom khi cùng NCC và cùng combo; các dịch vụ vẫn giữ trạng thái, phiên bản báo giá, điều khoản, cọc/chứng từ và quyền xử lý riêng. Chat, duyệt báo giá, xác nhận hợp đồng và khiếu nại vẫn ở đúng bước riêng.
 - **Lưu trữ / Khôi phục** chỉ ẩn/hiện trong tài khoản khách, không xóa bản ghi, không hủy dịch vụ, không giải phóng ngân sách và không giấu hồ sơ khỏi NCC. Không có nút xóa cứng lịch sử.

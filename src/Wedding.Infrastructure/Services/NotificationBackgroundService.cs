@@ -27,9 +27,9 @@ public class NotificationBackgroundService(IServiceScopeFactory scopes, ILogger<
                     var contracts = await db.BookingContracts.Where(c => c.Status == ContractStatus.PendingVerification).ToListAsync(ct);
                     foreach (var contract in contracts)
                         foreach (var hour in new[] { 24, 48 })
-                            if (contract.CreatedAt.AddHours(hour) <= now) await AddReminder(db, contract.CustomerId, $"contract:{contract.Id}:{hour}", $"Hợp đồng {contract.ContractCode} đang chờ xác nhận (hạn 72 giờ).", ct);
+                            if (contract.CreatedAt.AddHours(hour) <= now) await AddReminder(db, contract.CustomerId, $"contract:{contract.Id}:{hour}", $"Hợp đồng {contract.ContractCode} đang chờ xác nhận (hạn 72 giờ).", "contract", contract.Id, ct);
                     var tasks = await db.ChecklistTasks.Where(t => !t.IsCompleted && t.DueDate != null && t.DueDate <= now.AddDays(3) && t.DueDate >= now).ToListAsync(ct);
-                    foreach (var task in tasks) await AddReminder(db, task.CustomerId, $"task:{task.Id}:{task.DueDate:yyyyMMdd}", $"Nhắc việc: {task.Title} — hạn {task.DueDate:dd/MM/yyyy}.", ct);
+                    foreach (var task in tasks) await AddReminder(db, task.CustomerId, $"task:{task.Id}:{task.DueDate:yyyyMMdd}", $"Nhắc việc: {task.Title} — hạn {task.DueDate:dd/MM/yyyy}.", "task", task.Id, ct);
                     await db.SaveChangesAsync(ct);
                     return true;
                 }, stoppingToken);
@@ -51,10 +51,10 @@ public class NotificationBackgroundService(IServiceScopeFactory scopes, ILogger<
             catch (Exception ex) { logger.LogError(ex, "Notification outbox processing failed"); }
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }
-    private static async Task AddReminder(IApplicationDbContext db, Guid userId, string key, string message, CancellationToken ct)
+    private static async Task AddReminder(IApplicationDbContext db, Guid userId, string key, string message, string contextKind, Guid contextId, CancellationToken ct)
     {
         if (await db.Notifications.AnyAsync(n => n.UserId == userId && n.DeduplicationKey == key, ct)) return;
         var email = await db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstOrDefaultAsync(ct);
-        if (email != null) db.Notifications.Add(Notification.Create(userId, "Email", email, message, key));
+        if (email != null) db.Notifications.Add(Notification.Create(userId, "Email", email, message, key, contextKind, contextId));
     }
 }

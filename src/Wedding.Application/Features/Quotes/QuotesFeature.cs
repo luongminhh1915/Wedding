@@ -51,12 +51,12 @@ public class SendQuoteCommandHandler : IRequestHandler<SendQuoteCommand, QuoteDt
         quote.SetVat(subtotal, r.VatRate);
         _context.Quotes.Add(quote);
         await _context.SaveChangesAsync(ct);
-        await _notify.SendAsync("InApp", lead.CustomerId.ToString(), $"{lead.Vendor.BrandName} đã gửi báo giá {quote.Code}", ct);
+        await _notify.SendContextAsync("InApp", lead.CustomerId.ToString(), $"{lead.Vendor.BrandName} đã gửi báo giá {quote.Code}", "quote", quote.Id, ct);
         return QuoteMap.ToDto(quote) with { VendorName = lead.Vendor.BrandName };
     }
 }
 
-public record GetQuotesQuery(Guid? LeadId) : IRequest<List<QuoteDto>>;
+public record GetQuotesQuery(Guid? LeadId, List<Guid>? Ids = null) : IRequest<List<QuoteDto>>;
 
 public class GetQuotesQueryHandler : IRequestHandler<GetQuotesQuery, List<QuoteDto>>
 {
@@ -69,6 +69,7 @@ public class GetQuotesQueryHandler : IRequestHandler<GetQuotesQuery, List<QuoteD
         var uid = _user.UserId ?? throw new DomainException("Bạn cần đăng nhập.");
         var q = _context.Quotes.AsNoTracking().Include(x => x.Vendor).Where(x => x.CustomerId == uid || x.Vendor.UserId == uid);
         if (r.LeadId.HasValue) q = q.Where(x => x.LeadId == r.LeadId);
+        if (r.Ids != null) q = q.Where(x => r.Ids.Contains(x.Id));
         var list = await q.ToListAsync(ct);
         var ids = list.Select(x => x.Id).ToList();
         var contracts = await _context.BookingContracts.Where(c => c.QuoteId != null && ids.Contains(c.QuoteId.Value)).ToDictionaryAsync(c => c.QuoteId!.Value, c => c.Id, ct);

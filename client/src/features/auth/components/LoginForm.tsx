@@ -199,6 +199,7 @@ export default function LoginForm({ embedded = false, onComplete }: { embedded?:
           <Link
             to="/register"
             state={location.state}
+            onClick={onComplete}
             className="font-semibold text-rose-600 hover:text-rose-700 transition"
           >
             Đăng ký ngay

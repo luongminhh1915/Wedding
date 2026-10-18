@@ -2182,6 +2182,13 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<Guid?>("ContextId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContextKind")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -2226,6 +2233,8 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId", "ReadAt");
 
                     b.HasIndex("Channel", "SentAt", "NextAttemptAt");
+
+                    b.HasIndex("UserId", "CreatedAt", "Id");
 
                     b.ToTable("Notifications");
                 });

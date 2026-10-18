@@ -72,6 +72,8 @@ export function OrderCard({
   footer,
   onImageClick,
   className = "",
+  id,
+  tabIndex,
 }: {
   imageSources?: OrderPhotoSources;
   title: ReactNode;
@@ -83,9 +85,11 @@ export function OrderCard({
   footer?: ReactNode;
   onImageClick?: () => void;
   className?: string;
+  id?: string;
+  tabIndex?: number;
 }) {
   return (
-    <article className={`co-card ${className}`}>
+    <article className={`co-card ${className}`} id={id} tabIndex={tabIndex}>
       <header className="co-card-header">
         {imageSources &&
           (onImageClick ? (
@@ -137,6 +141,8 @@ export function OrderServiceRow({
   children,
   onPhotoClick,
   className = "",
+  id,
+  tabIndex,
 }: {
   photoSources?: OrderPhotoSources;
   title: ReactNode;
@@ -145,6 +151,8 @@ export function OrderServiceRow({
   children?: ReactNode;
   onPhotoClick?: () => void;
   className?: string;
+  id?: string;
+  tabIndex?: number;
 }) {
   const photo = (
     <OrderPhoto
@@ -153,7 +161,7 @@ export function OrderServiceRow({
     />
   );
   return (
-    <div className={`co-service-row ${className}`}>
+    <div className={`co-service-row ${className}`} id={id} tabIndex={tabIndex}>
       <div className="co-service-main">
         {onPhotoClick ? (
           <button

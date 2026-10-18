@@ -73,7 +73,7 @@ public class GetComboBuilderQueryHandler : IRequestHandler<GetComboBuilderQuery,
     {
         var items = await _context.ServiceItems.AsNoTracking().Include(i => i.Vendor).Include(i => i.Listing).ThenInclude(l => l.Category)
             .Include(i => i.Listing).ThenInclude(l => l.Media).Include(i => i.Variants).Include(i => i.AddOns)
-            .Where(i => i.IsActive && i.ModerationStatus == "Approved" && i.Listing.Status == ListingStatus.Active && i.Vendor.IsActive && i.Vendor.IsVerified && i.Vendor.AllowInCombos).ToListAsync(ct);
+            .Where(i => i.IsActive && i.ModerationStatus == "Approved" && i.Listing.Status == ListingStatus.Active && i.Vendor.IsActive && i.Vendor.User.IsActive && i.Vendor.IsVerified && i.Vendor.AllowInCombos).ToListAsync(ct);
         if (!string.IsNullOrWhiteSpace(r.City))
             items = items.Where(i => i.Serves(r.City)).ToList();
         var categories = await _context.Categories.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToListAsync(ct);
@@ -174,7 +174,7 @@ public class SubmitComboOrderCommandHandler : IRequestHandler<SubmitComboOrderCo
                 (await CustomerOrderJourney.StateAsync(_context, uid, "combo", source.Id, token)).Supersede(order.Id);
                 var affectedVendors = source.Items.Select(i => i.VendorId).Distinct().ToList();
                 foreach (var recipient in await _context.Vendors.Where(v => affectedVendors.Contains(v.Id)).Select(v => v.UserId).ToListAsync(token))
-                    _context.Notifications.Add(Notification.Create(recipient, "InApp", "", $"Khách đã chỉnh sửa combo {source.Code}, thay thế bằng {order.Code}. Yêu cầu/báo giá cũ đã dừng; vui lòng báo giá lại phiên bản mới. Lý do: {revisionReason}"));
+                    _context.Notifications.Add(Notification.Create(recipient, "InApp", "", $"Khách đã chỉnh sửa combo {source.Code}, thay thế bằng {order.Code}. Yêu cầu/báo giá cũ đã dừng; vui lòng báo giá lại phiên bản mới. Lý do: {revisionReason}", contextKind: "combo", contextId: order.Id));
             }
             if (previousDraft != null)
             {
@@ -199,7 +199,7 @@ public class SubmitComboOrderCommandHandler : IRequestHandler<SubmitComboOrderCo
                 _context.Vouchers.Add(Voucher.Create(lead.Id, uid, Guid.NewGuid().ToString("N")[..8], discountValue: line.DiscountShare)); item.AttachLead(lead.Id);
                 await ComboBudgetSynchronization.ReserveLineAsync(_context, scope, order, item, line, selection, token);
                 var vendor = await _context.Vendors.Include(v => v.User).FirstAsync(v => v.Id == item.VendorId, token);
-                await _notify.SendAsync("Email", vendor.User.Email, $"Bạn có yêu cầu combo {order.Code}: {item.Title}.", token);
+                await _notify.SendContextAsync("Email", vendor.User.Email, $"Bạn có yêu cầu combo {order.Code}: {item.Title}.", "lead", lead.Id, token);
             }
             _context.AuditLogs.Add(AuditLog.Create(uid, _user.Role, r.SaveAsDraft ? "Combo.DraftSaved" : source == null ? "Combo.Submitted" : "Combo.RevisionSubmitted", "ComboOrder", order.Id.ToString(), JsonSerializer.Serialize(new { revisionOfId = source?.Id, revisionReason })));
             await _context.SaveChangesAsync(token);
@@ -220,9 +220,12 @@ public class GetMyComboOrdersQueryHandler : IRequestHandler<GetMyComboOrdersQuer
         => Load(_user.UserId ?? throw new DomainException("Bạn cần đăng nhập."), null, ct);
 
     internal async Task<List<ComboOrderDto>> Load(Guid uid, Guid? id, CancellationToken ct)
+        => await LoadIds(uid, id.HasValue ? new List<Guid> { id.Value } : null, ct);
+
+    internal async Task<List<ComboOrderDto>> LoadIds(Guid uid, List<Guid>? ids, CancellationToken ct)
     {
         var orders = await _context.ComboOrders.Include(o => o.Items).ThenInclude(i => i.Vendor)
-            .Where(o => o.CustomerId == uid && (id == null || o.Id == id)).ToListAsync(ct);
+            .Where(o => o.CustomerId == uid && (ids == null || ids.Contains(o.Id))).ToListAsync(ct);
         await ComboMap.SyncAsync(_context, orders, ct);
         await _context.SaveChangesAsync(ct);
         var leadIds = orders.SelectMany(o => o.Items).Where(i => i.LeadId.HasValue).Select(i => i.LeadId!.Value).ToList();

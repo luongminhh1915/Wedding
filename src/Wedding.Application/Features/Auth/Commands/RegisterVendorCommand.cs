@@ -31,7 +31,8 @@ public class RegisterVendorCommandValidator : AbstractValidator<RegisterVendorCo
         RuleFor(x => x.PhoneNumber).Phone();
         RuleFor(x => x.Password).NewPassword();
         RuleFor(x => x.BrandName).Must(value => AuthInputRules.RequiredText(value, 200)).WithMessage("Tên thương hiệu cần từ 1 đến 200 ký tự.");
-        RuleFor(x => x.City).Must(value => AuthInputRules.RequiredText(value, 100)).WithMessage("Thành phố cần từ 1 đến 100 ký tự.");
+        RuleFor(x => x.City).Must(value => AuthInputRules.RequiredText(value, 100) && VietnamProvinces.TryNormalize(value, out _))
+            .WithMessage("Chọn tỉnh / thành phố thuộc danh sách 34 địa phương hiện hành.");
         RuleFor(x => x.CommissionRate).Must(rate => rate is 0.03m or 0.08m or 0.10m or 0.12m)
             .WithMessage("Tỷ lệ hoa hồng phải thuộc các mức 3%, 8%, 10% hoặc 12% của hệ thống.");
     }
@@ -77,7 +78,8 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
             }
 
             // Tạo hồ sơ Vendor gắn liền 1-1
-            var vendor = Vendor.Create(user.Id, request.BrandName, slug, request.FullName, request.PhoneNumber, request.City, request.CommissionRate);
+            VietnamProvinces.TryNormalize(request.City, out var city);
+            var vendor = Vendor.Create(user.Id, request.BrandName, slug, request.FullName, request.PhoneNumber, city, request.CommissionRate);
 
             _context.Users.Add(user);
             _context.Vendors.Add(vendor);

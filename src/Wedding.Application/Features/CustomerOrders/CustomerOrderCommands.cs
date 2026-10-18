@@ -50,7 +50,7 @@ public class CustomerOrderActionCommandHandler(IApplicationDbContext db, ICurren
                 ? await db.ComboOrderItems.Where(i => i.ComboOrderId == r.Id).Select(i => i.Vendor.UserId).Distinct().ToListAsync(token)
                 : item.Media.VendorId.HasValue ? await db.Vendors.Where(v => v.Id == item.Media.VendorId).Select(v => v.UserId).ToListAsync(token) : new List<Guid>();
             foreach (var recipient in recipients)
-                db.Notifications.Add(Notification.Create(recipient, "InApp", "", $"Khách đã dừng/rút {item.Media.Title}. Không tiếp tục báo giá/hợp đồng cũ. Lý do: {r.Reason}"));
+                db.Notifications.Add(Notification.Create(recipient, "InApp", "", $"Khách đã dừng/rút {item.Media.Title}. Không tiếp tục báo giá/hợp đồng cũ. Lý do: {r.Reason}", contextKind: r.Kind, contextId: r.Id));
         }
         db.AuditLogs.Add(AuditLog.Create(uid, user.Role, $"CustomerOrder.{r.Action}", r.Kind, r.Id.ToString(), JsonSerializer.Serialize(new { r.Reason })));
         await db.SaveChangesAsync(token);
@@ -83,7 +83,7 @@ public class ReviseCustomerLeadCommandHandler(IApplicationDbContext db, ICurrent
         (await CustomerOrderJourney.StateAsync(db, uid, "lead", source.Id, token)).Supersede(lead.Id);
         (await CustomerOrderJourney.StateAsync(db, uid, "lead", lead.Id, token)).RevisionOf(source.Id, r.Reason);
         db.AuditLogs.Add(AuditLog.Create(uid, user.Role, "CustomerOrder.Revise", "lead", source.Id.ToString(), JsonSerializer.Serialize(new { replacementId = lead.Id, r.Reason })));
-        await notify.SendAsync("InApp", source.Vendor.UserId.ToString(), "Khách đã gửi phiên bản tư vấn mới; yêu cầu/báo giá cũ đã dừng. Vui lòng xem yêu cầu mới.", token);
+        await notify.SendContextAsync("InApp", source.Vendor.UserId.ToString(), "Khách đã gửi phiên bản tư vấn mới; yêu cầu/báo giá cũ đã dừng. Vui lòng xem yêu cầu mới.", "lead", lead.Id, token);
         await db.SaveChangesAsync(token);
         return (await CustomerOrderJourney.LoadAsync(db, uid, token)).Single(x => x.Kind == "lead" && x.Id == lead.Id);
     }, ct);
@@ -105,7 +105,7 @@ public class CreateOrderChangeRequestCommandHandler(IApplicationDbContext db, IC
         var request = OrderChangeRequest.Create(uid, vendorId, r.Kind, r.Id, r.Type, r.Reason, r.ProposedChanges, requiresFinance);
         db.OrderChangeRequests.Add(request); db.AuditLogs.Add(AuditLog.Create(uid, user.Role, "CustomerOrder.RequestCreated", r.Kind, r.Id.ToString(), JsonSerializer.Serialize(new { request.Id, r.Type })));
         var vendor = await db.Vendors.SingleAsync(v => v.Id == vendorId, token);
-        await notify.SendAsync("InApp", vendor.UserId.ToString(), "Khách gửi đề nghị thay đổi/hủy. Tiếp nhận đề nghị không tự sửa hợp đồng hoặc hoàn tiền; cần phối hợp với khách và Tài chính.", token);
+        await notify.SendContextAsync("InApp", vendor.UserId.ToString(), "Khách gửi đề nghị thay đổi/hủy. Tiếp nhận đề nghị không tự sửa hợp đồng hoặc hoàn tiền; cần phối hợp với khách và Tài chính.", "order-request", request.Id, token);
         await db.SaveChangesAsync(token); return CustomerOrderJourney.Map(request);
     }, ct);
 }
@@ -147,10 +147,10 @@ public class ReviewOrderChangeRequestCommandHandler(IApplicationDbContext db, IC
             request.ReviewVendor(uid, r.Accept, r.Response);
         }
         db.AuditLogs.Add(AuditLog.Create(uid, user.Role, r.Finance ? "CustomerOrder.FinanceAcknowledgement" : "CustomerOrder.VendorAcknowledgement", "OrderChangeRequest", r.Id.ToString(), JsonSerializer.Serialize(new { r.Accept, r.Response })));
-        await notify.SendAsync("InApp", request.CustomerId.ToString(), $"Đề nghị đã có phản hồi: {request.Status}. Đây là tiếp nhận phối hợp; hợp đồng và khoản tiền chưa tự thay đổi. {r.Response}", token);
+        await notify.SendContextAsync("InApp", request.CustomerId.ToString(), $"Đề nghị đã có phản hồi: {request.Status}. Đây là tiếp nhận phối hợp; hợp đồng và khoản tiền chưa tự thay đổi. {r.Response}", "order-request", request.Id, token);
         if (request.Status == "PendingFinance")
             foreach (var id in await db.Users.Where(u => u.Role == UserRole.Finance || u.Role == UserRole.SuperAdmin).Select(u => u.Id).ToListAsync(token))
-                await notify.SendAsync("InApp", id.ToString(), "Có đề nghị hợp đồng/cọc đã được NCC tiếp nhận, cần Tài chính đối soát. Phản hồi đề nghị không tự phát lệnh hoàn tiền.", token);
+                await notify.SendContextAsync("InApp", id.ToString(), "Có đề nghị hợp đồng/cọc đã được NCC tiếp nhận, cần Tài chính đối soát. Phản hồi đề nghị không tự phát lệnh hoàn tiền.", "order-request", request.Id, token);
         await db.SaveChangesAsync(token); return CustomerOrderJourney.Map(request);
     }, ct);
 }

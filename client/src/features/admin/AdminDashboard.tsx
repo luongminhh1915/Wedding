@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Activity,
   DollarSign,
@@ -92,11 +92,12 @@ const tabs = [
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] =
-    useState<(typeof tabs)[number]["id"]>("overview");
+  const [params, setParams] = useSearchParams();
   const visibleTabs = tabs.filter(
     (tab) => !("roles" in tab) || (tab.roles as readonly string[]).includes(user?.role ?? ""),
   );
+  const activeTab = visibleTabs.find(tab => tab.id === params.get("tab"))?.id ?? "overview";
+  const setActiveTab = (tab: (typeof tabs)[number]["id"]) => setParams(tab === "overview" ? {} : { tab });
   const { data: pendingListings = [] } = usePendingListings(user?.role === "SuperAdmin" || user?.role === "Moderator");
   const current = tabs.find((tab) => tab.id === activeTab)!;
   return (

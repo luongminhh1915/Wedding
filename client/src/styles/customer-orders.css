@@ -687,3 +687,4 @@
     transition: none !important;
   }
 }
+.co-section .notification-focus { outline: 2px solid #bc9830; outline-offset: 4px; scroll-margin-top: calc(var(--wm-header-offset, 88px) + 18px); border-radius: 14px; }

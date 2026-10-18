@@ -9,7 +9,8 @@ namespace Wedding.Application.Features.Leads.Queries.GetVendorLeads;
 public record GetVendorLeadsQuery(
     string? Status = null,
     int PageNumber = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    Guid? FocusId = null
 ) : IRequest<List<LeadDto>>;
 
 public class GetVendorLeadsQueryHandler : IRequestHandler<GetVendorLeadsQuery, List<LeadDto>>
@@ -27,6 +28,7 @@ public class GetVendorLeadsQueryHandler : IRequestHandler<GetVendorLeadsQuery, L
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để xem hộp thư Lead.");
+        if (request.PageNumber < 1 || request.PageSize is < 1 or > 50) throw new DomainException("Trang hoặc số lượng yêu cầu không hợp lệ.");
 
         var vendor = await _context.Vendors
             .FirstOrDefaultAsync(v => v.UserId == userId, cancellationToken)
@@ -39,14 +41,16 @@ public class GetVendorLeadsQueryHandler : IRequestHandler<GetVendorLeadsQuery, L
             .Where(l => l.VendorId == vendor.Id)
             .AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<Domain.Enums.LeadStatus>(request.Status, true, out var leadStatus))
+        if (request.FocusId.HasValue) query = query.Where(l => l.Id == request.FocusId.Value);
+        else if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<Domain.Enums.LeadStatus>(request.Status, true, out var leadStatus))
         {
             query = query.Where(l => l.Status == leadStatus);
         }
 
         var leads = await query
             .OrderByDescending(l => l.CreatedAt)
-            .Skip((request.PageNumber - 1) * request.PageSize)
+            .ThenByDescending(l => l.Id)
+            .Skip(request.FocusId.HasValue ? 0 : (int)Math.Min((long)(request.PageNumber - 1) * request.PageSize, int.MaxValue))
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 

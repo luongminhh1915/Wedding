@@ -3,12 +3,12 @@ import axiosClient from "../../../services/axiosClient";
 import { useAuthStore } from "../../../store/authStore";
 import type { Contract } from "../../../types/contract.types";
 
-export function useCustomerContracts(pageNumber = 1, pageSize = 50) {
+export function useCustomerContracts(pageNumber = 1, pageSize = 50, enabled = true) {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
   const contractsQuery = useQuery({
     queryKey: ["customer-contracts", user?.id, pageNumber, pageSize],
-    enabled: user?.role === "Customer",
+    enabled: enabled && user?.role === "Customer",
     queryFn: async (): Promise<Contract[]> => (await axiosClient.get("/api/contracts/my-contracts", { params: { pageNumber, pageSize } })).data,
   });
   const confirmMutation = useMutation({

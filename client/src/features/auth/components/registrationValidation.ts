@@ -1,3 +1,5 @@
+import { normalizeProvince } from "../../../data/vietnamProvinces.ts";
+
 export type RegistrationRole = "customer" | "vendor";
 
 export type RegistrationValues = {
@@ -15,7 +17,7 @@ export type RegistrationErrors = Partial<Record<keyof RegistrationValues, string
 
 export const EMPTY_REGISTRATION: RegistrationValues = {
   fullName: "", email: "", phoneNumber: "", password: "", confirmPassword: "",
-  brandName: "", city: "TP. Hồ Chí Minh", commissionRate: "0.08",
+  brandName: "", city: "", commissionRate: "0.08",
 };
 
 export function normalizeRegistration(values: RegistrationValues): RegistrationValues {
@@ -25,7 +27,7 @@ export function normalizeRegistration(values: RegistrationValues): RegistrationV
     email: values.email.trim().toLowerCase(),
     phoneNumber: values.phoneNumber.trim(),
     brandName: values.brandName.trim(),
-    city: values.city.trim(),
+    city: normalizeProvince(values.city) ?? values.city.trim(),
   };
 }
 
@@ -43,7 +45,7 @@ export function validateRegistration(values: RegistrationValues, role: Registrat
   if (fields.password !== fields.confirmPassword || !fields.confirmPassword) errors.confirmPassword = "Mật khẩu nhập lại chưa khớp.";
   if (role === "vendor") {
     if (!fields.brandName || fields.brandName.length > 200) errors.brandName = "Tên thương hiệu cần có từ 1 đến 200 ký tự.";
-    if (!fields.city || fields.city.length > 100) errors.city = "Tỉnh / thành phố cần có từ 1 đến 100 ký tự.";
+    if (!normalizeProvince(fields.city)) errors.city = "Chọn một tỉnh / thành phố trong danh sách 34 địa phương hiện hành.";
     if (!["0.03", "0.08", "0.1", "0.12"].includes(fields.commissionRate)) errors.commissionRate = "Chọn nhóm dịch vụ và mức hoa hồng được hỗ trợ.";
   }
   return errors;

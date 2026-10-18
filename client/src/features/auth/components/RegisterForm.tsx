@@ -6,6 +6,8 @@ import { useAuth } from "../hooks/useAuth";
 import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
 import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration } from "./registrationValidation";
 import type { RegistrationErrors, RegistrationRole, RegistrationValues } from "./registrationValidation";
+import ProvinceSelect from "./ProvinceSelect";
+import "./register-page.css";
 
 const inputClass = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a740] focus:bg-white transition";
 const labelClass = "block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5";
@@ -36,8 +38,8 @@ function PasswordField({ id, label, error, hint, ...props }: FieldProps) {
 }
 
 export default function RegisterForm() {
-  const [params] = useSearchParams();
-  const [role, setRole] = useState<RegistrationRole>(params.get("role") === "vendor" ? "vendor" : "customer");
+  const [params, setParams] = useSearchParams();
+  const role: RegistrationRole = params.get("role") === "vendor" ? "vendor" : "customer";
   const [customer, setCustomer] = useState<RegistrationValues>({ ...EMPTY_REGISTRATION });
   const [vendor, setVendor] = useState<RegistrationValues>({ ...EMPTY_REGISTRATION });
   const [errors, setErrors] = useState<RegistrationErrors>({});
@@ -60,7 +62,10 @@ export default function RegisterForm() {
   };
   const chooseRole = (next: RegistrationRole) => {
     if (inFlight.current) return;
-    setRole(next); setErrors({}); setErrorMessage("");
+    const nextParams = new URLSearchParams(params);
+    nextParams.set("role", next);
+    setParams(nextParams, { replace: true, state: location.state });
+    setErrors({}); setErrorMessage("");
   };
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -109,6 +114,7 @@ export default function RegisterForm() {
           <Building2 className="w-4 h-4 shrink-0" aria-hidden="true" /><span>Nhà cung cấp</span>
         </button>
       </div>
+      <p className="wm-register-context">{role === "customer" ? "Sau khi đăng ký, hai bạn sẽ trả lời 10 câu hỏi ngắn để khởi tạo checklist và ngân sách, rồi đến trang tổng quan." : "Sau khi đăng ký, bạn đến cổng nhà cung cấp để hoàn thiện hồ sơ thương hiệu và gửi dịch vụ xét duyệt."}</p>
       {errorMessage && <div role="alert" className="mb-5 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-sm">
         <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" /><span>{errorMessage}</span>
       </div>}
@@ -123,7 +129,7 @@ export default function RegisterForm() {
           <RegistrationField id={`${prefix}-email`} name="email" label="Email đăng nhập" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required maxLength={150} value={values.email} onChange={(event) => update("email", event.target.value)} error={errors.email} placeholder="ban@example.com" />
           <RegistrationField id={`${prefix}-phone`} name="phoneNumber" label={role === "vendor" ? "Hotline nhà cung cấp" : "Số điện thoại"} type="tel" autoComplete="tel-national" inputMode="tel" required maxLength={20} value={values.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} error={errors.phoneNumber} placeholder="0912345678" />
           {role === "vendor" && <>
-            <RegistrationField id={`${prefix}-city`} name="city" label="Tỉnh / thành phố hoạt động" autoComplete="address-level1" required maxLength={100} value={values.city} onChange={(event) => update("city", event.target.value)} error={errors.city} placeholder="TP. Hồ Chí Minh" />
+            <ProvinceSelect key={`${role}-city`} id={`${prefix}-city`} value={values.city} onChange={(value) => update("city", value)} error={errors.city} disabled={isLoading} />
             <div>
               <label htmlFor={`${prefix}-commission`} className={labelClass}>Nhóm dịch vụ / hoa hồng</label>
               <select id={`${prefix}-commission`} name="commissionRate" value={values.commissionRate} onChange={(event) => update("commissionRate", event.target.value)} className={inputClass} aria-invalid={errors.commissionRate ? true : undefined} aria-describedby={errors.commissionRate ? `${prefix}-commission-error` : undefined}>

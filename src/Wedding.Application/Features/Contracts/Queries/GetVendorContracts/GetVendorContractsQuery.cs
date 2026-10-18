@@ -10,7 +10,8 @@ namespace Wedding.Application.Features.Contracts.Queries.GetVendorContracts;
 public record GetVendorContractsQuery(
     string? Status = null,
     int PageNumber = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    Guid? FocusId = null
 ) : IRequest<List<ContractDto>>;
 
 public class GetVendorContractsQueryHandler : IRequestHandler<GetVendorContractsQuery, List<ContractDto>>
@@ -28,6 +29,7 @@ public class GetVendorContractsQueryHandler : IRequestHandler<GetVendorContracts
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để xem danh sách hợp đồng.");
+        if (request.PageNumber < 1 || request.PageSize is < 1 or > 50) throw new DomainException("Trang hoặc số lượng hợp đồng không hợp lệ.");
 
         var vendor = await _context.Vendors
             .FirstOrDefaultAsync(v => v.UserId == userId, cancellationToken)
@@ -41,14 +43,16 @@ public class GetVendorContractsQueryHandler : IRequestHandler<GetVendorContracts
             .Where(c => c.VendorId == vendor.Id)
             .AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<ContractStatus>(request.Status, true, out var contractStatus))
+        if (request.FocusId.HasValue) query = query.Where(c => c.Id == request.FocusId.Value);
+        else if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<ContractStatus>(request.Status, true, out var contractStatus))
         {
             query = query.Where(c => c.Status == contractStatus);
         }
 
         var contracts = await query
             .OrderByDescending(c => c.CreatedAt)
-            .Skip((request.PageNumber - 1) * request.PageSize)
+            .ThenByDescending(c => c.Id)
+            .Skip(request.FocusId.HasValue ? 0 : (int)Math.Min((long)(request.PageNumber - 1) * request.PageSize, int.MaxValue))
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 

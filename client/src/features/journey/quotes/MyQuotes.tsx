@@ -1,11 +1,10 @@
 import { useId, useState } from "react";
 import { Archive, Check, FileSignature, Pencil, RotateCcw } from "lucide-react";
-import { useAuthStore } from "../../../store/authStore";
 import { apiError, useRespondQuote } from "../api";
-import { useFinancialQuotes, type FinancialQuote } from "../financeApi";
+import { type FinancialQuote } from "../financeApi";
 import { vnd, vnDate } from "../format";
 import {
-  useCustomerOrderJourney,
+  useCustomerOrderPage,
   type OrderJourneyItem,
 } from "../customerOrders/customerOrderApi";
 import {
@@ -22,24 +21,25 @@ import {
 import { orderMediaPhotos } from "../customerOrders/orderMedia";
 import {
   groupCustomerOrders,
-  matchesOrderFilter,
   orderCapability,
 } from "../customerOrders/orderPresentation";
 import {
   CustomerOrderActionDialog,
   type CustomerOrderIntent,
 } from "../../customer/components/CustomerOrderActionDialog";
+import { Pagination } from "../../../components/Pagination";
+import { useOrderPage } from "../customerOrders/useOrderPage";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 export function MyQuotes({
   onOpenContracts,
 }: {
   onOpenContracts?: () => void;
 }) {
-  const user = useAuthStore((state) => state.user);
-  const quotes = useFinancialQuotes();
-  const journey = useCustomerOrderJourney();
+  const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("quote");
+  const quotes = useCustomerOrderPage<FinancialQuote>("quote", page, pageSize, filter, focusId);
+  const journey = { data: quotes.data?.metadata, isError: quotes.isError, error: quotes.error };
   const respond = useRespondQuote();
-  const [filter, setFilter] = useState("all");
   const [dialog, setDialog] = useState<{
     item: OrderJourneyItem;
     intent: CustomerOrderIntent;
@@ -57,16 +57,14 @@ export function MyQuotes({
       .filter((item) => item.kind === "quote")
       .map((item) => [item.id, item]),
   );
-  const rows = (quotes.data ?? [])
-    .filter((q) => q.customerId === user?.id)
+  const rows = (quotes.data?.items ?? [])
     .map((q) => ({
       ...q,
       isArchived: metadata.get(q.id)?.isArchived,
       comboOrderId: metadata.get(q.id)?.comboOrderId,
     }));
-  const groups = groupCustomerOrders(
-    rows.filter((row) => matchesOrderFilter(row, filter)),
-  );
+  const groups = groupCustomerOrders(rows);
+  const notificationFocus = useNotificationFocus("quote", rows.map(row => row.id), quotes.isSuccess && !quotes.isFetching);
   function startReview(quote: FinancialQuote, accept: boolean) {
     respond.reset();
     setNote("");
@@ -94,7 +92,7 @@ export function MyQuotes({
     }
   }
   return (
-    <section className="co-section">
+    <section className="co-section" ref={listRef} style={{ scrollMarginTop: "calc(var(--wm-header-offset, 88px) + 18px)" }}>
       <header className="co-section-heading">
         <div>
           <p className="co-eyebrow">XEM RÕ TRƯỚC KHI CHỐT</p>
@@ -107,20 +105,18 @@ export function MyQuotes({
       </header>
       <OrderFilterBar
         label="Lọc báo giá"
-        value={filter}
+        value={quotes.data?.filter ?? filter}
         onChange={setFilter}
         options={[
           { id: "all", label: "Tất cả" },
           {
             id: "pending",
             label: "Cần phản hồi",
-            count: rows.filter((r) => matchesOrderFilter(r, "pending")).length,
           },
           { id: "closed", label: "Đã hết hiệu lực" },
           {
             id: "archived",
             label: "Lưu trữ",
-            count: rows.filter((r) => matchesOrderFilter(r, "archived")).length,
           },
         ]}
       />
@@ -129,6 +125,7 @@ export function MyQuotes({
           <Check size={14} /> {notice}
         </p>
       )}
+      {notificationFocus.missing && <p className="co-summary-note" role="status">Báo giá trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
       {(quotes.isError || journey.isError) && (
         <p className="co-error" role="alert">
           {apiError(quotes.error || journey.error)}
@@ -185,6 +182,9 @@ export function MyQuotes({
                   return (
                     <OrderServiceRow
                       key={quote.id}
+                      id={`notification-quote-${quote.id}`}
+                      tabIndex={-1}
+                      className={focusId === quote.id ? "notification-focus" : ""}
                       title={title}
                       photoSources={photos}
                       onPhotoClick={
@@ -306,6 +306,7 @@ export function MyQuotes({
           })}
         </div>
       )}
+      <Pagination page={quotes.data?.page ?? page} pageSize={pageSize} totalCount={quotes.data?.totalCount ?? 0} isLoading={quotes.isFetching} onPageChange={next => changePage(next, quotes.data?.filter)} label="Phân trang nhóm báo giá" />
       {gallery && (
         <OrderGallery {...gallery} onClose={() => setGallery(null)} />
       )}

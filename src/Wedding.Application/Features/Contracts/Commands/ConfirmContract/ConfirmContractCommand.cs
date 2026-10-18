@@ -88,7 +88,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             var priorComboEstimate = await _context.ComboOrderItems.AnyAsync(i => i.LeadId == contract.LeadId && i.BudgetItemId.HasValue, cancellationToken);
             var note = priorComboEstimate ? "Dự toán combo cũ đã được chỉnh sửa/đã chi hoặc không có đủ dấu vết tự động, nên hệ thống giữ nguyên và tạo khoản hợp đồng riêng. Hãy kiểm tra/gộp lại trong Planner để tránh trùng dự toán." : "Tự đồng bộ từ hợp đồng đã xác nhận.";
             budget = BudgetItem.Create(weddingScope.OwnerId, contract.Lead.Listing?.CategoryId, $"{contract.Vendor.BrandName} · {contract.ContractCode}", contract.ContractValue, contract.DepositAmount, note);
-            if (priorComboEstimate) _context.Notifications.Add(Wedding.Domain.Entities.Notification.Create(userId, "InApp", "", $"Hợp đồng {contract.ContractCode}: {note}"));
+            if (priorComboEstimate) _context.Notifications.Add(Wedding.Domain.Entities.Notification.Create(userId, "InApp", "", $"Hợp đồng {contract.ContractCode}: {note}", contextKind: "contract", contextId: contract.Id));
             budget.LinkContract(contract.Id);
             if (weddingScope.ProfileId.HasValue) budget.AttachToWedding(weddingScope.ProfileId.Value);
             _context.BudgetItems.Add(budget);

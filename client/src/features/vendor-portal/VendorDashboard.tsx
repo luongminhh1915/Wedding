@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Building2,
   MessageSquare,
@@ -39,8 +39,9 @@ const tabs = [
 
 export default function VendorDashboard() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] =
-    useState<(typeof tabs)[number]["id"]>("listings");
+  const [params, setParams] = useSearchParams();
+  const activeTab = tabs.find(tab => tab.id === params.get("tab"))?.id ?? "listings";
+  const setActiveTab = (tab: (typeof tabs)[number]["id"]) => setParams(tab === "listings" ? {} : { tab });
   const { data: categories = [] } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["categories"],
     queryFn: async () => (await axiosClient.get("/api/categories")).data,

@@ -60,6 +60,7 @@
 }
 
 .wm-theme {
+  --wm-header-offset: 96px;
   --brand: #25334c;
   --gold: #d2ac2b;
   --cream: #f2efe4;
@@ -116,7 +117,8 @@
   top: 12px;
 }
 .wm-header {
-  position: relative;
+  position: sticky;
+  top: 12px;
   z-index: 40;
   height: 72px;
   margin: 18px 24px 0;
@@ -1640,6 +1642,7 @@
   }
 }
 @media (max-width: 900px) {
+  .wm-theme { --wm-header-offset: 83px; }
   .wm-desktop-nav {
     display: none;
   }
@@ -1857,6 +1860,7 @@
   }
 }
 @media (max-width: 600px) {
+  .wm-theme { --wm-header-offset: 75px; }
   .section-width {
     width: calc(100% - 40px);
   }

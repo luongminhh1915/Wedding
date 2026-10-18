@@ -18,7 +18,10 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { useSavedCombos, type SavedCombo } from "../comboApi";
+import { useSavedCombosPage, type SavedCombo } from "../comboApi";
+import { Pagination } from "../../../components/Pagination";
+import { useOrderPage } from "../customerOrders/useOrderPage";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 import { apiError } from "../api";
 import { vnd } from "../format";
 import { ComboDialog } from "./ComboDialog";
@@ -31,7 +34,6 @@ import {
 } from "../customerOrders/customerOrderApi";
 import {
   comboCardModel,
-  comboMatchesFilter,
   type ComboListFilter,
   type ComboCardAction,
 } from "../customerOrders/comboOrderModel";
@@ -63,10 +65,10 @@ type ActionSelection = {
 };
 
 export function MyCombos() {
-  const orders = useSavedCombos();
-  const journey = useCustomerOrderJourney();
+  const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("combo");
+  const orders = useSavedCombosPage(page, pageSize, filter, focusId);
+  const journey = useCustomerOrderJourney(orders.data?.items.map(o => o.id) ?? []);
   const action = useCustomerOrderAction();
-  const [filter, setFilter] = useState<ComboListFilter>("all");
   const [selected, setSelected] = useState<ActionSelection | null>(null);
   const [reason, setReason] = useState("");
   const [detail, setDetail] = useState<SavedCombo | null>(null);
@@ -76,15 +78,14 @@ export function MyCombos() {
     index: number;
   } | null>(null);
   const navigate = useNavigate();
-  const data = orders.data ?? [];
+  const data = orders.data?.items ?? [];
   const metadata = new Map(
     journey.data
       ?.filter((item) => item.kind === "combo")
       .map((item) => [item.id, item] as const) ?? [],
   );
-  const visible = data.filter((order) =>
-    comboMatchesFilter(order, metadata.get(order.id), filter),
-  );
+  const visible = data;
+  const notificationFocus = useNotificationFocus("combo", visible.map(row => row.id), orders.isSuccess && !orders.isFetching && !journey.isLoading);
   const openAction = (
     order: SavedCombo,
     type: Exclude<ComboCardAction, "edit">,
@@ -114,7 +115,7 @@ export function MyCombos() {
     );
   };
   return (
-    <section className="co-section" aria-label="Combo của bạn">
+    <section className="co-section" aria-label="Combo của bạn" ref={listRef} style={{ scrollMarginTop: "calc(var(--wm-header-offset, 88px) + 18px)" }}>
       <div className="co-section-heading">
         <div>
           <p className="co-eyebrow">DỊCH VỤ CHO NGÀY VUI</p>
@@ -130,14 +131,9 @@ export function MyCombos() {
         </Link>
       </div>
       <OrderFilterBar
-        value={filter}
+        value={orders.data?.filter ?? filter}
         onChange={(value) => setFilter(value as ComboListFilter)}
-        options={filters.map((item) => ({
-          ...item,
-          count: data.filter((order) =>
-            comboMatchesFilter(order, metadata.get(order.id), item.id),
-          ).length,
-        }))}
+        options={filters}
         label="Lọc combo theo tiến độ"
       />
       {orders.isError && (
@@ -163,6 +159,7 @@ export function MyCombos() {
           </button>
         </div>
       )}
+      {notificationFocus.missing && <p className="co-summary-note" role="status">Combo trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
       {orders.isLoading || journey.isLoading ? (
         <div className="co-loading" role="status">
           <ShoppingBag size={30} />
@@ -203,6 +200,7 @@ export function MyCombos() {
             <ComboOrderCard
               key={order.id}
               order={order}
+              focused={focusId === order.id}
               metadata={journey.isError ? undefined : metadata.get(order.id)}
               onView={() => setDetail(order)}
               onPhoto={(title, sources) =>
@@ -218,6 +216,7 @@ export function MyCombos() {
           ))}
         </div>
       )}
+      {!orders.isError && <Pagination page={orders.data?.page ?? page} pageSize={pageSize} totalCount={orders.data?.totalCount ?? 0} isLoading={orders.isFetching} onPageChange={next => changePage(next, orders.data?.filter)} label="Phân trang combo đã chọn" />}
       {selected && (
         <OrderActionDialog
           title={
@@ -350,6 +349,7 @@ export function MyCombos() {
 
 function ComboOrderCard({
   order,
+  focused,
   metadata,
   onView,
   onPhoto,
@@ -357,6 +357,7 @@ function ComboOrderCard({
   onAction,
 }: {
   order: SavedCombo;
+  focused?: boolean;
   metadata?: OrderJourneyItem;
   onView: () => void;
   onPhoto: (title: string, sources: string[]) => void;
@@ -368,6 +369,9 @@ function ComboOrderCard({
   const services = expanded ? model.items : model.items.slice(0, 2);
   return (
     <OrderCard
+      id={`notification-combo-${order.id}`}
+      tabIndex={-1}
+      className={focused ? "notification-focus" : ""}
       imageSources={model.photos}
       onImageClick={onView}
       title={model.title}

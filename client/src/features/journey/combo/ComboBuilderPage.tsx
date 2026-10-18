@@ -23,7 +23,7 @@ import { useAuthStore } from "../../../store/authStore";
 import { useComboCartStore } from "../../../store/comboCartStore";
 import { apiError, type ComboOrder, type PlannerOverview } from "../api";
 import {
-  useCatalogBuilder,
+  useCatalogPage,
   useServerPrice,
   useSubmitCatalogCombo,
   type CatalogOption,
@@ -45,7 +45,9 @@ import { ServiceConfigurator } from "./ServiceConfigurator";
 import { ComboNextSteps } from "./ComboNextSteps";
 import { ComboPhoto } from "./ComboPhoto";
 import { editableComboCart } from "./comboEditing";
+import { catalogErrorMessage } from "./catalogError";
 import { useCustomerOrderJourney } from "../customerOrders/customerOrderApi";
+import { Pagination, scrollToList, useResponsivePageSize } from "../../../components/Pagination";
 import "../../../styles/combo-builder.css";
 
 const normalize = (s: string) =>
@@ -81,7 +83,6 @@ function ComboBuilder() {
   const cart = useComboCartStore((s) => s.carts[scope] ?? EMPTY_CART);
   const updateCart = useComboCartStore((s) => s.update);
   const clearCart = useComboCartStore((s) => s.clear);
-  const { data, isPending, isError, refetch } = useCatalogBuilder();
   const journey = useCustomerOrderJourney();
   const planner = useQuery({
     queryKey: ["planner-overview", user?.id],
@@ -97,6 +98,30 @@ function ComboBuilder() {
   const routeRevision = (location.state as { revision?: SavedCombo } | null)
     ?.revision;
   const routeOrder = routeRevision ?? routeDraft;
+  const [menu, setMenu] = useState(params.get("category") ?? "");
+  const [listingFilter, setListingFilter] = useState(params.get("listing") ?? "");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("recommended");
+  const pageSize = useResponsivePageSize();
+  const filterKey = JSON.stringify([menu, listingFilter, query, sort, cart.vendorId, cart.templateVendorId, pageSize]);
+  const [pagination, setPagination] = useState({ key: filterKey, page: 1 });
+  const page = pagination.key === filterKey ? pagination.page : 1;
+  const catalog = useCatalogPage({
+    categoryId: menu && menu !== "templates" ? menu : undefined,
+    vendorId: cart.vendorId ?? cart.templateVendorId ?? undefined,
+    listingId: listingFilter || undefined,
+    search: query.trim(), sort, page, pageSize,
+    selectedItemIds: [...new Set([...cart.selections.map(i => i.serviceItemId), ...(routeOrder?.items.flatMap(i => i.serviceItemId ? [i.serviceItemId] : []) ?? [])])].sort(),
+    templateId: routeOrder?.comboTemplateId ?? cart.templateId,
+    guests: cart.guestCount || 200,
+  });
+  const { isPending, isError, refetch } = catalog;
+  const data = catalog.data?.builder;
+  const listRef = useRef<HTMLElement>(null);
+  const changePage = (next: number) => {
+    setPagination({ key: filterKey, page: next });
+    scrollToList(listRef.current);
+  };
   const intentMetadata = journey.data?.find(
     (item) => item.kind === "combo" && item.id === routeOrder?.id,
   );
@@ -115,7 +140,7 @@ function ComboBuilder() {
       return;
     if (!replaceApproved) return;
     loadedDraft.current = true;
-    const template = data.templates.find(
+    const template = [...data.templates, ...(catalog.data?.selectedTemplate ? [catalog.data.selectedTemplate] : [])].find(
       (t) => t.id === routeOrder.comboTemplateId,
     );
     updateCart(
@@ -148,6 +173,7 @@ function ComboBuilder() {
     intentMetadata,
     replaceApproved,
     data,
+    catalog.data?.selectedTemplate,
     scope,
     updateCart,
     location.state,
@@ -180,11 +206,6 @@ function ComboBuilder() {
     updateCart,
   ]);
 
-  const [menu, setMenu] = useState(params.get("category") ?? "");
-  const [listingFilter, setListingFilter] = useState(
-    params.get("listing") ?? "",
-  );
-  const [query, setQuery] = useState("");
   const [pendingVendor, setPendingVendor] = useState<{
     id: string;
     name: string;
@@ -221,11 +242,11 @@ function ComboBuilder() {
   const options = useMemo(
     () =>
       new Map(
-        data?.categories.flatMap((category) =>
+        [...(data?.categories.flatMap((category) =>
           category.options.map((item) => [item.serviceItemId, item] as const),
-        ) ?? [],
+        ) ?? []), ...(catalog.data?.selectedOptions.map(item => [item.serviceItemId, item] as const) ?? [])],
       ),
-    [data],
+    [data, catalog.data?.selectedOptions],
   );
   const categories = data?.categories ?? [];
   const vendorProfiles = new Map(
@@ -243,14 +264,7 @@ function ComboBuilder() {
       categories.find((c) => c.categoryId === selection.categoryId)?.name ??
       "Dịch vụ đã chọn",
   }));
-  const vendors = [
-    ...new Map(
-      [...options.values()].map((item) => [
-        item.vendorId,
-        { id: item.vendorId, name: item.vendorName },
-      ]),
-    ).values(),
-  ];
+  const vendors = data?.vendors?.map(v => ({ id: v.id, name: v.name })) ?? [];
   const cartVendorIds = [
     ...new Set(lines.flatMap((l) => (l.item ? [l.item.vendorId] : []))),
   ];
@@ -309,20 +323,25 @@ function ComboBuilder() {
       normalize(`${item.title} ${item.vendorName}`).includes(normalize(query)));
   const openCategory = (id: string) => {
     setMenu(id);
+    if (id === "templates") setSort("recommended");
     setListingFilter("");
     setNotice("");
   };
   const categoryNavRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (!window.matchMedia("(max-width: 960px)").matches) return;
-    const nav = categoryNavRef.current;
-    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (!nav || !active) return;
-    const target =
-      active.offsetLeft -
-      nav.offsetLeft -
-      (nav.clientWidth - active.clientWidth) / 2;
-    nav.scrollTo({ left: Math.max(0, target), behavior: "auto" });
+    const revealActiveCategory = () => {
+      if (!window.matchMedia("(max-width: 960px)").matches) return;
+      const nav = categoryNavRef.current;
+      const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!nav || !active) return;
+      const target = active.offsetLeft - nav.offsetLeft - (nav.clientWidth - active.clientWidth) / 2;
+      nav.scrollTo({ left: Math.max(0, target), behavior: "auto" });
+    };
+    revealActiveCategory();
+    // Resizing/rotating a device also changes the vertical sidebar into a rail.
+    // Keep the already-selected category visible without changing the cart/filter.
+    window.addEventListener("resize", revealActiveCategory);
+    return () => window.removeEventListener("resize", revealActiveCategory);
   }, [activeId]);
   const changeVendor = (vendor: { id: string; name: string }) => {
     updateCart(scope, (previous) => startVendorCart(previous, vendor.id));
@@ -454,15 +473,15 @@ function ComboBuilder() {
         </div>
       </main>
     );
-  if (isError || !data)
+  if ((isError && !data) || !data)
     return (
       <main className="wd wd-page wm-combo">
         <div className="container combo-empty">
           <PackageOpen size={40} />
           <h1>Chưa mở được thực đơn dịch vụ</h1>
           <p>
-            Kiểm tra kết nối với API rồi thử lại. Giỏ của bạn vẫn được giữ
-            nguyên.
+            {catalogErrorMessage(catalog.error, import.meta.env.DEV)} Giỏ của bạn
+            vẫn được giữ nguyên.
           </p>
           <button className="combo-primary" onClick={() => refetch()}>
             Thử lại
@@ -859,11 +878,7 @@ function ComboBuilder() {
                     </span>
                     <small>
                       {
-                        category.options.filter(
-                          (item) =>
-                            !selectedVendorId ||
-                            item.vendorId === selectedVendorId,
-                        ).length
+                        catalog.data?.categoryCounts.find(c => c.categoryId === category.categoryId)?.count ?? 0
                       }{" "}
                       lựa chọn
                     </small>
@@ -878,7 +893,23 @@ function ComboBuilder() {
           <section
             className="combo-menu"
             aria-label={activeCategory?.name ?? "Combo gợi ý"}
+            ref={listRef}
+            aria-busy={catalog.isFetching}
           >
+            {catalog.isFetching && <p className="combo-catalog-status" role="status">Đang cập nhật danh sách...</p>}
+            {catalog.isError && <p className="co-error" role="alert">Không tải được danh sách mới. Giỏ vẫn được giữ. <button className="combo-text-button" onClick={() => void refetch()}>Thử lại</button></p>}
+            <div className="combo-filters combo-catalog-controls">
+              <label className="combo-search">
+                <Search size={16} />
+                <input className="input" value={query} maxLength={150} onChange={e => setQuery(e.target.value)} placeholder="Tìm combo, dịch vụ hoặc NCC..." aria-label="Tìm trong danh mục combo" />
+              </label>
+              <label className="combo-sort">Sắp xếp
+                <select className="input" value={sort} onChange={e => setSort(e.target.value)}>
+                  <option value="recommended">Đề xuất</option><option value="newest">Mới nhất</option>
+                  {activeId !== "templates" && <><option value="price-asc">Giá tăng dần</option><option value="price-desc">Giá giảm dần</option></>}
+                </select>
+              </label>
+            </div>
             {activeId === "templates" ? (
               <>
                 <div className="combo-section-heading">
@@ -1033,18 +1064,6 @@ function ComboBuilder() {
                     </p>
                   </div>
                 </div>
-                <div className="combo-filters">
-                  <label className="combo-search">
-                    <Search size={16} />
-                    <input
-                      className="input"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Tìm dịch vụ hoặc NCC..."
-                      aria-label="Tìm dịch vụ trong danh mục"
-                    />
-                  </label>
-                </div>
                 {listingFilter && (
                   <p className="combo-notice">
                     Đang xem dịch vụ thuộc bài đăng bạn vừa chọn.{" "}
@@ -1154,6 +1173,7 @@ function ComboBuilder() {
                 )}
               </>
             )}
+            <Pagination page={catalog.data?.page ?? page} pageSize={pageSize} totalCount={catalog.data?.totalCount ?? 0} onPageChange={changePage} isLoading={catalog.isFetching} label="Phân trang combo và dịch vụ" />
             {lines.length > 0 && !mixedCart && (
               <div className="combo-next-step">
                 <div>

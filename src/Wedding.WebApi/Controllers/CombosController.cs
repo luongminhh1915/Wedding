@@ -16,6 +16,9 @@ public class CombosController : ControllerBase
     [HttpGet("builder")]
     public async Task<IActionResult> Builder([FromQuery] string? city, [FromQuery] int guests = 200, [FromQuery] string? style = null) => Ok(await _mediator.Send(new GetComboBuilderQuery(city, guests, style)));
 
+    [HttpGet("catalog")]
+    public async Task<IActionResult> Catalog([FromQuery] GetComboCatalogPageQuery query) => Ok(await _mediator.Send(query));
+
     [HttpPost("price")]
     public async Task<IActionResult> Price([FromBody] ComboPriceCommand command) => Ok(await _mediator.Send(command));
 
@@ -26,6 +29,10 @@ public class CombosController : ControllerBase
     [HttpGet("orders/my")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> My() => Ok(await _mediator.Send(new GetMyComboOrdersQuery()));
+
+    [HttpGet("orders/my/page")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> MyPage([FromQuery] GetMyComboOrdersPageQuery query) => Ok(await _mediator.Send(query));
 
     [HttpPost("orders/{id:guid}/cancel")]
     [Authorize(Roles = "Customer")]

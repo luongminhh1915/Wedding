@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Trash2, CheckCircle2, RotateCw, Loader2, X, Pencil } from "lucide-react";
 import { useWeddingChecklist } from "../../hooks/useWeddingTools";
 import type { SaveChecklistTaskPayload } from "../../../../types/wedding-tools.types";
+import { useNotificationFocus } from "../../../notifications/useNotificationFocus";
 
 const MILESTONES = [
   "9 - 12 Tháng",
@@ -36,6 +37,7 @@ export function WeddingChecklist() {
     isSaving,
     deleteTask,
   } = useWeddingChecklist();
+  const { focusId, missing } = useNotificationFocus("task", tasks.map(t => t.id), !isLoading && !isError);
 
   const [selectedMilestone, setSelectedMilestone] = useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -53,7 +55,7 @@ export function WeddingChecklist() {
   const filteredTasks =
     selectedMilestone === "all"
       ? tasks
-      : tasks.filter((t) => milestoneLabel(t.milestone) === selectedMilestone);
+      : tasks.filter((t) => t.id === focusId || milestoneLabel(t.milestone) === selectedMilestone);
 
   const handleToggle = async (id: string) => {
     try {
@@ -225,6 +227,7 @@ export function WeddingChecklist() {
 
       {/* Tasks List */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+        {missing && <p role="status" className="text-sm text-slate-500">Công việc trong thông báo không còn khả dụng trong kế hoạch của bạn.</p>}
         {filteredTasks.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs">
             Không có công việc nào trong mốc này. Bấm [+ Thêm Việc Mới] để thêm
@@ -235,6 +238,9 @@ export function WeddingChecklist() {
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
+                id={`notification-task-${task.id}`}
+                tabIndex={-1}
+                data-notification-focus={focusId === task.id}
                 className="py-3.5 flex items-center justify-between gap-3 group hover:bg-slate-50/60 px-3 rounded-2xl transition"
               >
                 <div className="flex items-center gap-3 flex-1">

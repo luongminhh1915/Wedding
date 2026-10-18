@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   Gift,
   MessageCircle,
   Pencil,
@@ -16,13 +14,12 @@ import {
   Users,
 } from "lucide-react";
 import axiosClient from "../../../services/axiosClient";
-import { useAuthStore } from "../../../store/authStore";
 import type { Lead } from "../../../types/lead.types";
 import { ChatRoomModal } from "../../chat/components/ChatRoomModal";
 import { apiError } from "../../journey/api";
 import { vnd, vnDate } from "../../journey/format";
 import {
-  useCustomerOrderJourney,
+  useCustomerOrderPage,
   type OrderJourneyItem,
 } from "../../journey/customerOrders/customerOrderApi";
 import {
@@ -38,7 +35,6 @@ import {
 import { orderMediaPhotos } from "../../journey/customerOrders/orderMedia";
 import {
   groupCustomerOrders,
-  matchesOrderFilter,
   orderCapability,
 } from "../../journey/customerOrders/orderPresentation";
 import {
@@ -46,11 +42,12 @@ import {
   CustomerOrderRequestHistory,
   type CustomerOrderIntent,
 } from "./CustomerOrderActionDialog";
+import { Pagination } from "../../../components/Pagination";
+import { useOrderPage } from "../../journey/customerOrders/useOrderPage";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 export function CustomerLeads() {
-  const user = useAuthStore((state) => state.user);
-  const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState("active");
+  const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("lead", "active");
   const [chatLead, setChatLead] = useState<Lead | null>(null);
   const [dialog, setDialog] = useState<{
     item: OrderJourneyItem;
@@ -60,36 +57,26 @@ export function CustomerLeads() {
   const [notice, setNotice] = useState("");
   const [gallery, setGallery] = useState<OrderGallerySelection | null>(null);
   const queryClient = useQueryClient();
-  const journey = useCustomerOrderJourney();
-  const query = useQuery<Lead[]>({
-    queryKey: ["customer-leads", user?.id, page],
-    enabled: user?.role === "Customer",
-    queryFn: async () =>
-      (
-        await axiosClient.get("/api/leads/my-leads", {
-          params: { pageNumber: page, pageSize: 50 },
-        })
-      ).data,
-  });
+  const query = useCustomerOrderPage<Lead>("lead", page, pageSize, filter, focusId);
+  const journey = { data: query.data?.metadata, isError: query.isError, error: query.error, refetch: query.refetch };
   const unlock = useMutation({
     mutationFn: async (id: string) =>
       axiosClient.post(`/api/leads/${id}/unlock-phone`),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["customer-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["customer-order-page"] }),
   });
   const metadata = new Map(
     (journey.data ?? [])
       .filter((item) => item.kind === "lead")
       .map((item) => [item.id, item]),
   );
-  const rows = (query.data ?? []).map((lead) => ({
+  const rows = (query.data?.items ?? []).map((lead) => ({
     ...lead,
     isArchived: metadata.get(lead.id)?.isArchived,
     comboOrderId: metadata.get(lead.id)?.comboOrderId,
   }));
-  const groups = groupCustomerOrders(
-    rows.filter((row) => matchesOrderFilter(row, filter)),
-  );
+  const groups = groupCustomerOrders(rows);
+  const notificationFocus = useNotificationFocus("lead", rows.map(row => row.id), query.isSuccess && !query.isFetching);
   const show = (lead: Lead, intent: CustomerOrderIntent) => {
     const item = metadata.get(lead.id);
     if (item) {
@@ -98,7 +85,7 @@ export function CustomerLeads() {
     }
   };
   return (
-    <section className="co-section">
+    <section className="co-section" ref={listRef} style={{ scrollMarginTop: "calc(var(--wm-header-offset, 88px) + 18px)" }}>
       <header className="co-section-heading">
         <div>
           <p className="co-eyebrow">TỪ MONG MUỐN ĐẾN LỰA CHỌN</p>
@@ -120,24 +107,21 @@ export function CustomerLeads() {
       </header>
       <OrderFilterBar
         label="Lọc yêu cầu tư vấn"
-        value={filter}
+        value={query.data?.filter ?? filter}
         onChange={setFilter}
         options={[
           {
             id: "active",
             label: "Đang xử lý",
-            count: rows.filter((r) => matchesOrderFilter(r, "active")).length,
           },
           {
             id: "closed",
             label: "Đã dừng / hết hạn",
-            count: rows.filter((r) => matchesOrderFilter(r, "closed")).length,
           },
           { id: "all", label: "Tất cả" },
           {
             id: "archived",
             label: "Lưu trữ",
-            count: rows.filter((r) => matchesOrderFilter(r, "archived")).length,
           },
         ]}
       />
@@ -146,6 +130,7 @@ export function CustomerLeads() {
           {notice}
         </p>
       )}
+      {notificationFocus.missing && <p className="co-summary-note" role="status">Yêu cầu trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
       {(query.isError || journey.isError || unlock.isError) && (
         <p className="co-error" role="alert">
           {apiError(query.error || journey.error || unlock.error)}{" "}
@@ -212,6 +197,9 @@ export function CustomerLeads() {
                   return (
                     <OrderServiceRow
                       key={lead.id}
+                      id={`notification-lead-${lead.id}`}
+                      tabIndex={-1}
+                      className={focusId === lead.id ? "notification-focus" : ""}
                       title={title}
                       photoSources={photos}
                       onPhotoClick={
@@ -364,30 +352,7 @@ export function CustomerLeads() {
           })}
         </div>
       )}
-      {(page > 1 || rows.length === 50) && (
-        <nav
-          className="customer-order-pagination"
-          aria-label="Trang yêu cầu tư vấn"
-        >
-          <button
-            className="co-button secondary"
-            aria-label="Trang trước"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            <ChevronLeft size={15} />
-          </button>
-          <span>Trang {page} · Lọc trong trang hiện tại</span>
-          <button
-            className="co-button secondary"
-            aria-label="Trang tiếp"
-            disabled={rows.length < 50}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            <ChevronRight size={15} />
-          </button>
-        </nav>
-      )}
+      <Pagination page={query.data?.page ?? page} pageSize={pageSize} totalCount={query.data?.totalCount ?? 0} isLoading={query.isFetching} onPageChange={next => changePage(next, query.data?.filter)} label="Phân trang nhóm tư vấn" />
       {dialog && (
         <CustomerOrderActionDialog
           key={`${dialog.item.id}:${dialog.intent}`}

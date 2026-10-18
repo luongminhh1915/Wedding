@@ -22,6 +22,8 @@ const VendorDashboard = lazy(
   () => import("../features/vendor-portal/VendorDashboard"),
 );
 const AdminDashboard = lazy(() => import("../features/admin/AdminDashboard"));
+const AccountPage = lazy(() => import("../features/account/AccountPage"));
+const NotificationsPage = lazy(() => import("../features/notifications/NotificationsPage"));
 // Hành trình cặp đôi kiểu Weddy (P1–P6)
 const SetupWizard = lazy(() => import("../features/journey/planner/SetupWizard"));
 const ComboBuilderPage = lazy(() => import("../features/journey/combo/ComboBuilderPage"));
@@ -50,6 +52,10 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/invitation/:slug" element={<PublicInvitationPage />} />
         <Route element={<WeddingMatchLayout />}>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+          </Route>
           <Route element={<CustomerOnboardingGuard />}>
           <Route path="/auth/continue" element={<PostLoginRedirect />} />
           <Route path="/" element={<HomePage />} />

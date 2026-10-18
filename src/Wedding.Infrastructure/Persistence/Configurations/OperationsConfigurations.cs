@@ -19,6 +19,8 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
     {
         b.Property(x => x.Channel).HasMaxLength(20); b.Property(x => x.Destination).HasMaxLength(200); b.Property(x => x.Message).HasMaxLength(4000);
         b.Property(x => x.DeduplicationKey).HasMaxLength(200); b.HasIndex(x => new { x.UserId, x.DeduplicationKey }).IsUnique().HasFilter("[DeduplicationKey] IS NOT NULL");
+        b.Property(x => x.ContextKind).HasMaxLength(30);
+        b.HasIndex(x => new { x.UserId, x.CreatedAt, x.Id });
         b.HasIndex(x => new { x.UserId, x.ReadAt }); b.HasIndex(x => new { x.Channel, x.SentAt, x.NextAttemptAt });
     }
 }

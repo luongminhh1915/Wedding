@@ -12,7 +12,8 @@ param([switch]$InstallClientDependencies)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-foreach ($required in @('dotnet', 'node', 'npm', 'sqlcmd')) {
+$npmCommand = if ($IsWindows) { 'npm.cmd' } else { 'npm' }
+foreach ($required in @('dotnet', 'node', $npmCommand, 'sqlcmd')) {
     if (-not (Get-Command $required -ErrorAction SilentlyContinue)) { throw "Missing $required. No ready result was produced." }
 }
 $run = Join-Path $repo ('artifacts/readiness/' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
@@ -48,9 +49,9 @@ try {
     Invoke-Checked 'sqlcmd' @('-S', 'localhost', '-E', '-C', '-b', '-d', 'master', '-Q', 'SET NOCOUNT ON; SELECT 1;')
     Push-Location (Join-Path $repo 'client')
     try {
-        if ($InstallClientDependencies) { Invoke-Checked 'npm' @('ci') }
-        Invoke-Checked 'npm' @('test')
-        Invoke-Checked 'npm' @('run', 'lint')
+        if ($InstallClientDependencies) { Invoke-Checked $npmCommand @('ci') }
+        Invoke-Checked $npmCommand @('test')
+        Invoke-Checked $npmCommand @('run', 'lint')
     } finally { Pop-Location }
     Invoke-Checked 'dotnet' @('test', 'tests/Wedding.Tests/Wedding.Tests.csproj', '--artifacts-path', (Join-Path $run 'test-build'), '--results-directory', (Join-Path $run 'test-results'), '--logger', 'trx;LogFileName=backend.trx', '--verbosity', 'minimal')
     $trx = [xml](Get-Content -LiteralPath (Join-Path $run 'test-results/backend.trx') -Raw)

@@ -3,7 +3,7 @@ import axiosClient from '../../../services/axiosClient';
 import { useAuthStore } from '../../../store/authStore';
 import type { AuthResponse } from '../../../types/auth';
 
-export default function ContactPhoneForm({ onClose }: { onClose: () => void }) {
+export default function ContactPhoneForm({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
   const session = useRef(useAuthStore.getState().token);
   const user = useAuthStore(state => state.user);
   const [phoneNumber, setPhoneNumber] = useState(() => /^0\d{9}$/.test(user?.phoneNumber || '') ? user!.phoneNumber : '');
@@ -20,9 +20,10 @@ export default function ContactPhoneForm({ onClose }: { onClose: () => void }) {
     try {
       const response = await axiosClient.patch<AuthResponse>('/api/auth/contact', { phoneNumber: phone }, { headers: { Authorization: `Bearer ${session.current}` } });
       // Never replace a newer account/session with this response.
-      if (useAuthStore.getState().token === session.current && useAuthStore.getState().user?.id === response.data.user.id)
+      if (useAuthStore.getState().token === session.current && useAuthStore.getState().user?.id === response.data.user.id) {
         useAuthStore.getState().setAuth(response.data.user, response.data.token);
-      onClose();
+        (onSaved ?? onClose)();
+      } else onClose();
     } catch (failure: unknown) {
       if (useAuthStore.getState().token !== session.current) { onClose(); return; }
       const message = (failure as { response?: { data?: { message?: string } } })?.response?.data?.message;

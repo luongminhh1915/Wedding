@@ -5,19 +5,22 @@ import { useAuthStore } from "../../../store/authStore";
 import { downloadAppointmentCalendar, useMyBookings } from "../bookingApi";
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { vnd, vnDateTime } from "../format";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 /** P3 – "Lịch hẹn của tôi" trong Planner. */
 export function MyAppointments() {
-  const { data = [], isLoading } = useMyBookings();
+  const { data = [], isLoading, isError, refetch } = useMyBookings();
+  const { focusId, missing } = useNotificationFocus("appointment", data.map(a => a.id), !isLoading && !isError);
   const user = useAuthStore((s) => s.user);
   const act = useAppointmentAction();
   return (
     <Panel eyebrow="Lịch hẹn" title="Lịch hẹn với nhà cung cấp" action={<Link to="/browse" className="btn btn-outline">Tìm NCC để đặt hẹn</Link>}>
       <ErrorText>{act.isError ? apiError(act.error) : ""}</ErrorText>
-      {isLoading ? <p className="muted text-sm">Đang tải...</p> : data.length === 0 ? <Empty>Chưa có lịch hẹn nào. Mở trang dịch vụ và bấm “Đặt lịch hẹn”.</Empty> : (
+      {missing && <p role="status" className="text-sm muted">Lịch hẹn trong thông báo không còn khả dụng trong tài khoản của bạn.</p>}
+      {isError ? <div role="alert"><p>Chưa tải được lịch hẹn.</p><button className="btn btn-outline" onClick={() => refetch()}>Thử lại</button></div> : isLoading ? <p className="muted text-sm">Đang tải...</p> : data.length === 0 ? <Empty>Chưa có lịch hẹn nào. Mở trang dịch vụ và bấm “Đặt lịch hẹn”.</Empty> : (
         <ul className="grid gap-3">
           {data.map((a) => (
-            <li key={a.id} className="rounded-2xl border border-[var(--line)] p-4 flex flex-wrap justify-between gap-3 bg-[var(--paper)]">
+            <li key={a.id} id={`notification-appointment-${a.id}`} tabIndex={-1} data-notification-focus={focusId === a.id} className="rounded-2xl border border-[var(--line)] p-4 flex flex-wrap justify-between gap-3 bg-[var(--paper)]">
               <div>
                 <p className="font-bold flex items-center gap-2"><CalendarDays size={15} className="text-[var(--gold)]" /> {vnDateTime(a.startAt)} <StatusPill status={a.status} /></p>
                 <p className="text-sm">{a.typeName} · <b>{a.vendorName}</b></p>

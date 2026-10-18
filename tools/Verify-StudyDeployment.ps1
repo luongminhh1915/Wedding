@@ -95,6 +95,36 @@ function Assert-Http([string]$Path, [int]$Status, [string]$Type) {
         if ($contentType -match 'text/html' -or $response.Content -match '(?i)<!doctype|<html') { throw "$Path leaked the SPA fallback instead of a non-HTML response." }
     } elseif ($contentType -notmatch "^$Type") { throw "$Path has unexpected Content-Type: $contentType" }
 }
+function Assert-ComboCatalog {
+    # Probe the endpoint used by the current UI, not just its compatible legacy builder.
+    # A healthy legacy route must not hide an old API package or a wrong response shape.
+    $path = '/api/combos/catalog?page=1&pageSize=6'
+    $response = Invoke-WebRequest ("https://127.0.0.1:5011" + $path) -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 10
+    if ($response.StatusCode -ne 200 -or ($response.Headers['Content-Type'] -join '') -notmatch '^application/json') {
+        throw 'Modern combo catalog endpoint did not return HTTP 200 JSON; frontend and API must be packaged together.'
+    }
+    try { $catalog = ConvertFrom-Json -InputObject $response.Content -AsHashtable -ErrorAction Stop }
+    catch { throw 'Modern combo catalog returned invalid JSON.' }
+    if ($catalog -isnot [Collections.IDictionary]) { throw 'Modern combo catalog must return a paged object.' }
+    foreach ($key in @('builder', 'selectedOptions', 'selectedTemplate', 'page', 'pageSize', 'totalCount', 'categoryCounts')) {
+        if (-not $catalog.Contains($key)) { throw "Modern combo catalog is missing required field: $key" }
+    }
+    if ($catalog.page -ne 1 -or $catalog.pageSize -ne 6 -or
+        ($catalog.totalCount -isnot [int] -and $catalog.totalCount -isnot [long]) -or $catalog.totalCount -lt 0 -or
+        $catalog.selectedOptions -isnot [Array] -or $catalog.categoryCounts -isnot [Array] -or
+        $catalog.builder -isnot [Collections.IDictionary]) { throw 'Modern combo catalog returned an incompatible paging contract.' }
+    foreach ($key in @('categories', 'templates', 'discountTiers', 'vendors')) {
+        if (-not $catalog.builder.Contains($key) -or $catalog.builder[$key] -isnot [Array]) {
+            throw "Modern combo catalog builder is missing its $key array."
+        }
+    }
+    foreach ($category in $catalog.builder.categories) {
+        if ($category -isnot [Collections.IDictionary] -or -not $category.Contains('categoryId') -or
+            -not $category.Contains('name') -or -not $category.Contains('options') -or $category.options -isnot [Array]) {
+            throw 'Modern combo catalog returned an incompatible category contract.'
+        }
+    }
+}
 
 try {
     $null = Invoke-LocalSql "CREATE DATABASE [$database];"; $databaseCreated = $true
@@ -140,11 +170,13 @@ try {
     $redirect = Invoke-WebRequest 'http://127.0.0.1:5012/combo' -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction SilentlyContinue
     if ($redirect.StatusCode -notin @(307,308) -or ($redirect.Headers['Location'] -join '') -ne 'https://127.0.0.1:5011/combo') { throw 'HTTP did not redirect to loopback HTTPS.' }
     Assert-Http '/api/combos/builder' 200 'application/json'
+    Assert-ComboCatalog
     Start-Sleep -Seconds 12 # Let startup/background queries settle before measuring the warmed process.
     $script:apiProcess.Refresh()
     Write-Host ("Warmed smoke-process working set: {0:N1} MB; private bytes: {1:N1} MB (single-user smoke, not a concurrent-capacity result)." -f ($script:apiProcess.WorkingSet64 / 1MB), ($script:apiProcess.PrivateMemorySize64 / 1MB))
     if ($script:apiProcess.WorkingSet64 -gt 200MB) { Write-Warning 'Observed working set exceeds 200 MB. Fit on a 256 MB shared host is uncertain; this is not a load test.' }
     Stop-QAApi; Apply-ReleaseSchema; Start-QAApi
+    Assert-ComboCatalog
     Assert-Sql '7|16|1|0' 'SELECT (SELECT COUNT(*) FROM Categories),(SELECT COUNT(*) FROM InvitationTemplates),(SELECT COUNT(*) FROM Users),(SELECT COUNT(*) FROM Vendors);'
     Assert-Sql 'QA persistence sentinel|qa-only-not-a-password-hash' "SELECT FullName,PasswordHash FROM Users WHERE Id='$userId';"
     Assert-Http ("/uploads/listings/" + $imageName) 200 'image/png'
@@ -158,7 +190,7 @@ try {
         Write-Host ("After account/WebSocket smoke: working set {0:N1} MB; private bytes {1:N1} MB (small functional workload, not a load test)." -f ($script:apiProcess.WorkingSet64 / 1MB), ($script:apiProcess.PrivateMemorySize64 / 1MB))
         if ($script:apiProcess.WorkingSet64 -gt 200MB) { Write-Warning 'Post-security-smoke working set exceeds 200 MB. A 256 MB shared host may need a larger plan; verify real-host resource usage before inviting users.' }
     }
-    Write-Host 'PASS: actual SQL migration idempotency; 7 categories / 16 templates / no demo users/vendors; Production SPA, API 404 isolation, readiness, invalid-login JSON, HTTPS redirect; SQL user/hash and private image survive API restart.'
+    Write-Host 'PASS: actual SQL migration idempotency; 7 categories / 16 templates / no demo users/vendors; Production SPA, modern paged combo catalog contract before/after restart, API 404 isolation, readiness, invalid-login JSON, HTTPS redirect; SQL user/hash and private image survive API restart.'
 } finally {
     Stop-QAApi
     if ($databaseCreated) {

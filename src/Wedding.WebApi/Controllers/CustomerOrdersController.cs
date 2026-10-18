@@ -9,7 +9,10 @@ namespace Wedding.WebApi.Controllers;
 public class CustomerOrdersController(IMediator mediator) : ControllerBase
 {
     [HttpGet, Authorize(Roles = "Customer")]
-    public async Task<IActionResult> Mine() => Ok(await mediator.Send(new GetCustomerOrdersQuery()));
+    public async Task<IActionResult> Mine([FromQuery] List<Guid>? comboIds = null)
+        => Ok(await mediator.Send(new GetCustomerOrdersQuery(Request.Query.ContainsKey("comboIds") ? comboIds ?? [] : null)));
+    [HttpGet("page"), Authorize(Roles = "Customer")]
+    public async Task<IActionResult> Page([FromQuery] GetCustomerOrderPageQuery query) => Ok(await mediator.Send(query));
     public record ReasonBody(string Reason);
     public record RequestBody(string Type, string Reason, string? ProposedChanges);
     public record CustomerOrderReviewBody(bool Accept, string Response);

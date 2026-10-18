@@ -8,6 +8,7 @@ import {
   useReviewOrderRequest,
   type OrderChangeRequest,
 } from "./customerOrderApi";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 const labels: Record<string, string> = {
   PendingVendor: "Chờ NCC tiếp nhận",
@@ -31,10 +32,11 @@ export function OrderRequestInbox({
   const pendingStatus =
     audience === "vendor" ? "PendingVendor" : "PendingFinance";
   const requests = query.data ?? [];
+  const { focusId, missing, clearFocus } = useNotificationFocus("order-request", requests.map(request => request.id), !query.isPending && !query.isError);
   const pending = requests.filter(
     (request) => request.status === pendingStatus,
   );
-  const visible = filter === "pending" ? pending : requests;
+  const visible = filter === "pending" ? requests.filter(request => request.id === focusId || request.status === pendingStatus) : requests;
   const choose = (request: OrderChangeRequest, accept: boolean) => {
     review.reset();
     setResponse("");
@@ -78,12 +80,13 @@ export function OrderRequestInbox({
       </header>
       <OrderFilterBar
         value={filter}
-        onChange={setFilter}
+        onChange={value => { setFilter(value); clearFocus(); }}
         options={[
           { id: "pending", label: "Cần phản hồi", count: pending.length },
           { id: "all", label: "Lịch sử", count: requests.length },
         ]}
       />
+      {missing && <p role="status" className="co-summary-note">Đề nghị trong thông báo không còn khả dụng trong tài khoản của bạn.</p>}
       {query.isPending ? (
         <p role="status" className="co-loading">
           Đang tải yêu cầu...
@@ -104,8 +107,8 @@ export function OrderRequestInbox({
       ) : (
         <div className="co-card-list">
           {visible.map((request) => (
+            <div key={request.id} id={`notification-order-request-${request.id}`} tabIndex={-1} data-notification-focus={focusId === request.id}>
             <OrderCard
-              key={request.id}
               title={
                 request.type === "Cancellation"
                   ? "Đề nghị hủy dịch vụ"
@@ -165,6 +168,7 @@ export function OrderRequestInbox({
                 </p>
               )}
             </OrderCard>
+            </div>
           ))}
         </div>
       )}

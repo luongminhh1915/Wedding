@@ -6,13 +6,15 @@ import { useAuthStore } from "../../../store/authStore";
 import { ServiceItemManager } from "./ServiceItemManager";
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { vnd, vnDateTime } from "../format";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 const DAYS = [["1", "T2"], ["2", "T3"], ["3", "T4"], ["4", "T5"], ["5", "T6"], ["6", "T7"], ["0", "CN"]];
 const blank = { id: null as string | null, name: "", description: "", durationMinutes: 60, capacity: 1, workingDays: "1,2,3,4,5,6", openTime: "09:00", closeTime: "18:00", depositAmount: 0, requiresApproval: true, isActive: true, bufferBeforeMinutes: 0, bufferAfterMinutes: 0, minBookingHours: 12, maxBookingDays: 90, maxAttendees: 10, freeCancellationHours: 24, meetingMode: "Store", location: "", breakStart: "", breakEnd: "" };
 
 /** P3 – NCC: cấu hình loại lịch hẹn/giờ làm việc và xử lý lịch hẹn (duyệt, từ chối, check-in, vắng mặt). */
 export function VendorAppointments() {
-  const { data: appts = [] } = useVendorBookings();
+  const { data: appts = [], isPending, isError, refetch } = useVendorBookings();
+  const { focusId, missing } = useNotificationFocus("appointment", appts.map(a => a.id), !isPending && !isError);
   const { data: types = [] } = useBookingTypes();
   const user = useAuthStore((s) => s.user);
   const act = useAppointmentAction();
@@ -30,12 +32,13 @@ export function VendorAppointments() {
       <ServiceItemManager />
       <Panel eyebrow={`${pending} lịch chờ duyệt`} title="Lịch hẹn của khách">
         <ErrorText>{act.isError ? apiError(act.error) : ""}</ErrorText>
-        {appts.length === 0 ? <Empty>Chưa có lịch hẹn.</Empty> : (
+        {missing && <p role="status" className="text-sm muted">Lịch hẹn trong thông báo không còn khả dụng trong tài khoản của bạn.</p>}
+        {isError ? <div role="alert"><p>Chưa tải được lịch hẹn.</p><button className="btn btn-outline" onClick={() => refetch()}>Thử lại</button></div> : isPending ? <p role="status">Đang tải lịch hẹn...</p> : appts.length === 0 ? <Empty>Chưa có lịch hẹn.</Empty> : (
           <table className="wd-table">
             <thead><tr><th>Thời gian</th><th>Khách</th><th>Loại hẹn</th><th>Trạng thái</th><th /></tr></thead>
             <tbody>
               {appts.map((a) => (
-                <tr key={a.id}>
+                <tr key={a.id} id={`notification-appointment-${a.id}`} tabIndex={-1} data-notification-focus={focusId === a.id}>
                   <td><b>{vnDateTime(a.startAt)}</b><div className="text-xs muted">{a.code}</div></td>
                   <td>{a.customerName}<div className="text-xs muted">{a.attendees} người{a.note ? ` · ${a.note}` : ""}</div></td>
                   <td>{a.typeName}{a.depositAmount > 0 && <div className="text-xs muted">Cọc {vnd(a.depositAmount)}{a.depositPaid ? " ✓" : ""}</div>}</td>

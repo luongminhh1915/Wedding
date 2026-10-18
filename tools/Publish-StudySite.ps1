@@ -27,7 +27,8 @@ $archive = Join-Path $releaseRoot 'WeddingMatch-site.zip'
 $webProject = Join-Path $repoRoot 'src/Wedding.WebApi/Wedding.WebApi.csproj'
 $dataProject = Join-Path $repoRoot 'src/Wedding.Infrastructure/Wedding.Infrastructure.csproj'
 $manifest = Join-Path $repoRoot '.config/dotnet-tools.json'
-foreach ($required in @('dotnet', 'node', 'npm')) {
+$npmCommand = if ($IsWindows) { 'npm.cmd' } else { 'npm' }
+foreach ($required in @('dotnet', 'node', $npmCommand)) {
     if (-not (Get-Command $required -ErrorAction SilentlyContinue)) { throw "Missing $required. Install the project prerequisites first." }
 }
 if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) { throw 'Missing the version-pinned .config/dotnet-tools.json.' }
@@ -46,7 +47,7 @@ $previousMigrationConnection = [Environment]::GetEnvironmentVariable('WEDDING_MI
 try {
     if ($InstallClientDependencies) {
         Push-Location (Join-Path $repoRoot 'client')
-        try { Invoke-Checked 'npm' @('ci') } finally { Pop-Location }
+        try { Invoke-Checked $npmCommand @('ci') } finally { Pop-Location }
     }
     if (-not (Test-Path -LiteralPath (Join-Path $repoRoot 'client/node_modules/vite/bin/vite.js'))) {
         throw 'Missing frontend dependencies. Run again with -InstallClientDependencies.'

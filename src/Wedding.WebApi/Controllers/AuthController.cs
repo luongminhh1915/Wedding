@@ -81,6 +81,12 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> UpdateContact([FromBody] UpdateContactCommand command, CancellationToken ct)
         => Ok(await _mediator.Send(command, ct));
 
+    [Authorize]
+    [HttpPatch("profile")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateAccountProfileCommand command, CancellationToken ct)
+        => Ok(await _mediator.Send(command, ct));
+
     /// <summary>
     /// Gửi mã đăng nhập qua email khi SMTP đã được cấu hình; không trả mã trong API.
     /// </summary>

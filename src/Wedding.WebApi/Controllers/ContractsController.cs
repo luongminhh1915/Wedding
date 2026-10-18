@@ -49,9 +49,9 @@ public class ContractsController : ControllerBase
     /// </summary>
     [HttpGet("vendor")]
     [Authorize(Roles = "VendorOwner")]
-    public async Task<IActionResult> GetVendorContracts([FromQuery] string? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetVendorContracts([FromQuery] string? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, [FromQuery] Guid? focusId = null)
     {
-        var result = await _mediator.Send(new GetVendorContractsQuery(status, pageNumber, pageSize));
+        var result = await _mediator.Send(new GetVendorContractsQuery(status, pageNumber, pageSize, focusId));
         return Ok(result);
     }
 

@@ -102,12 +102,13 @@ public static class CustomerOrderJourney
             }
     }
 
-    public static async Task<List<OrderJourneyItemDto>> LoadAsync(IApplicationDbContext db, Guid uid, CancellationToken ct)
+    public static async Task<List<OrderJourneyItemDto>> LoadAsync(IApplicationDbContext db, Guid uid, CancellationToken ct, IReadOnlyCollection<Guid>? comboIds = null, IReadOnlyCollection<Guid>? onlyLeadIds = null)
     {
-        var orders = await db.ComboOrders.AsNoTracking().Include(o => o.Items).Where(o => o.CustomerId == uid).ToListAsync(ct);
-        var leads = await db.Leads.AsNoTracking().Include(l => l.Vendor).Include(l => l.Listing).ThenInclude(l => l!.Media).Where(l => l.CustomerId == uid).ToListAsync(ct);
-        var contracts = await db.BookingContracts.AsNoTracking().Where(c => c.CustomerId == uid).ToListAsync(ct);
-        var quotes = await db.Quotes.AsNoTracking().Where(q => q.CustomerId == uid).ToListAsync(ct);
+        var orders = await db.ComboOrders.AsNoTracking().Include(o => o.Items).Where(o => o.CustomerId == uid && (comboIds == null || comboIds.Contains(o.Id)) && (onlyLeadIds == null || o.Items.Any(i => i.LeadId != null && onlyLeadIds.Contains(i.LeadId.Value)))).ToListAsync(ct);
+        var relatedLeads = orders.SelectMany(o => o.Items).Where(i => i.LeadId.HasValue).Select(i => i.LeadId!.Value).ToList();
+        var leads = await db.Leads.AsNoTracking().Include(l => l.Vendor).Include(l => l.Listing).ThenInclude(l => l!.Media).Where(l => l.CustomerId == uid && (comboIds == null || relatedLeads.Contains(l.Id)) && (onlyLeadIds == null || onlyLeadIds.Contains(l.Id))).ToListAsync(ct);
+        var contracts = await db.BookingContracts.AsNoTracking().Where(c => c.CustomerId == uid && (comboIds == null || relatedLeads.Contains(c.LeadId)) && (onlyLeadIds == null || onlyLeadIds.Contains(c.LeadId))).ToListAsync(ct);
+        var quotes = await db.Quotes.AsNoTracking().Where(q => q.CustomerId == uid && (comboIds == null || relatedLeads.Contains(q.LeadId)) && (onlyLeadIds == null || onlyLeadIds.Contains(q.LeadId))).ToListAsync(ct);
         var states = await db.CustomerOrderStates.AsNoTracking().Where(s => s.CustomerId == uid).ToListAsync(ct);
         var requests = await db.OrderChangeRequests.AsNoTracking().Where(r => r.CustomerId == uid).OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
         var appointments = await db.Appointments.AsNoTracking().Where(a => a.CustomerId == uid && a.LeadId != null &&
@@ -191,8 +192,8 @@ public static class CustomerOrderJourney
     }
 }
 
-public record GetCustomerOrdersQuery : IRequest<List<OrderJourneyItemDto>>;
+public record GetCustomerOrdersQuery(List<Guid>? ComboIds = null) : IRequest<List<OrderJourneyItemDto>>;
 public class GetCustomerOrdersQueryHandler(IApplicationDbContext db, ICurrentUserService user) : IRequestHandler<GetCustomerOrdersQuery, List<OrderJourneyItemDto>>
 {
-    public Task<List<OrderJourneyItemDto>> Handle(GetCustomerOrdersQuery r, CancellationToken ct) => CustomerOrderJourney.LoadAsync(db, user.UserId ?? throw new DomainException("Bạn cần đăng nhập."), ct);
+    public Task<List<OrderJourneyItemDto>> Handle(GetCustomerOrdersQuery r, CancellationToken ct) => CustomerOrderJourney.LoadAsync(db, user.UserId ?? throw new DomainException("Bạn cần đăng nhập."), ct, r.ComboIds?.Distinct().Take(10).ToList());
 }

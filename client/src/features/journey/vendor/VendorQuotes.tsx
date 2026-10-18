@@ -10,6 +10,7 @@ import {
 } from "../financeApi";
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { vnd, vnDate } from "../format";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 /** P4 – NCC gửi báo giá có cấu trúc cho các yêu cầu đã tiếp nhận (gồm cả Lead đến từ combo). */
 export function VendorQuotes() {
@@ -18,7 +19,8 @@ export function VendorQuotes() {
     queryFn: async () =>
       (await axiosClient.get<Lead[]>("/api/leads/vendor-inbox")).data,
   });
-  const { data: quotes = [] } = useQuotes();
+  const { data: quotes = [], isPending: loadingQuotes, isError: quotesError, refetch: reloadQuotes } = useQuotes();
+  const { focusId, missing } = useNotificationFocus("quote", quotes.map(quote => quote.id), !loadingQuotes && !quotesError);
   const send = useSendQuote();
   const quotable = leads.filter(
     (l) => l.status === "Accepted" || l.status === "Contacted",
@@ -208,7 +210,8 @@ export function VendorQuotes() {
         )}
       </Panel>
       <Panel title="Báo giá đã gửi">
-        {quotes.length === 0 ? (
+        {missing && <p role="status" className="text-sm muted">Báo giá trong thông báo không còn khả dụng trong tài khoản của bạn.</p>}
+        {quotesError ? <div role="alert"><p>Chưa tải được báo giá.</p><button className="btn btn-outline" onClick={() => reloadQuotes()}>Thử lại</button></div> : loadingQuotes ? <p role="status">Đang tải báo giá...</p> : quotes.length === 0 ? (
           <Empty>Chưa gửi báo giá nào.</Empty>
         ) : (
           <table className="wd-table">
@@ -223,7 +226,7 @@ export function VendorQuotes() {
             </thead>
             <tbody>
               {quotes.map((q) => (
-                <tr key={q.id}>
+                <tr key={q.id} id={`notification-quote-${q.id}`} tabIndex={-1} data-notification-focus={focusId === q.id}>
                   <td>
                     {q.code} <span className="muted text-xs">v{q.version}</span>
                   </td>

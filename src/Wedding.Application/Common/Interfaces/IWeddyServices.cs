@@ -10,6 +10,9 @@ public interface IAuditLogger
 public interface INotificationSender
 {
     Task SendAsync(string channel, string to, string message, CancellationToken ct = default);
+    // Existing senders remain compatible; the durable sender stores typed resource context, never arbitrary URLs.
+    Task SendContextAsync(string channel, string to, string message, string contextKind, Guid contextId, CancellationToken ct = default)
+        => SendAsync(channel, to, message, ct);
 }
 
 /// <summary>Legacy interface name: generates references/QR only, never confirms a payment.</summary>

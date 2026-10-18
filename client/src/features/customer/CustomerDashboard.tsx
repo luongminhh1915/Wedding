@@ -1,5 +1,5 @@
-import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Fragment, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -22,7 +22,7 @@ import { WeddingBudgetPlanner } from "./components/tools/WeddingBudgetPlanner";
 import { WeddingChecklist } from "./components/tools/WeddingChecklist";
 import { useMyInvitation } from "./hooks/useInvitations";
 import { useWeddingBudget, useWeddingChecklist } from "./hooks/useWeddingTools";
-import { PlannerSnapshot } from "../journey/planner/PlannerSnapshot";
+import { CustomerJourney } from "./CustomerJourney";
 import { usePlannerOverview } from "../journey/api";
 import { PremiumUpgrade } from "../journey/planner/PremiumUpgrade";
 import { MyAppointments } from "../journey/appointments/MyAppointments";
@@ -37,17 +37,18 @@ const tabs = [
   { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
   { id: "checklist", label: "Công việc", icon: CheckCheck },
   { id: "budget", label: "Ngân sách", icon: Wallet },
-  { id: "guests", label: "Khách & xếp bàn", icon: Users },
-  { id: "invitations", label: "Thiệp & RSVP", icon: Heart },
-  { id: "appointments", label: "Lịch hẹn", icon: CalendarClock },
-  { id: "combos", label: "Combo", icon: PackageCheck },
+  { id: "combos", label: "Lựa chọn & yêu cầu", icon: PackageCheck },
   { id: "contracts", label: "Hợp đồng & tư vấn", icon: FileCheck2 },
+  { id: "guests", label: "Khách & xếp bàn", icon: Users, utility: true },
+  { id: "invitations", label: "Thiệp & RSVP", icon: Heart, utility: true },
+  { id: "appointments", label: "Lịch hẹn", icon: CalendarClock, utility: true },
 ] as const;
 type CustomerTab = (typeof tabs)[number]["id"];
 
 export default function CustomerDashboard() {
   const { user } = useAuthStore();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
   const location = useLocation();
   const requestedTab =
     params.get("tab") ||
@@ -55,11 +56,16 @@ export default function CustomerDashboard() {
   const activeTab = tabs.some((tab) => tab.id === requestedTab)
     ? (requestedTab as CustomerTab)
     : "overview";
-  const selectTab = (tab: CustomerTab) =>
-    setParams(tab === "overview" ? {} : { tab });
+  const selectTab = (tab: CustomerTab) => {
+    const next = new URLSearchParams();
+    if (tab !== "overview") next.set("tab", tab);
+    if (params.get("join")) next.set("join", params.get("join")!);
+    navigate({ pathname: '/customer/dashboard', search: next.toString() });
+  };
   const { invitation } = useMyInvitation();
   const [today] = useState(() => Date.now());
-  const { data: planner } = usePlannerOverview();
+  const plannerQuery = usePlannerOverview();
+  const planner = plannerQuery.data;
   const profile = planner?.profile;
   const members = useMembers();
   const viewer = members.data?.myRole === "Viewer";
@@ -109,9 +115,10 @@ export default function CustomerDashboard() {
         </button>
       </div>
       <nav className="planner-tabs" aria-label="Công cụ của cặp đôi">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {tabs.filter(tab => !("utility" in tab)).map(({ id, label, icon: Icon }) => (
+          <Fragment key={id}>
+          {id === "combos" && <Link to="/combo"><Compass size={17} />Khám phá combo</Link>}
           <button
-            key={id}
             className={activeTab === id ? "active" : ""}
             onClick={() => selectTab(id)}
             aria-current={activeTab === id ? "page" : undefined}
@@ -119,19 +126,17 @@ export default function CustomerDashboard() {
             <Icon size={17} />
             {label}
           </button>
+          </Fragment>
         ))}
-        <Link to="/browse">
-          <Compass size={17} />
-          Tìm dịch vụ
-        </Link>
       </nav>
+      <nav className="planner-utility-nav" aria-label="Tiện ích có thể làm song song"><span>Tiện ích song song</span>{tabs.filter(tab => "utility" in tab).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => selectTab(id)} aria-current={activeTab === id ? "page" : undefined}><Icon size={14} className="inline mr-2" />{label}</button>)}<Link to="/browse" className="underline px-2">Tìm dịch vụ lẻ</Link></nav>
       <div className="feature-content">
+        <CustomerJourney active={activeTab} data={planner} isLoading={plannerQuery.isPending} isError={plannerQuery.isError} retry={() => void plannerQuery.refetch()} />
         {activeTab === "overview" && (
           <>
             <ContinueIntent />
-            <WeddingMembers />
-            <PlannerSnapshot />
             <PlannerOverview onSelect={selectTab} />
+            <details className="planner-members" open={params.get("join") ? true : undefined}><summary>Cùng nhau lên kế hoạch · Thành viên & chia sẻ</summary><WeddingMembers /></details>
           </>
         )}
         {activeTab === "appointments" && <MyAppointments />}

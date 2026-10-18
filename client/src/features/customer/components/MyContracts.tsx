@@ -3,8 +3,6 @@ import {
   Archive,
   CalendarDays,
   Check,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Pencil,
   RefreshCw,
@@ -31,12 +29,11 @@ import {
 } from "../../journey/customerOrders/OrderGallery";
 import { orderMediaPhotos } from "../../journey/customerOrders/orderMedia";
 import {
-  useCustomerOrderJourney,
+  useCustomerOrderPage,
   type OrderJourneyItem,
 } from "../../journey/customerOrders/customerOrderApi";
 import {
   groupCustomerOrders,
-  matchesOrderFilter,
   orderCapability,
 } from "../../journey/customerOrders/orderPresentation";
 import {
@@ -44,22 +41,22 @@ import {
   CustomerOrderRequestHistory,
   type CustomerOrderIntent,
 } from "./CustomerOrderActionDialog";
+import { Pagination } from "../../../components/Pagination";
+import { useOrderPage } from "../../journey/customerOrders/useOrderPage";
+import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 
 export function MyContracts() {
-  const [page, setPage] = useState(1);
+  const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("contract");
   const {
-    contracts,
-    isLoading,
-    isError,
-    error,
-    refetch,
     confirmContract,
     isConfirming,
     rejectContract,
     isRejecting,
-  } = useCustomerContracts(page, 50);
-  const journey = useCustomerOrderJourney();
-  const [filter, setFilter] = useState("all");
+  } = useCustomerContracts(1, 1, false);
+  const query = useCustomerOrderPage<Contract>("contract", page, pageSize, filter, focusId);
+  const contracts = query.data?.items ?? [];
+  const { isLoading, isError, error, refetch } = query;
+  const journey = { data: query.data?.metadata, isError, error, refetch };
   const [now, setNow] = useState(() => Date.now());
   const [dialog, setDialog] = useState<{
     item: OrderJourneyItem;
@@ -89,9 +86,8 @@ export function MyContracts() {
     isArchived: metadata.get(contract.id)?.isArchived,
     comboOrderId: metadata.get(contract.id)?.comboOrderId,
   }));
-  const groups = groupCustomerOrders(
-    rows.filter((row) => matchesOrderFilter(row, filter)),
-  );
+  const groups = groupCustomerOrders(rows);
+  const notificationFocus = useNotificationFocus("contract", rows.map(row => row.id), query.isSuccess && !query.isFetching);
   function showVerification(contract: Contract, type: "confirm" | "reject") {
     setReason("");
     setActionError("");
@@ -127,7 +123,7 @@ export function MyContracts() {
   }
   const previewUrl = comboMediaSources([preview?.contractImageUrl])[0];
   return (
-    <section className="co-section">
+    <section className="co-section" ref={listRef} style={{ scrollMarginTop: "calc(var(--wm-header-offset, 88px) + 18px)" }}>
       <header className="co-section-heading">
         <div>
           <p className="co-eyebrow">THỎA THUẬN RÕ RÀNG, NGÀY VUI AN TÂM</p>
@@ -150,21 +146,19 @@ export function MyContracts() {
       </header>
       <OrderFilterBar
         label="Lọc hợp đồng"
-        value={filter}
+        value={query.data?.filter ?? filter}
         onChange={setFilter}
         options={[
           { id: "all", label: "Tất cả" },
           {
             id: "pending",
             label: "Cần kiểm tra",
-            count: rows.filter((r) => matchesOrderFilter(r, "pending")).length,
           },
           { id: "confirmed", label: "Đang hiệu lực" },
           { id: "closed", label: "Đã kết thúc" },
           {
             id: "archived",
             label: "Lưu trữ",
-            count: rows.filter((r) => matchesOrderFilter(r, "archived")).length,
           },
         ]}
       />
@@ -173,6 +167,7 @@ export function MyContracts() {
           {notice}
         </p>
       )}
+      {notificationFocus.missing && <p className="co-summary-note" role="status">Hợp đồng trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
       {(isError || journey.isError) && (
         <p className="co-error" role="alert">
           {apiError(error || journey.error)}{" "}
@@ -238,6 +233,9 @@ export function MyContracts() {
                   return (
                     <OrderServiceRow
                       key={contract.id}
+                      id={`notification-contract-${contract.id}`}
+                      tabIndex={-1}
+                      className={focusId === contract.id ? "notification-focus" : ""}
                       title={title}
                       photoSources={photos}
                       onPhotoClick={
@@ -444,27 +442,7 @@ export function MyContracts() {
           })}
         </div>
       )}
-      {(page > 1 || contracts.length === 50) && (
-        <nav className="customer-order-pagination" aria-label="Trang hợp đồng">
-          <button
-            className="co-button secondary"
-            aria-label="Trang trước"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            <ChevronLeft size={15} />
-          </button>
-          <span>Trang {page} · Lọc trong trang hiện tại</span>
-          <button
-            className="co-button secondary"
-            aria-label="Trang tiếp"
-            disabled={contracts.length < 50}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            <ChevronRight size={15} />
-          </button>
-        </nav>
-      )}
+      <Pagination page={query.data?.page ?? page} pageSize={pageSize} totalCount={query.data?.totalCount ?? 0} isLoading={query.isFetching} onPageChange={next => changePage(next, query.data?.filter)} label="Phân trang nhóm hợp đồng" />
       {gallery && (
         <OrderGallery {...gallery} onClose={() => setGallery(null)} />
       )}

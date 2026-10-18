@@ -42,14 +42,23 @@ public class Notification : BaseEntity
     public string Destination { get; private set; } = "";
     public string Message { get; private set; } = "";
     public string? DeduplicationKey { get; private set; }
+    public string? ContextKind { get; private set; }
+    public Guid? ContextId { get; private set; }
     public DateTime? ReadAt { get; private set; }
     public DateTime? SentAt { get; private set; }
     public DateTime NextAttemptAt { get; private set; } = DateTime.UtcNow;
     public int Attempts { get; private set; }
     public string? DeliveryError { get; private set; }
     private Notification() { }
-    public static Notification Create(Guid userId, string channel, string destination, string message, string? key = null)
-        => new() { UserId = userId, Channel = channel, Destination = destination, Message = message, DeduplicationKey = key };
+    public static Notification Create(Guid userId, string channel, string destination, string message, string? key = null,
+        string? contextKind = null, Guid? contextId = null)
+    {
+        if ((contextKind == null) != (contextId == null) || contextId == Guid.Empty ||
+            contextKind is not (null or "contract" or "quote" or "lead" or "appointment" or "combo" or "task" or "order-request"))
+            throw new DomainException("Ngữ cảnh thông báo không hợp lệ.");
+        return new() { UserId = userId, Channel = channel, Destination = destination, Message = message,
+            DeduplicationKey = key, ContextKind = contextKind, ContextId = contextId };
+    }
     public void Read() { ReadAt ??= DateTime.UtcNow; }
     public void Delivered() { SentAt = DateTime.UtcNow; DeliveryError = null; }
     public void Failed(string error) { Attempts++; DeliveryError = error; NextAttemptAt = DateTime.UtcNow.AddMinutes(Math.Min(360, Math.Pow(2, Attempts))); }

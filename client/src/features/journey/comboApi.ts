@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "../../services/axiosClient";
 import type { ComboBuilder, ComboOption, ComboOrder, ComboTemplate } from "./api";
+import type { PagedResult } from "../../components/Pagination";
+import { useAuthStore } from "../../store/authStore";
 
 export interface Variant { id?: string | null; name: string; priceDelta: number }
 export interface AddOn { id?: string | null; name: string; price: number; perUnit: boolean }
@@ -16,6 +18,13 @@ export interface ComboPrice { subtotal: number; discountPercent: number; discoun
 export interface SavedCombo extends ComboOrder { region: string; comboTemplateId?: string; priceLockUntil?: string; note?: string; revisionOfId?: string; revisionReason?: string; items: (ComboOrder["items"][number] & { serviceItemId?: string; categoryId: string; quantity: number; unit: string; cancellationPolicy: string; selectionJson: string })[] }
 export const useSavedCombos = () => useQuery({ queryKey: ["my-combos"], queryFn: async () => (await axios.get<SavedCombo[]>("/api/combos/orders/my")).data });
 export const useCatalogBuilder = () => useQuery({ queryKey: ["combo-builder"], queryFn: async () => (await axios.get<CatalogBuilder>("/api/combos/builder")).data });
+export interface CatalogPage { builder: CatalogBuilder; selectedOptions: CatalogOption[]; selectedTemplate?: CatalogTemplate | null; page: number; pageSize: number; totalCount: number; categoryCounts: { categoryId: string; count: number }[] }
+export interface CatalogPageInput { categoryId?: string; vendorId?: string; listingId?: string; search?: string; sort?: string; page: number; pageSize: number; selectedItemIds: string[]; templateId?: string | null; guests?: number }
+export const useCatalogPage = (input: CatalogPageInput) => useQuery({ queryKey: ["combo-catalog-page", input], placeholderData: previous => previous, queryFn: async () => (await axios.get<CatalogPage>("/api/combos/catalog", { params: input, paramsSerializer: { indexes: null } })).data });
+export function useSavedCombosPage(page: number, pageSize: number, filter: string, focusId?: string) {
+  const user = useAuthStore(state => state.user);
+  return useQuery({ queryKey: ["my-combos", user?.id, "page", page, pageSize, filter, focusId], enabled: user?.role === "Customer", queryFn: async () => (await axios.get<PagedResult<SavedCombo> & { filter: string; focusFound: boolean }>("/api/combos/orders/my/page", { params: { page, pageSize, filter, focusId } })).data });
+}
 export const useCatalog = (admin = false) => useQuery({ queryKey: ["combo-catalog", admin], queryFn: async () => (await axios.get<CatalogItem[]>(`/api/combos/${admin ? "items" : "vendor/items"}`)).data });
 export const useParticipation = () => useQuery({ queryKey: ["combo-participation"], queryFn: async () => (await axios.get<{ allowInCombos: boolean; maxComboDiscount: number }>("/api/combos/vendor/participation")).data });
 export const useComboTemplates = () => useQuery({ queryKey: ["combo-templates-admin"], queryFn: async () => (await axios.get<CatalogTemplate[]>("/api/combos/templates")).data });
