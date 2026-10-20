@@ -3,34 +3,64 @@ import {
   X, PlusCircle, Loader2, AlertCircle, Send, CheckCircle2,
   Sparkles, UploadCloud, Image as ImageIcon, Trash2, Star, Plus
 } from 'lucide-react';
-import { useCreateListing, useUpdateListing, useSubmitListing } from '../hooks/useListings';
+import { useCreateListing, useUpdateListing, useSubmitListing, useListingDetail } from '../hooks/useListings';
 import axiosClient from '../../../services/axiosClient';
 import type { ListingSummaryDto } from '../../../types/listing.types';
+import { EMPTY_LISTING_FORM, hydrateListingEditor, isListingImageReference, listingImagePreview, listingUpdatePayload, moveListingCover, uploadedListingImages, type ListingEditorState, type ListingImageItem } from './listingEditModel';
+import { normalizeServiceDetails, validateServiceDetails } from '../../listings/serviceDetailsModel';
+import { ServiceDetailsEditor } from './ServiceDetailsEditor';
+import { MoneyInput } from '../../../components/MoneyInput';
+import { listingUpdatedTime } from '../vendorListingFilters';
+import { useVendorCategories } from '../hooks/useVendorCategories';
+import { useVendorBusinessGroupPolicy } from '../hooks/useBusinessGroups';
+import { vendorCategoryError, vendorCategoryGroups } from '../vendorCategoryModel';
+import { commissionPercent } from '../businessGroupPolicy';
+import { ServiceItemManager } from '../../journey/vendor/ServiceItemManager';
+import { listingPricingPayload, listingPricingValues } from './listingPricingModel';
 
 interface Props {
   editing?: ListingSummaryDto;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; requiresCommissionBasisApproval?: boolean }[];
   onClose: () => void;
 }
 
-interface ImageItem {
-  id: string;
-  preview: string; // ObjectURL hoặc URL hiển thị chính xác ảnh người dùng chọn
-  url: string;     // URL lưu trữ để gửi lên server
+export default function ListingForm(props: Props) {
+  const [editorSession] = useState(() => crypto.randomUUID());
+  const detail = useListingDetail(props.editing?.id ?? '', editorSession);
+  let initial: ListingEditorState | undefined;
+  let loadError = '';
+  if (props.editing && detail.data) {
+    try { initial = hydrateListingEditor(detail.data, props.editing.id, import.meta.env.VITE_API_URL || ''); }
+    catch (error) { loadError = (error as Error).message; }
+  }
+  if (props.editing && !initial) return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="Tải bài đăng để chỉnh sửa">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex justify-between items-center mb-4"><h2 className="font-bold">Chỉnh sửa gói dịch vụ</h2><button onClick={props.onClose} aria-label="Đóng"><X size={20} /></button></div>
+        {detail.isPending || detail.isFetching ? <p role="status" className="flex gap-2 text-sm text-slate-600"><Loader2 className="animate-spin" size={18} />Đang tải mô tả và toàn bộ ảnh đã lưu...</p> : <><p role="alert" className="text-sm text-red-700">{loadError || 'Không tải được bài đăng. Chưa có thay đổi nào được lưu; vui lòng thử lại.'}</p><button type="button" className="mt-4 px-4 py-2 rounded-xl bg-slate-800 text-white text-sm" onClick={() => void detail.refetch()}>Thử lại</button></>}
+      </div>
+    </div>
+  );
+  return <ListingEditor key={props.editing?.id ?? 'new-listing'} {...props} initial={initial} />;
 }
 
-const INITIAL_FORM = {
-  categoryId: '',
-  title: '',
-  minPrice: '',
-  maxPrice: '',
-  description: '',
-  location: '',
-};
-
-export default function ListingForm({ editing, categories, onClose }: Props) {
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [images, setImages] = useState<ImageItem[]>([]);
+function ListingEditor({ editing, categories, onClose, initial }: Props & { initial?: ListingEditorState }) {
+  const categoryQuery = useVendorCategories();
+  const policyQuery = useVendorBusinessGroupPolicy();
+  const selectableCategories = categoryQuery.isError ? [] : categoryQuery.data?.categories ?? [];
+  const published = editing?.status === 'Active' || editing?.status === 'Hidden';
+  // The keyed editor mounts only after a complete detail response. Never hydrate through an effect:
+  // a cache refresh or mutation invalidation must not replace text/images the vendor is editing.
+  const [form, setForm] = useState(() => initial?.form ?? { ...EMPTY_LISTING_FORM });
+  const [images, setImages] = useState<ListingImageItem[]>(() => initial?.images ?? []);
+  const originalImages = useRef(initial?.images ?? []);
+  const [serviceDetails, setServiceDetails] = useState(() => normalizeServiceDetails(initial?.serviceDetails));
+  const originalServiceDetails = useRef(initial?.serviceDetails ?? null);
+  const [pricing, setPricing] = useState(() => listingPricingValues(initial?.pricing));
+  const [pricingChanged, setPricingChanged] = useState(!editing);
+  const selectedCategory = [...selectableCategories, ...(categoryQuery.data?.existingCategories ?? [])].find(category => category.id === form.categoryId);
+  const fullServiceEnabled = !!initial?.categoryRequiresCommissionBasisApproval || !!selectedCategory?.requiresCommissionBasisApproval || !!categories.find(category => category.id === form.categoryId)?.requiresCommissionBasisApproval;
+  const previewUrls = useRef(new Set<string>());
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -48,28 +78,16 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
   const isLoading = createMutation.isPending || updateMutation.isPending || isUploading;
 
   useEffect(() => {
-    if (editing) {
-      setForm({
-        categoryId: editing.categoryName, // display only
-        title: editing.title,
-        minPrice: String(editing.minPrice),
-        maxPrice: String(editing.maxPrice),
-        description: '',
-        location: editing.location,
-      });
-      if (editing.primaryImageUrl) {
-        setImages([{
-          id: 'initial-1',
-          preview: editing.primaryImageUrl,
-          url: editing.primaryImageUrl,
-        }]);
-      }
-    }
-  }, [editing]);
+    const urls = previewUrls.current;
+    return () => { for (const url of urls) URL.revokeObjectURL(url); urls.clear(); };
+  }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.categoryId && !editing) e.categoryId = 'Vui lòng chọn ngành hàng';
+    if (!editing) {
+      const categoryError = vendorCategoryError(form.categoryId, categoryQuery.data?.categories, categoryQuery.isPending, categoryQuery.isError);
+      if (categoryError) e.categoryId = categoryError;
+    }
     if (!form.title.trim()) e.title = 'Tiêu đề không được để trống';
     if (!form.minPrice || Number(form.minPrice) < 0) e.minPrice = 'Giá tối thiểu không hợp lệ';
     if (!form.maxPrice || Number(form.maxPrice) < Number(form.minPrice))
@@ -78,10 +96,15 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     if (!form.description.trim()) e.description = 'Mô tả không được để trống';
 
     // Ràng buộc hình ảnh: Bắt buộc tối thiểu 1 ảnh, nhiều nhất là 10 bức ảnh
-    if (images.length === 0) {
+    if (images.length === 0 && (!editing || originalImages.current.length > 0)) {
       e.images = 'Bắt buộc phải tải lên ít nhất 1 hình ảnh dịch vụ.';
-    } else if (images.length > 10) {
+    } else if (images.length > 10 && (!editing || images.length !== originalImages.current.length)) {
       e.images = 'Số lượng ảnh tối đa là 10 bức ảnh.';
+    }
+    if (!editing || JSON.stringify(normalizeServiceDetails(serviceDetails)) !== JSON.stringify(normalizeServiceDetails(originalServiceDetails.current)))
+      Object.assign(e, validateServiceDetails(serviceDetails));
+    if (pricingChanged) {
+      try { listingPricingPayload(pricing); } catch (error) { e.pricing = (error as Error).message; }
     }
 
     setErrors(e);
@@ -103,11 +126,10 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     setIsUploading(true);
 
     // Tạo preview trực tiếp từ file trên máy người dùng (hiển thị ngay lập tức, 100% đúng ảnh)
-    const newItems: ImageItem[] = files.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      preview: URL.createObjectURL(file),
-      url: '', // sẽ được cập nhật sau khi server upload xong
-    }));
+    const newItems: ListingImageItem[] = files.map(file => {
+      const preview = URL.createObjectURL(file); previewUrls.current.add(preview);
+      return { id: crypto.randomUUID(), preview, url: '' };
+    });
 
     try {
       const formData = new FormData();
@@ -120,15 +142,13 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
       });
 
       const serverUrls: string[] = res.data.urls || [];
-      newItems.forEach((item, idx) => {
-        item.url = serverUrls[idx] || item.preview;
-      });
-
-      setImages(prev => [...prev, ...newItems].slice(0, 10));
+      const uploaded = uploadedListingImages(newItems, serverUrls, import.meta.env.VITE_API_URL || '');
+      setImages(prev => [...prev, ...uploaded]);
       if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setUploadError(error.response?.data?.message || 'Tải ảnh lên thất bại. Vui lòng thử lại.');
+      for (const image of newItems) { URL.revokeObjectURL(image.preview); previewUrls.current.delete(image.preview); }
+      setUploadError(error.response?.data?.message || (err as Error).message || 'Tải ảnh lên thất bại. Vui lòng thử lại.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -138,6 +158,8 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
   const handleAddUrl = () => {
     const url = urlInput.trim();
     if (!url) return;
+    if (!isListingImageReference(url)) { setUploadError('Dùng ảnh HTTP(S) hợp lệ hoặc tải ảnh từ thiết bị; không dùng đường dẫn tạm hay đường dẫn chứa mã lệnh.'); return; }
+    if (images.some(image => image.url === url)) { setUploadError('Ảnh này đã có trong album.'); return; }
     if (images.length >= 10) {
       setUploadError('Đã đạt số lượng tối đa 10 bức ảnh.');
       return;
@@ -145,18 +167,21 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     setUploadError('');
     setImages(prev => [
       ...prev,
-      { id: Math.random().toString(36).substring(7), preview: url, url },
+      { id: crypto.randomUUID(), preview: listingImagePreview(url, import.meta.env.VITE_API_URL || ''), url },
     ]);
     setUrlInput('');
     if (errors.images) setErrors(prev => ({ ...prev, images: '' }));
   };
 
   const handleRemoveImage = (index: number) => {
+    const preview = images[index]?.preview;
+    if (preview && previewUrls.current.has(preview)) { URL.revokeObjectURL(preview); previewUrls.current.delete(preview); }
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     if (!validate()) return;
     setApiError('');
 
@@ -164,11 +189,8 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
       if (editing) {
         await updateMutation.mutateAsync({
           id: editing.id,
-          title: form.title,
-          minPrice: Number(form.minPrice),
-          maxPrice: Number(form.maxPrice),
-          description: form.description,
-          location: form.location,
+          ...listingUpdatePayload(form, images, originalImages.current, serviceDetails, originalServiceDetails.current),
+          ...(pricingChanged ? { pricing: listingPricingPayload(pricing) } : {}),
         });
         onClose();
       } else {
@@ -181,6 +203,8 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
           description: form.description,
           location: form.location,
           imageUrls: images.map(img => img.url),
+          serviceDetails: normalizeServiceDetails(serviceDetails),
+          pricing: listingPricingPayload(pricing),
         });
         setCreatedId(result.listingId);
         setShowSubmitConfirm(true);
@@ -189,6 +213,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
       const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const msg = error.response?.data?.message
         || Object.values(error.response?.data?.errors ?? {}).flat().join(', ')
+        || (err as Error).message
         || 'Đã xảy ra lỗi. Vui lòng thử lại.';
       setApiError(msg);
     }
@@ -209,7 +234,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
     onClose();
   };
 
-  const set = (field: keyof typeof INITIAL_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const set = (field: keyof typeof EMPTY_LISTING_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
@@ -247,7 +272,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               <div>
                 <p className="text-sm font-semibold text-amber-800">Sau khi nộp duyệt (BR-008):</p>
                 <ul className="text-xs text-amber-700 mt-1.5 space-y-1">
-                  <li>• Moderator / Admin sẽ xem xét trong tối đa <strong>24 giờ</strong></li>
+                  <li>• Moderator / Admin sẽ xem xét nội dung và danh mục; theo dõi trạng thái trong shop</li>
                   <li>• Bài được duyệt → hiển thị công khai cho khách hàng</li>
                   <li>• Bị từ chối → bạn nhận được lý do và có thể chỉnh sửa lại</li>
                 </ul>
@@ -285,7 +310,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
 
   // ── Form tạo / chỉnh sửa ──────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label={editing ? 'Chỉnh sửa dịch vụ' : 'Tạo dịch vụ mới'}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
@@ -296,7 +321,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
             <p className="text-xs text-slate-500 mt-0.5">
               Sau khi tạo, hệ thống sẽ hỏi bạn có muốn{' '}
               <span className="font-semibold text-rose-600">nộp duyệt ngay cho Admin</span>{' '}
-              hay lưu Nháp trước (SLA 24h)
+              hay lưu Nháp trước
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition">
@@ -305,6 +330,10 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {published && <p role="note" className="rounded-xl border border-[#d4c894] bg-[#faf8f0] p-3 text-xs leading-relaxed text-[#25334c]">Bạn đang chỉnh một bản sửa riêng. Lưu nháp hoặc gửi duyệt không đổi bản đang công khai; chỉ bản được kiểm duyệt chấp thuận mới thay thế nội dung cũ. Giao dịch đã chốt giữ nguyên.</p>}
+          {published && initial?.revision?.status === 'Pending' && <p role="note" className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Phiên bản này đang chờ duyệt. Nếu lưu bản sửa mới, yêu cầu cũ sẽ được ghi nhận đã thay thế; bạn cần gửi duyệt bản mới khi sẵn sàng.</p>}
+          {initial?.revision?.reviewNote && <p role="note" className="rounded-xl bg-red-50 p-3 text-xs text-red-700">Lý do cần sửa phiên bản #{initial.revision.sequence}: {initial.revision.reviewNote}</p>}
+          {!!initial?.revisionHistory?.length && <details className="rounded-xl border border-[#e4dfcf] p-3"><summary className="cursor-pointer text-sm font-semibold">Lịch sử phiên bản ({initial.revisionHistory.length})</summary><ul className="mt-3 space-y-3 text-xs">{initial.revisionHistory.map(revision => <li key={revision.id} className="border-t border-slate-100 pt-2"><p>#{revision.sequence} · {revision.status === 'Baseline' ? 'Ghi nhận bản công khai cũ, không suy diễn lịch sử phê duyệt' : revision.status} · {listingUpdatedTime(revision.reviewedAt, revision.createdAt)}</p>{revision.reviewNote && <p className="mt-1 whitespace-pre-wrap text-red-700">{revision.reviewNote}</p>}<a className="mt-1 inline-block underline" href={`/listings/${editing?.id}?preview=vendor&revision=${revision.id}`} target="_blank" rel="noreferrer">Xem bản chỉ đọc trong tab mới</a></li>)}</ul></details>}
           {/* API Error */}
           {apiError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
@@ -313,25 +342,40 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
             </div>
           )}
 
+          <details open className="rounded-2xl border border-[#e4dfcf] bg-[#faf8f0] p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-[#25334c]">1. Thông tin cơ bản</summary>
+          <div className="mt-4 space-y-5">
           {/* Ngành hàng */}
           {!editing && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Ngành Hàng <span className="text-red-500">*</span>
+                Danh mục dịch vụ <span className="text-red-500">*</span>
               </label>
               <select
                 value={form.categoryId}
                 onChange={set('categoryId')}
+                aria-label="Danh mục dịch vụ được phép của shop"
+                disabled={categoryQuery.isPending || categoryQuery.isError || !selectableCategories.length}
                 className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${errors.categoryId ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
               >
-                <option value="">— Chọn ngành hàng dịch vụ cưới —</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                <option value="">{categoryQuery.isPending ? 'Đang tải danh mục của shop...' : '— Chọn danh mục dịch vụ —'}</option>
+                {vendorCategoryGroups(selectableCategories).map(group => <optgroup key={group.id} label={group.label}>{group.categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</optgroup>)}
               </select>
               {errors.categoryId && <FieldError msg={errors.categoryId} />}
+              {categoryQuery.isError && <p role="alert" className="mt-2 text-xs text-red-700">Chưa tải được danh mục. <button type="button" className="underline" onClick={() => void categoryQuery.refetch()}>Thử lại</button></p>}
+              {categoryQuery.data?.requiresMembershipReview && <p role="note" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">{categoryQuery.data.guidance || 'Shop cần Admin xác nhận nhóm kinh doanh trước khi tạo dịch vụ mới. Dịch vụ và chính sách cũ không bị tự chuyển đổi.'}</p>}
+              {!categoryQuery.isPending && !categoryQuery.isError && !selectableCategories.length && !categoryQuery.data?.requiresMembershipReview && <p role="note" className="mt-2 text-xs text-slate-600">Chưa có danh mục đang hoạt động phù hợp với nhóm kinh doanh của shop. Vui lòng liên hệ Admin; hệ thống không tự chọn nhóm hoặc hoa hồng thay bạn.</p>}
             </div>
           )}
+          {editing && <div className="rounded-xl border border-[#e4dfcf] bg-white p-3 text-sm"><p className="text-xs text-slate-500">Danh mục dịch vụ đã lưu</p><p className="mt-1 font-semibold">{selectedCategory?.name || editing.categoryName}</p><p className="mt-2 text-xs leading-relaxed text-slate-500">Danh mục được giữ cố định khi sửa bài để không làm lệch phân loại và hợp đồng. Muốn cung cấp dịch vụ thuộc danh mục khác, hãy tạo bài riêng.</p></div>}
+          {selectedCategory && <div className="rounded-xl border border-[#e4dfcf] bg-white p-3 text-xs leading-relaxed text-slate-600">
+            <p><b>Nhóm kinh doanh:</b> {selectedCategory.businessGroupName || 'Chưa có nhóm được ghi nhận'}</p>
+            {selectedCategory.defaultCommissionRate != null && <p className="mt-1"><b>Hoa hồng mặc định theo danh mục:</b> {commissionPercent(selectedCategory.defaultCommissionRate)} · không phải giảm giá cho khách.</p>}
+            {policyQuery.data?.usesLegacyCommissionRate && <p className="mt-2">Shop đang giữ chính sách cũ{policyQuery.data.legacyCommissionRate != null ? ` (${commissionPercent(policyQuery.data.legacyCommissionRate)})` : ''} cho đến khi Admin xác nhận chuyển đổi hợp lệ. Chọn danh mục không tự đổi tỷ lệ cũ.</p>}
+            {(policyQuery.isPending || policyQuery.isError) && <p className="mt-2">Chưa xác nhận được chính sách riêng của shop. Mức theo danh mục ở trên chỉ là mặc định tham khảo, không tự thay thế chính sách cũ hoặc thỏa thuận riêng.</p>}
+            <p className="mt-2">Hợp đồng mới ghi nhận danh mục và chính sách thực tế khi xác nhận; hợp đồng đã chốt giữ snapshot ban đầu.</p>
+            {selectedCategory.requiresCommissionBasisApproval && <p className="mt-2 text-amber-900">A–Z cần Admin duyệt cơ sở phí quản lý/tổ chức. Mô tả bên dưới không tự cho phép tính hoa hồng trên toàn giá trị gói.</p>}
+          </div>}
 
           {/* Tiêu đề */}
           <div>
@@ -355,10 +399,10 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Giá Tối Thiểu (VNĐ) <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                value={form.minPrice}
-                onChange={set('minPrice')}
+              <MoneyInput
+                aria-label="Giá tối thiểu (VNĐ)"
+                value={form.minPrice === '' ? null : Number(form.minPrice)}
+                onValueChange={value => setForm(previous => ({ ...previous, minPrice: value == null ? '' : String(value) }))}
                 placeholder="12500000"
                 min={0}
                 className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${errors.minPrice ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
@@ -369,10 +413,10 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Giá Tối Đa (VNĐ) <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                value={form.maxPrice}
-                onChange={set('maxPrice')}
+              <MoneyInput
+                aria-label="Giá tối đa (VNĐ)"
+                value={form.maxPrice === '' ? null : Number(form.maxPrice)}
+                onValueChange={value => setForm(previous => ({ ...previous, maxPrice: value == null ? '' : String(value) }))}
                 placeholder="25000000"
                 min={0}
                 className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${errors.maxPrice ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
@@ -390,6 +434,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               type="text"
               value={form.location}
               onChange={set('location')}
+              maxLength={200}
               placeholder="Vd: Quận 1, TP. Hồ Chí Minh"
               className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${errors.location ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
             />
@@ -406,13 +451,28 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               onChange={set('description')}
               placeholder="Mô tả chi tiết về gói dịch vụ, điểm nổi bật, tiện ích đi kèm..."
               rows={4}
-              maxLength={5000}
+              maxLength={4000}
               className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition resize-none ${errors.description ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
             />
-            <div className="text-right text-xs text-slate-400 mt-1">{form.description.length}/5000</div>
+            <div className="text-right text-xs text-slate-400 mt-1">{form.description.length}/4000</div>
             {errors.description && <FieldError msg={errors.description} />}
           </div>
 
+          </div>
+          </details>
+
+          <ServiceDetailsEditor value={serviceDetails} onChange={setServiceDetails} fullServiceEnabled={fullServiceEnabled} disabled={isLoading} errors={errors} />
+          <ServiceItemManager value={pricing} onChange={value => { setPricing(value); setPricingChanged(!initial?.pricingSelectionRequired || !!value.serviceItemId); }} options={initial?.pricingOptions} selectionRequired={initial?.pricingSelectionRequired} disabled={isLoading} error={errors.pricing} open={!editing} />
+
+          <details className="rounded-2xl border border-[#e4dfcf] bg-[#faf8f0] p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-[#25334c]">Chính sách hủy hiện hành · chỉ đọc</summary>
+            <p className="mt-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-600">{initial?.cancellationPolicy || 'Dịch vụ mới giữ cơ chế chính sách hủy hiện có của hệ thống. Nội dung bổ sung không tự thay thế chính sách đó.'}</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">Biểu mẫu này không sửa chính sách hủy hoặc snapshot đã chốt trên giao dịch. Thay đổi có ảnh hưởng tài chính cần quy trình phê duyệt riêng.</p>
+          </details>
+
+          <details open={!!errors.images || images.length === 0} className="rounded-2xl border border-[#e4dfcf] bg-white p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-[#25334c]">3. Hình ảnh dịch vụ ({images.length}/10)</summary>
+          <div className="mt-4">
           {/* ─── HÌNH ẢNH DỊCH VỤ (BẮT BUỘC 1 ĐẾN 10 ẢNH) ──────────────────── */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80">
             <div className="flex items-center justify-between mb-2">
@@ -511,7 +571,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
                     className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-xs"
                   >
                     <img
-                      src={item.preview}
+                      src={item.preview || undefined}
                       alt={`Ảnh ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -537,6 +597,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
+                    {idx > 0 && <button type="button" disabled={isLoading} onClick={() => setImages(current => moveListingCover(current, idx))} className="absolute bottom-0 inset-x-0 py-1.5 bg-white/90 text-slate-800 text-[10px] font-semibold hover:bg-white" aria-label={`Đặt ảnh ${idx + 1} làm ảnh bìa`}>Đặt làm ảnh bìa</button>}
                   </div>
                 ))}
               </div>
@@ -548,6 +609,9 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               </div>
             )}
           </div>
+
+          </div>
+          </details>
 
           {/* Footer actions */}
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
@@ -568,7 +632,7 @@ export default function ListingForm({ editing, categories, onClose }: Props) {
               ) : (
                 <PlusCircle className="w-4 h-4" />
               )}
-              {editing ? 'Lưu Thay Đổi' : 'Tạo Bài Đăng'}
+              {published ? 'Lưu bản sửa nháp' : editing ? 'Lưu Thay Đổi' : 'Tạo Bài Đăng'}
             </button>
           </div>
         </form>

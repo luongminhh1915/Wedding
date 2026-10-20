@@ -10,7 +10,7 @@ const statusConfig: Record<ListingStatus, { label: string; className: string }> 
     className: 'bg-amber-50 text-amber-700 border border-amber-200',
   },
   Active: {
-    label: 'Đang Hiển Thị',
+    label: 'Đã Duyệt',
     className: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   },
   Rejected: {

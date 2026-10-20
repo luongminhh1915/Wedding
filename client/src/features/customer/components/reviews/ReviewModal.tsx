@@ -1,10 +1,8 @@
-import { useState } from 'react';
-import {
-  CheckCircle2,
-  X, Loader2, Sparkles, Image
-} from 'lucide-react';
-import { useEligibleContracts, useSubmitReview } from '../../hooks/useReviews';
-import type { SubmitReviewRequest } from '../../../../types/review.types';
+import { useState } from "react";
+import { CheckCircle2, X, Loader2, Sparkles, Image } from "lucide-react";
+import { useEligibleContracts, useSubmitReview } from "../../hooks/useReviews";
+import type { SubmitReviewRequest } from "../../../../types/review.types";
+import { matchingReviewContracts, selectedReviewContract } from "./reviewPolicyModel";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -21,10 +19,12 @@ export function ReviewModal({
   onClose,
   listingId,
   listingTitle,
+  vendorId,
   vendorBrandName,
-  onSuccess
+  onSuccess,
 }: ReviewModalProps) {
-  const { data: eligibleContracts = [] } = useEligibleContracts();
+  const eligibleQuery = useEligibleContracts(isOpen);
+  const eligibleContracts = matchingReviewContracts(eligibleQuery.data ?? [], listingId, vendorId);
   const submitMutation = useSubmitReview();
 
   // 4 Tiêu chí chấm sao theo Prototype SCR-05-06
@@ -33,9 +33,9 @@ export function ReviewModal({
   const [c3, setC3] = useState(5); // Đúng hẹn & cam kết
   const [c4, setC4] = useState(5); // Xứng đáng chi phí
 
-  const [selectedContractId, setSelectedContractId] = useState<string>('');
-  const [content, setContent] = useState('');
-  const [photoUrl, setPhotoUrl] = useState('');
+  const [selectedContractId, setSelectedContractId] = useState<string>("");
+  const [content, setContent] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -44,12 +44,16 @@ export function ReviewModal({
   const overallRating = Math.round((c1 + c2 + c3 + c4) / 4);
 
   // Kiểm tra HĐ đã chọn có thuộc dạng Verified không
-  const matchedContract = eligibleContracts.find(c => c.contractId === selectedContractId);
+  const matchedContract = selectedReviewContract(eligibleContracts, selectedContractId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) {
-      setErrorMsg('Vui lòng viết lời nhận xét chi tiết.');
+    if (!eligibleQuery.isSuccess || eligibleQuery.isFetching || !matchedContract) {
+      setErrorMsg("Vui lòng chọn hợp đồng của dịch vụ này đã Hoàn tất. Hợp đồng mới xác nhận hoặc chỉ qua ngày cưới chưa đủ điều kiện.");
+      return;
+    }
+    if (content.trim().length < 30 || content.trim().length > 3000) {
+      setErrorMsg("Vui lòng viết nhận xét từ 30 đến 3000 ký tự.");
       return;
     }
 
@@ -57,10 +61,21 @@ export function ReviewModal({
     try {
       const payload: SubmitReviewRequest = {
         listingId,
-        bookingContractId: selectedContractId ? selectedContractId : undefined,
+        bookingContractId: matchedContract.contractId,
         rating: overallRating,
         content: content.trim(),
-        photosJson: photoUrl.trim() ? JSON.stringify([photoUrl.trim()]) : undefined
+        photosJson: photoUrl.trim()
+          ? JSON.stringify(
+              photoUrl
+                .split("\n")
+                .map((p) => p.trim())
+                .filter(Boolean),
+            )
+          : undefined,
+        qualityRating: c1,
+        serviceRating: c2,
+        punctualityRating: c3,
+        valueRating: c4,
       };
 
       await submitMutation.mutateAsync(payload);
@@ -68,7 +83,7 @@ export function ReviewModal({
       onClose();
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Không thể gửi đánh giá.');
+      setErrorMsg(e.message || "Không thể gửi đánh giá.");
     }
   };
 
@@ -82,9 +97,13 @@ export function ReviewModal({
               ★
             </div>
             <div>
-              <h3 className="font-bold text-sm leading-tight">Đánh Giá Dịch Vụ Cưới</h3>
+              <h3 className="font-bold text-sm leading-tight">
+                Đánh Giá Dịch Vụ Cưới
+              </h3>
               <p className="text-[11px] text-slate-300">
-                {listingTitle || vendorBrandName || 'Trải nghiệm dịch vụ thực tế'}
+                {listingTitle ||
+                  vendorBrandName ||
+                  "Trải nghiệm dịch vụ thực tế"}
               </p>
             </div>
           </div>
@@ -94,64 +113,93 @@ export function ReviewModal({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 overflow-y-auto space-y-4 text-xs"
+        >
           {/* Hợp đồng dịch vụ cưới (BR-009) */}
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Chọn Hợp Đồng Dịch Vụ Đã Thực Hiện (Để Nhận Huy Hiệu Verified Buyer):
+              Chọn hợp đồng dịch vụ đã Hoàn tất:
             </label>
             <select
-              value={selectedContractId}
+              value={matchedContract?.contractId ?? ""}
               onChange={(e) => setSelectedContractId(e.target.value)}
+              disabled={eligibleQuery.isFetching || eligibleQuery.isError || !eligibleContracts.length}
+              required
               className="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-rose-500 font-semibold"
             >
-              <option value="">-- Đánh giá trải nghiệm tư vấn thông thường (Chưa có HĐ) --</option>
-              {eligibleContracts.map(c => (
-                <option key={c.contractId} value={c.contractId}>
-                  ✓ Hợp đồng {c.contractCode} - {c.vendorBrandName} ({c.weddingDate ? new Date(c.weddingDate).toLocaleDateString('vi-VN') : 'Đã ký'})
-                </option>
-              ))}
+              <option value="">
+                -- Chọn hợp đồng đã Hoàn tất --
+              </option>
+              {eligibleContracts.map((c) => (
+                  <option key={c.contractId} value={c.contractId}>
+                    ✓ Hợp đồng {c.contractCode} - {c.vendorBrandName} (
+                    {c.weddingDate
+                      ? new Date(c.weddingDate).toLocaleDateString("vi-VN")
+                      : "Đã ký"}
+                    )
+                  </option>
+                ))}
             </select>
 
             {matchedContract ? (
               <div className="mt-1.5 flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px] font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                <span>Đủ điều kiện cấp nhãn: [✓ Verified Buyer] theo quy tắc BR-009!</span>
+                <span>
+                  Đủ điều kiện cấp nhãn: [✓ Verified Buyer] theo quy tắc BR-009!
+                </span>
               </div>
             ) : (
-              <p className="text-[10px] text-slate-400 mt-1">
-                * Khách hàng đã hoàn tất hợp đồng trên sàn sẽ được gắn nhãn Verified Buyer và tính trọng số cao (W=1.0) theo FM-005.
+              <p className="text-[11px] text-slate-500 mt-2">
+                Chỉ nhận đánh giá mới sau khi hợp đồng đã chuyển sang Hoàn tất. Đánh giá tư vấn cũ được giữ nguyên, nhưng không mở nhận đánh giá mới khi chưa sử dụng dịch vụ.
               </p>
             )}
+            {eligibleQuery.isFetching && <p role="status" className="text-slate-500 mt-2">Đang kiểm tra hợp đồng đủ điều kiện...</p>}
+            {eligibleQuery.isError && <p role="alert" className="text-red-700 mt-2">{eligibleQuery.error.message} <button type="button" className="underline" onClick={() => { void eligibleQuery.refetch(); }}>Thử lại</button></p>}
+            {eligibleQuery.isSuccess && !eligibleContracts.length && <p role="status" className="text-slate-600 mt-2">Chưa có hợp đồng đã Hoàn tất và chưa được đánh giá cho dịch vụ này. Bạn không thể gửi đánh giá khi chỉ mới tư vấn, đang thực hiện hoặc có tranh chấp.</p>}
           </div>
 
           {/* 4 Tiêu Chí Chấm Sao */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
             <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-              <span className="font-bold text-slate-800">1. Chất lượng thẩm mỹ & sản phẩm:</span>
+              <span className="font-bold text-slate-800">
+                1. Chất lượng thẩm mỹ & sản phẩm:
+              </span>
               <StarPicker value={c1} onChange={setC1} />
             </div>
 
             <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-              <span className="font-bold text-slate-800">2. Thái độ tư vấn & phục vụ:</span>
+              <span className="font-bold text-slate-800">
+                2. Thái độ tư vấn & phục vụ:
+              </span>
               <StarPicker value={c2} onChange={setC2} />
             </div>
 
             <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-              <span className="font-bold text-slate-800">3. Đúng hẹn & cam kết hợp đồng:</span>
+              <span className="font-bold text-slate-800">
+                3. Đúng hẹn & cam kết hợp đồng:
+              </span>
               <StarPicker value={c3} onChange={setC3} />
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-800">4. Xứng đáng với chi phí bỏ ra:</span>
+              <span className="font-bold text-slate-800">
+                4. Xứng đáng với chi phí bỏ ra:
+              </span>
               <StarPicker value={c4} onChange={setC4} />
             </div>
 
             <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
-              <span className="font-bold text-rose-600 uppercase tracking-wider">Điểm Đánh Giá Tổng Thể:</span>
+              <span className="font-bold text-rose-600 uppercase tracking-wider">
+                Điểm Đánh Giá Tổng Thể:
+              </span>
               <span className="font-black text-amber-500 text-sm flex items-center gap-1">
-                {'★'.repeat(overallRating)}{'☆'.repeat(5 - overallRating)}
-                <span className="text-slate-800 ml-1">({overallRating}.0 / 5.0)</span>
+                {"★".repeat(overallRating)}
+                {"☆".repeat(5 - overallRating)}
+                <span className="text-slate-800 ml-1">
+                  ({overallRating}.0 / 5.0)
+                </span>
               </span>
             </div>
           </div>
@@ -159,10 +207,13 @@ export function ReviewModal({
           {/* Lời nhận xét chi tiết */}
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Lời Nhận Xét Chi Tiết Của Cặp Đôi: <span className="text-rose-500">*</span>
+              Lời Nhận Xét Chi Tiết Của Cặp Đôi:{" "}
+              <span className="text-rose-500">*</span>
             </label>
             <textarea
               required
+              minLength={30}
+              maxLength={3000}
               rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -175,13 +226,13 @@ export function ReviewModal({
           <div>
             <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
               <Image className="w-3.5 h-3.5 text-slate-400" />
-              Link Ảnh Cưới Thực Tế (Tùy chọn):
+              Tối đa 5 link ảnh HTTPS (mỗi dòng một ảnh):
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={3}
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="https://images.unsplash.com/... hoặc link ảnh sản phẩm"
+              placeholder="https://... (tối đa 5 dòng)"
               className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500 text-xs"
             />
           </div>
@@ -203,10 +254,14 @@ export function ReviewModal({
             </button>
             <button
               type="submit"
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isPending || !matchedContract || !eligibleQuery.isSuccess || eligibleQuery.isFetching}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center gap-1.5 transition disabled:opacity-50"
             >
-              {submitMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {submitMutation.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
               <span>Gửi Đánh Giá Ngay</span>
             </button>
           </div>
@@ -216,7 +271,13 @@ export function ReviewModal({
   );
 }
 
-function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function StarPicker({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
   return (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -225,7 +286,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           type="button"
           onClick={() => onChange(star)}
           className={`text-lg transition transform hover:scale-110 ${
-            star <= value ? 'text-amber-400' : 'text-slate-200'
+            star <= value ? "text-amber-400" : "text-slate-200"
           }`}
         >
           ★

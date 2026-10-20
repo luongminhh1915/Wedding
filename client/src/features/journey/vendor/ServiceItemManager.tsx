@@ -1,0 +1,33 @@
+import { MoneyInput } from "../../../components/MoneyInput";
+import type { ListingPricingOption } from "../../../types/listing.types";
+import { listingPricingValues, type ListingPricingEditor } from "../../vendor-portal/components/listingPricingModel";
+
+/** Pricing and legacy children share the parent service's save and approval. */
+export function ServiceItemManager({ value, onChange, options = [], selectionRequired = false, disabled = false, error = "", open = false }: {
+  value: ListingPricingEditor; onChange: (value: ListingPricingEditor) => void; options?: ListingPricingOption[];
+  selectionRequired?: boolean; disabled?: boolean; error?: string; open?: boolean;
+}) {
+  return <details open={open || !!error} className="rounded-2xl border border-[#e4dfcf] bg-[#faf8f0] p-4">
+    <summary className="cursor-pointer text-sm font-semibold text-[#25334c]">Giá bán lẻ, biến thể và món kèm của dịch vụ</summary>
+    <p className="mt-3 text-xs leading-relaxed text-slate-600">Thiết lập một lần tại dịch vụ này. Sau khi dịch vụ được duyệt và đang hoạt động, bạn có thể chọn vào nhiều combo trong Combo của tôi.</p>
+    {selectionRequired && <label className="mt-3 block"><span className="label">Chọn cấu hình giá cũ cần chỉnh sửa</span><select className="input" value={value.serviceItemId ?? ""} disabled={disabled} onChange={event => { const item = options.find(option => option.id === event.target.value); onChange(listingPricingValues(item ? { ...item, serviceItemId: item.id } : null)); }}><option value="">Giữ nguyên tất cả cấu hình cũ</option>{options.map(item => <option key={item.id} value={item.id}>{item.name} · {item.basePrice.toLocaleString("vi-VN")} VNĐ / {item.unit}</option>)}</select><p className="mt-1 text-xs text-amber-900">Chọn cấu hình sẽ dùng làm giá của dịch vụ. Các cấu hình cũ khác và giao dịch đã chốt được giữ nguyên.</p></label>}
+    <fieldset disabled={disabled || selectionRequired && !value.serviceItemId} className="mt-4 grid gap-3 sm:grid-cols-2 disabled:opacity-60">
+      <legend className="sr-only">Cấu hình giá của dịch vụ</legend>
+      <label><span className="label">Giá bán lẻ chính xác (VNĐ)</span><MoneyInput aria-label="Giá bán lẻ chính xác của dịch vụ" className="input" min={0} max={100000000000} fractionDigits={0} value={value.basePrice} onValueChange={basePrice => onChange({ ...value, basePrice })} /></label>
+      <label><span className="label">Đơn vị giá</span><select className="input" value={value.unit} onChange={event => onChange({ ...value, unit: event.target.value })}><option value="Package">Gói</option><option value="Table">Bàn (10 khách)</option><option value="Guest">Khách</option><option value="Hour">Giờ</option></select></label>
+      <label><span className="label">Số khách tối thiểu</span><input className="input" type="number" min={1} value={value.minGuests} onChange={event => onChange({ ...value, minGuests: Number(event.target.value) })} /></label>
+      <label><span className="label">Số khách tối đa</span><input className="input" type="number" min={1} value={value.maxGuests} onChange={event => onChange({ ...value, maxGuests: Number(event.target.value) })} /></label>
+      <label><span className="label">Số đơn tối đa mỗi ngày</span><input className="input" type="number" min={1} max={100} value={value.maxBookingsPerDay} onChange={event => onChange({ ...value, maxBookingsPerDay: Number(event.target.value) })} /></label>
+      <label><span className="label">Khu vực phục vụ (* = toàn quốc)</span><input className="input" maxLength={1000} value={value.regions} onChange={event => onChange({ ...value, regions: event.target.value })} /></label>
+      <label className="sm:col-span-2"><span className="label">Chính sách hủy (để trống để giữ chính sách của dịch vụ)</span><textarea className="input" maxLength={4000} rows={2} value={value.cancellationPolicy ?? ""} onChange={event => onChange({ ...value, cancellationPolicy: event.target.value })} /></label>
+      <details className="sm:col-span-2"><summary className="cursor-pointer text-sm font-semibold">Biến thể ({value.variants.length}) và món kèm ({value.addOns.length})</summary>
+        <p className="mt-2 text-xs text-slate-500">Thông tin đã có được giữ cùng mã định danh khi lưu. Chỉ bỏ mục khi bạn muốn xóa khỏi cấu hình hiện tại.</p>
+        {value.variants.map((variant, index) => <div key={variant.id ?? index} className="mt-3 grid gap-2 sm:grid-cols-[1fr_160px_auto]"><input aria-label="Tên biến thể" className="input" maxLength={200} value={variant.name} onChange={event => onChange({ ...value, variants: value.variants.map((item, at) => at === index ? { ...item, name: event.target.value } : item) })} /><MoneyInput aria-label="Giá chênh biến thể" className="input" fractionDigits={0} min={-100000000000} value={variant.priceDelta} onValueChange={priceDelta => onChange({ ...value, variants: value.variants.map((item, at) => at === index ? { ...item, priceDelta: priceDelta ?? 0 } : item) })} /><button type="button" className="text-xs underline" onClick={() => onChange({ ...value, variants: value.variants.filter((_, at) => at !== index) })}>Bỏ biến thể</button></div>)}
+        <button type="button" className="btn btn-outline mt-3" disabled={value.variants.length >= 20} onClick={() => onChange({ ...value, variants: [...value.variants, { name: "", priceDelta: 0 }] })}>+ Biến thể</button>
+        {value.addOns.map((addOn, index) => <div key={addOn.id ?? index} className="mt-3 grid gap-2 sm:grid-cols-2"><input aria-label="Tên món kèm" className="input" maxLength={200} value={addOn.name} onChange={event => onChange({ ...value, addOns: value.addOns.map((item, at) => at === index ? { ...item, name: event.target.value } : item) })} /><MoneyInput aria-label="Giá món kèm" className="input" min={0} fractionDigits={0} value={addOn.price} onValueChange={price => onChange({ ...value, addOns: value.addOns.map((item, at) => at === index ? { ...item, price: price ?? 0 } : item) })} /><label className="text-xs"><input type="checkbox" checked={addOn.perUnit} onChange={event => onChange({ ...value, addOns: value.addOns.map((item, at) => at === index ? { ...item, perUnit: event.target.checked } : item) })} /> Nhân theo số lượng</label><button type="button" className="text-left text-xs underline" onClick={() => onChange({ ...value, addOns: value.addOns.filter((_, at) => at !== index) })}>Bỏ món kèm</button></div>)}
+        <button type="button" className="btn btn-outline mt-3" disabled={value.addOns.length >= 30} onClick={() => onChange({ ...value, addOns: [...value.addOns, { name: "", price: 0, perUnit: false }] })}>+ Món kèm</button>
+      </details>
+    </fieldset>
+    {error && <p role="alert" className="mt-3 text-xs text-red-700">{error}</p>}
+  </details>;
+}

@@ -9,7 +9,8 @@ namespace Wedding.Application.Features.Contracts.Queries.GetCustomerContracts;
 
 public record GetCustomerContractsQuery(
     int PageNumber = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    List<Guid>? Ids = null
 ) : IRequest<List<ContractDto>>;
 
 public class GetCustomerContractsQueryHandler : IRequestHandler<GetCustomerContractsQuery, List<ContractDto>>
@@ -34,7 +35,7 @@ public class GetCustomerContractsQueryHandler : IRequestHandler<GetCustomerContr
             .Include(c => c.Lead)
             .Include(c => c.Voucher)
             .Include(c => c.Commissions)
-            .Where(c => c.CustomerId == userId)
+            .Where(c => c.CustomerId == userId && (request.Ids == null || request.Ids.Contains(c.Id)))
             .OrderByDescending(c => c.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -70,7 +71,12 @@ public class GetCustomerContractsQueryHandler : IRequestHandler<GetCustomerContr
                 CommissionAmount: cm.CommissionAmount,
                 DueDate: cm.DueDate,
                 Status: cm.Status.ToString()
-            )).ToList()
-        )).ToList();
+            )).ToList(),
+            CancellationPolicySnapshot: c.CancellationPolicySnapshot,
+            CommissionRateSnapshot: c.CommissionRateSnapshot,
+            RejectReason: c.RejectReason,
+            RevisionCount: c.RevisionCount,
+            AppointmentDepositCredit: c.AppointmentDepositCredit
+        ).WithCategorySnapshot(c)).ToList();
     }
 }

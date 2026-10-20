@@ -15,11 +15,15 @@ public class ListingConfiguration : IEntityTypeConfiguration<Listing>
         builder.Property(l => l.Slug).HasMaxLength(250).IsRequired();
         builder.Property(l => l.Location).HasMaxLength(200).IsRequired();
         builder.Property(l => l.Description).HasMaxLength(4000).IsRequired();
+        // SQL Server maps this Unicode length to nvarchar(max); SQLite tests keep their native TEXT mapping.
+        builder.Property(l => l.ServiceDetailsJson).HasMaxLength(60000);
 
         builder.Property(l => l.MinPrice).HasPrecision(18, 2);
         builder.Property(l => l.MaxPrice).HasPrecision(18, 2);
 
         builder.Property(l => l.Status).HasConversion<string>().HasMaxLength(30).IsRequired();
+        builder.Property(l => l.IsActive).HasDefaultValue(true);
+        builder.Property(l => l.PricingServiceItemId);
         builder.Property(l => l.RejectionReason).HasMaxLength(1000);
 
         builder.HasIndex(l => l.Slug);

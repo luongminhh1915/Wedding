@@ -21,10 +21,10 @@ public class ReviewsController : ControllerBase
 
     /// <summary>
     /// [Customer] Gửi đánh giá dịch vụ cưới.
-    /// Nếu có BookingContractId ở trạng thái Completed sẽ tự động được gắn nhãn Verified Buyer (BR-009).
+    /// Chỉ nhận đánh giá mới cho hợp đồng đúng khách/dịch vụ và đã Completed; không nhận đánh giá tư vấn mới.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SubmitReview([FromBody] SubmitReviewCommand command)
     {
         var result = await _mediator.Send(command);
@@ -35,7 +35,7 @@ public class ReviewsController : ControllerBase
     /// [Customer] Lấy danh sách hợp đồng đã hoàn tất của tôi để chọn viết đánh giá Verified.
     /// </summary>
     [HttpGet("eligible-contracts")]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetEligibleContracts()
     {
         var result = await _mediator.Send(new GetEligibleContractsQuery());

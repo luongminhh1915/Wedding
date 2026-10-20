@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Activity,
   DollarSign,
@@ -6,52 +6,99 @@ import {
   Layers,
   ShieldCheck,
   Users,
+  BadgeCheck,
+  Gavel,
+  Receipt,
+  RefreshCw,
 } from "lucide-react";
+import {
+  AdminKpiPanel,
+  DisputeDesk,
+  VerificationQueue,
+} from "../journey/admin/AdminJourneyPanels";
+import { SettlementsPanel } from "../journey/admin/FinancialLedgerPanel";
+import { ArticleCms, EmergencyMatchingPanel } from "../journey/admin/OperationsPanels";
+import { ComboAdministration } from "../journey/admin/ComboAdministration";
 import { useAuthStore } from "../../store/authStore";
 import ModerationQueue from "./ModerationQueue";
 import UserManagement from "./UserManagement";
 import AllListingsManager from "./AllListingsManager";
 import FinancialDashboard from "./FinancialDashboard";
-import { usePendingListings } from "../vendor-portal/hooks/useListings";
+import { useModerationQueue } from "./useModerationQueue";
+import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
 
 const tabs = [
+  {
+    id: "overview",
+    label: "Tổng quan",
+    icon: Activity,
+    description: "KPI vận hành: GMV, chuyển đổi Lead → HĐ, SLA, tranh chấp, nhật ký thao tác.",
+    roles: ["SuperAdmin", "Finance", "Moderator", "CustomerCare"],
+  },
   {
     id: "moderation",
     label: "Kiểm duyệt",
     icon: FileCheck,
-    description: "Xem xét bài đăng và đánh giá từ cộng đồng.",
+    description: "Hàng chờ chung cho bài giới thiệu, dịch vụ thành phần và combo của nhà cung cấp.",
+    roles: ["SuperAdmin", "Moderator"],
   },
   {
     id: "published-listings",
     label: "Gói dịch vụ",
     icon: Layers,
     description: "Theo dõi và quản lý các gói dịch vụ trên nền tảng.",
+    roles: ["SuperAdmin", "Moderator"],
   },
   {
     id: "users",
     label: "Người dùng & đối tác",
     icon: Users,
     description: "Kiểm tra thông tin và quản lý trạng thái tài khoản.",
+    roles: ["SuperAdmin"],
   },
   {
     id: "finance",
     label: "Tài chính & đối soát",
     icon: DollarSign,
     description: "Tổng hợp hợp đồng, tiền cọc và hoa hồng của nhà cung cấp.",
+    roles: ["SuperAdmin", "Finance"],
   },
   {
-    id: "analytics",
-    label: "Báo cáo GMV",
-    icon: Activity,
-    description: "Báo cáo hoạt động của nền tảng.",
+    id: "settlements",
+    label: "Bảng kê tháng",
+    icon: Receipt,
+    description: "Bảng kê, giao dịch ngân hàng, hàng chờ đối soát và hóa đơn có chứng từ thật.",
+    roles: ["SuperAdmin", "Finance"],
   },
+  {
+    id: "verifications",
+    label: "Xác minh NCC",
+    icon: BadgeCheck,
+    description: "Duyệt hồ sơ pháp lý để cấp huy hiệu “Đã xác minh”.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "disputes",
+    label: "Tranh chấp",
+    icon: Gavel,
+    description: "Xử lý sự cố hợp đồng giữa cặp đôi và nhà cung cấp trong 72 giờ.",
+    roles: ["SuperAdmin", "CustomerCare", "Finance"],
+  },
+  { id: "change-requests", label: "Yêu cầu thay đổi / hủy", icon: RefreshCw, description: "Tiếp nhận đề nghị sau khi NCC phản hồi; không tự thay hợp đồng hoặc hoàn tiền.", roles: ["SuperAdmin", "Finance"] },
+  { id: "cms", label: "Cẩm nang CMS", icon: FileCheck, description: "Tạo, chỉnh sửa, xuất bản và ghim dịch vụ vào bài viết.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "combos", label: "Combo & ưu đãi", icon: Layers, description: "Mẫu combo, duyệt dịch vụ và cấu hình giảm giá.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "emergency", label: "Hỗ trợ khẩn cấp", icon: ShieldCheck, description: "Tạo yêu cầu NCC thay thế cho hợp đồng đang tranh chấp.", roles: ["SuperAdmin", "CustomerCare"] },
 ] as const;
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] =
-    useState<(typeof tabs)[number]["id"]>("moderation");
-  const { data: pendingListings = [] } = usePendingListings();
+  const [params, setParams] = useSearchParams();
+  const visibleTabs = tabs.filter(
+    (tab) => !("roles" in tab) || (tab.roles as readonly string[]).includes(user?.role ?? ""),
+  );
+  const activeTab = visibleTabs.find(tab => tab.id === params.get("tab"))?.id ?? "overview";
+  const setActiveTab = (tab: (typeof tabs)[number]["id"]) => setParams(tab === "overview" ? {} : { tab });
+  const { data: moderation } = useModerationQueue({ type: "all", status: "Pending", search: "", page: 1, pageSize: 1 });
   const current = tabs.find((tab) => tab.id === activeTab)!;
   return (
     <main className="portal-shell">
@@ -66,7 +113,7 @@ export default function AdminDashboard() {
         <span>{user?.role}</span>
       </div>
       <nav className="planner-tabs" aria-label="Quản trị hệ thống">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {visibleTabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             className={activeTab === id ? "active" : ""}
@@ -75,9 +122,9 @@ export default function AdminDashboard() {
           >
             <Icon size={17} />
             {label}
-            {id === "moderation" && pendingListings.length > 0 && (
+            {id === "moderation" && (moderation?.pendingCount ?? 0) > 0 && (
               <span className="bg-amber-100 text-amber-700 text-[9px] rounded-full px-2 py-0.5">
-                {pendingListings.length}
+                {moderation?.pendingCount}
               </span>
             )}
           </button>
@@ -92,22 +139,14 @@ export default function AdminDashboard() {
         {activeTab === "published-listings" && <AllListingsManager />}
         {activeTab === "users" && <UserManagement />}
         {activeTab === "finance" && <FinancialDashboard />}
-        {activeTab === "analytics" && (
-          <div className="overview-panel text-center py-16">
-            <Activity size={30} className="text-rose-300 mx-auto mb-5" />
-            <h2>Báo cáo đang được phát triển</h2>
-            <p>
-              Hiện tại, bạn có thể xem tổng hợp giao dịch tại Tài chính & đối
-              soát.
-            </p>
-            <button
-              onClick={() => setActiveTab("finance")}
-              className="wm-button small mt-6"
-            >
-              Xem dữ liệu tài chính
-            </button>
-          </div>
-        )}
+        {activeTab === "overview" && <AdminKpiPanel />}
+        {activeTab === "settlements" && <SettlementsPanel />}
+        {activeTab === "verifications" && <VerificationQueue />}
+        {activeTab === "disputes" && <DisputeDesk />}
+        {activeTab === "change-requests" && <OrderRequestInbox audience="finance" />}
+        {activeTab === "cms" && <ArticleCms />}
+        {activeTab === "emergency" && <EmergencyMatchingPanel />}
+        {activeTab === "combos" && <ComboAdministration />}
       </div>
     </main>
   );

@@ -24,6 +24,8 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken)
             ?? throw new NotFoundException("Người dùng", request.UserId);
 
+        if (!user.IsActive) throw new Wedding.Domain.Exceptions.DomainException("Tài khoản đang bị khóa. Vui lòng liên hệ hỗ trợ.");
+
         return new UserDto(
             user.Id,
             user.FullName,

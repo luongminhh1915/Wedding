@@ -9,80 +9,13 @@ namespace Wedding.Application.Features.Reviews.Commands.ApproveReview;
 
 public class ApproveReviewCommandHandler : IRequestHandler<ApproveReviewCommand, ReviewDto>
 {
-    private readonly IApplicationDbContext _context;
-
-    public ApproveReviewCommandHandler(IApplicationDbContext context)
+    private readonly IApplicationDbContext _db;
+    public ApproveReviewCommandHandler(IApplicationDbContext db) => _db = db;
+    public Task<ReviewDto> Handle(ApproveReviewCommand r, CancellationToken ct) => _db.ExecuteSerializableAsync(token => ApproveAsync(r, token), ct);
+    private async Task<ReviewDto> ApproveAsync(ApproveReviewCommand r, CancellationToken ct)
     {
-        _context = context;
-    }
-
-    public async Task<ReviewDto> Handle(ApproveReviewCommand request, CancellationToken cancellationToken)
-    {
-        var review = await _context.Reviews
-            .Include(r => r.Customer)
-            .Include(r => r.Vendor)
-            .Include(r => r.Listing)
-            .Include(r => r.BookingContract)
-            .FirstOrDefaultAsync(r => r.Id == request.ReviewId, cancellationToken)
-            ?? throw new DomainException("Bài đánh giá không tồn tại.");
-
-        // Chuyển trạng thái sang Approved
-        review.Approve();
-
-        // FM-005: Tính lại điểm uy tín trung bình của Nhà cung cấp (Vendor Rating Average)
-        // Rating_Avg = Sum(Rating_i * W_i) / Sum(W_i)
-        // Trong đó W_i = 1.0 cho Verified Buyer, W_i = 0.5 cho đánh giá thường
-        var vendorReviews = await _context.Reviews
-            .Where(r => r.VendorId == review.VendorId && (r.Status == ReviewStatus.Approved || r.Id == review.Id))
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        decimal totalWeightedScore = 0;
-        decimal totalWeight = 0;
-
-        foreach (var r in vendorReviews)
-        {
-            var weight = r.IsVerifiedBuyer ? 1.0m : 0.5m;
-            totalWeightedScore += r.Rating * weight;
-            totalWeight += weight;
-        }
-
-        var newRatingAvg = 5.0m;
-        if (totalWeight > 0)
-        {
-            var calculated = totalWeightedScore / totalWeight;
-            // Làm tròn tới 1 chữ số thập phân theo FM-005 (VD: 4.8 / 5.0)
-            newRatingAvg = Math.Round(calculated, 1, MidpointRounding.AwayFromZero);
-        }
-
-        var vendor = await _context.Vendors
-            .FirstOrDefaultAsync(v => v.Id == review.VendorId, cancellationToken);
-
-        if (vendor != null)
-        {
-            vendor.UpdateRating(newRatingAvg, vendorReviews.Count);
-        }
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return new ReviewDto(
-            Id: review.Id,
-            BookingContractId: review.BookingContractId,
-            ContractCode: review.BookingContract?.ContractCode,
-            ListingId: review.ListingId,
-            ListingTitle: review.Listing.Title,
-            CustomerId: review.CustomerId,
-            CustomerName: review.Customer.FullName,
-            VendorId: review.VendorId,
-            VendorBrandName: review.Vendor.BrandName,
-            Rating: review.Rating,
-            Content: review.Content,
-            PhotosJson: review.PhotosJson,
-            IsVerifiedBuyer: review.IsVerifiedBuyer,
-            Status: review.Status.ToString(),
-            VendorReply: review.VendorReply,
-            VendorRepliedAt: review.VendorRepliedAt,
-            CreatedAt: review.CreatedAt
-        );
+        var review = await _db.Reviews.Include(x => x.Customer).Include(x => x.Vendor).Include(x => x.Listing).Include(x => x.BookingContract).FirstOrDefaultAsync(x => x.Id == r.ReviewId, ct) ?? throw new NotFoundException("Đánh giá không tồn tại.");
+        if (await _db.BookingContracts.AnyAsync(c => c.CustomerId == review.CustomerId && c.VendorId == review.VendorId && c.Lead.ListingId == review.ListingId && c.Status == ContractStatus.Disputed, ct)) throw new DomainException("Tạm dừng duyệt đánh giá trong thời gian tranh chấp.");
+        review.Approve(); await _db.SaveChangesAsync(ct); await ReviewRules.RefreshVendorAsync(_db, review.VendorId, ct); await _db.SaveChangesAsync(ct); return ReviewRules.Dto(review);
     }
 }

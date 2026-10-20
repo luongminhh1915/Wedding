@@ -8,6 +8,7 @@ import { useSettlement } from '../hooks/useSettlement';
 import { VietQrModal } from './VietQrModal';
 import { CommissionAdvanceModal, type CommissionAdvanceRecord } from './CommissionAdvanceModal';
 import type { CommissionItem, AdvancePaymentNotice } from '../../../types/commission.types';
+import { VendorSettlementLedger } from '../../journey/admin/FinancialLedgerPanel';
 
 interface GroupedSettlementContract {
   contractCode: string;
@@ -77,10 +78,10 @@ export function SettlementDashboard() {
 
     for (const item of statement.items) {
       const key = item.contractCode;
-      const isPaid = item.status === 'Paid';
+      const isPaid = item.status === 'Paid' || item.status === 'Settled';
       const isOverdue = item.status === 'Overdue';
-      const paid = isPaid ? item.commissionAmount : 0;
-      const pending = isPaid ? 0 : item.commissionAmount;
+      const paid = item.paidAmount ?? (isPaid ? item.commissionAmount : 0);
+      const pending = ['Pending', 'Unsettled', 'InSettlement', 'Overdue'].includes(item.status) ? Math.max(0, item.commissionAmount - paid) : 0;
 
       if (!map.has(key)) {
         map.set(key, {
@@ -186,6 +187,7 @@ export function SettlementDashboard() {
 
   return (
     <div className="space-y-6">
+      <VendorSettlementLedger />
       {/* Advance Payment Success Notice */}
       {advanceSuccessNotice && (
         <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md flex items-center justify-between gap-3 animate-in fade-in duration-300">

@@ -55,5 +55,6 @@ export interface RegisterVendorRequest {
   password: string;
   brandName: string;
   city: string;
-  commissionRate: number;
+  businessGroupIds: string[];
+  partnershipPolicyAccepted: true;
 }

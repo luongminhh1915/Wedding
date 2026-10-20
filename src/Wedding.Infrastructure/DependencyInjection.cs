@@ -16,11 +16,10 @@ public static class DependencyInjection
         IConfiguration configuration,
         IHostEnvironment hostEnvironment)
     {
-        var databaseProvider = configuration["Database:Provider"]
-            ?? configuration["DatabaseProvider"]
-            ?? "Sqlite";
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
-            ?? "Data Source=WeddingPlatformDb.db";
+        var databasePolicy = DatabaseStartupPolicy.FromConfiguration(configuration, hostEnvironment);
+        services.AddSingleton(databasePolicy);
+        var databaseProvider = databasePolicy.Provider;
+        var connectionString = databasePolicy.ConnectionString;
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -63,7 +62,15 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddSingleton<IVietQrService, VietQrService>();
-        services.AddSingleton<IAdvancePaymentService, AdvancePaymentService>();
+        services.AddScoped<IAdvancePaymentService, AdvancePaymentService>(); // P0: lưu DB thay vì bộ nhớ
+        services.AddScoped<IAuditLogger, AuditLogger>();
+        services.AddScoped<INotificationSender, DurableNotificationSender>();
+        services.AddSingleton<SmtpDelivery>();
+        services.AddSingleton<IOtpDelivery>(provider => provider.GetRequiredService<SmtpDelivery>());
+        services.AddHttpClient("identity", client => client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
+        services.AddSingleton<IMockPaymentGateway, MockPaymentGateway>();
+        services.AddScoped<IBillingService, PaymentLedgerService>();
 
         // Đăng ký CurrentUserService — đọc UserId từ JWT claims
         services.AddHttpContextAccessor();
@@ -77,6 +84,11 @@ public static class DependencyInjection
 
         // Đăng ký Background Worker đối soát hoa hồng và xử lý trễ hạn (BR-007)
         services.AddHostedService<MonthlySettlementBackgroundService>();
+
+        // P3: tự hết hạn lịch hẹn chờ cọc/chờ duyệt quá giờ
+        services.AddHostedService<AppointmentHousekeepingBackgroundService>();
+        services.AddHostedService<NotificationBackgroundService>();
+        services.AddHostedService<ReleasePeriod2BackgroundService>();
 
         return services;
     }

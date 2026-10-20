@@ -6,12 +6,19 @@ import {
 import { useVendorContracts } from '../hooks/useVendorContracts';
 import type { Contract } from '../../../types/contract.types';
 import { AdvancePaymentModal, type AdvancePaymentRecord } from './AdvancePaymentModal';
+import { ContractRevisionActions } from './ContractRevisionActions';
+import { useSearchParams } from 'react-router-dom';
+import { requestedNotificationFocus, useNotificationFocus } from '../../notifications/useNotificationFocus';
+import { ContractCategorySummary } from '../../contracts/ContractCategorySummary';
 
 const ADVANCE_STORAGE_KEY = 'wedding_vendor_advance_requests';
 
 export function ContractList() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const { data: contracts = [], isLoading, isError, refetch } = useVendorContracts(selectedStatus || undefined);
+  const [params] = useSearchParams();
+  const requestedFocus = requestedNotificationFocus(params, 'contract');
+  const { data: contracts = [], isLoading, isError, refetch } = useVendorContracts(selectedStatus || undefined, requestedFocus ?? undefined);
+  const { focusId, missing, clearFocus } = useNotificationFocus('contract', contracts.map(contract => contract.id), !isLoading && !isError);
 
   // State for Advance Payment Modal
   const [selectedContractForAdvance, setSelectedContractForAdvance] = useState<Contract | null>(null);
@@ -159,9 +166,9 @@ export function ContractList() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setSelectedStatus(tab.id)}
+            onClick={() => { setSelectedStatus(tab.id); clearFocus(); }}
             className={`px-3.5 py-2 rounded-xl transition cursor-pointer ${
-              selectedStatus === tab.id
+              (requestedFocus ? '' : selectedStatus) === tab.id
                 ? 'bg-rose-500 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -172,6 +179,7 @@ export function ContractList() {
       </div>
 
       {/* Content */}
+      {focusId && <p role="status" className="text-sm text-slate-500">{missing ? 'Hợp đồng trong thông báo không còn khả dụng trong tài khoản của bạn.' : 'Đang xem hợp đồng liên quan đến thông báo.'} <button type="button" className="underline" onClick={clearFocus}>Xem tất cả hợp đồng</button></p>}
       {isLoading ? (
         <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
           <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-3" />
@@ -201,6 +209,9 @@ export function ContractList() {
             return (
               <div
                 key={contract.id}
+                id={`notification-contract-${contract.id}`}
+                tabIndex={-1}
+                data-notification-focus={focusId === contract.id}
                 className="bg-white rounded-2xl border border-slate-100 hover:border-purple-100 transition shadow-sm p-5 space-y-4"
               >
                 {/* Header */}
@@ -273,6 +284,8 @@ export function ContractList() {
                   </div>
                 </div>
 
+                <ContractCategorySummary contract={contract} showCommissionPolicy />
+
                 {/* Banner Thông Báo Yêu Cầu Xin Thanh Toán Trước Đã Gửi */}
                 {advanceRecord && (
                   <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -318,8 +331,8 @@ export function ContractList() {
 
                 {/* Hoa hồng đã sinh tự động */}
                 {contract.commissions && contract.commissions.length > 0 && (() => {
-                  const paid = contract.commissions.filter(c => c.status === 'Paid').reduce((s, c) => s + c.commissionAmount, 0);
-                  const pending = contract.commissions.filter(c => c.status !== 'Paid').reduce((s, c) => s + c.commissionAmount, 0);
+                  const paid = contract.commissions.filter(c => c.status === 'Paid' || c.status === 'Settled').reduce((s, c) => s + c.commissionAmount, 0);
+                  const pending = contract.commissions.filter(c => ['Pending', 'Unsettled', 'InSettlement', 'Overdue'].includes(c.status)).reduce((s, c) => s + c.commissionAmount, 0);
                   const total = paid + pending;
 
                   const isFullyPaid = pending === 0 && paid > 0;
@@ -342,7 +355,7 @@ export function ContractList() {
                           </span>
                         )}
                         <span className="text-[10px] text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">
-                          Hạn thanh toán: Ngày 25
+                          Chốt ngày 25 · trả trước ngày 30 · K2 khóa đến sau cưới 3 ngày
                         </span>
                       </div>
 
@@ -382,6 +395,7 @@ export function ContractList() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <ContractRevisionActions contract={contract} onSuccess={() => { void refetch(); }} />
                     <button
                       onClick={() => handleOpenAdvanceModal(contract)}
                       disabled={contract.status === 'Cancelled'}

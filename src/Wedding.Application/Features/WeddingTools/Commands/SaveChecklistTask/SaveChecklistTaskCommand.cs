@@ -4,6 +4,7 @@ using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.WeddingTools.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.WeddingTools.Commands.SaveChecklistTask;
 
@@ -12,7 +13,8 @@ public record SaveChecklistTaskCommand(
     string Title,
     string Milestone,
     DateTime? DueDate = null,
-    string? Notes = null
+    string? Notes = null,
+    string? Owner = null
 ) : IRequest<ChecklistTaskDto>;
 
 public class SaveChecklistTaskCommandHandler : IRequestHandler<SaveChecklistTaskCommand, ChecklistTaskDto>
@@ -28,8 +30,8 @@ public class SaveChecklistTaskCommandHandler : IRequestHandler<SaveChecklistTask
 
     public async Task<ChecklistTaskDto> Handle(SaveChecklistTaskCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để thêm công việc.");
+        var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
+        var userId = scope.OwnerId;
 
         ChecklistTask task;
 
@@ -54,6 +56,8 @@ public class SaveChecklistTaskCommandHandler : IRequestHandler<SaveChecklistTask
             _context.ChecklistTasks.Add(task);
         }
 
+        task.AssignOwner(request.Owner ?? task.Owner);
+        if (scope.ProfileId.HasValue) task.AttachToWedding(scope.ProfileId.Value, task.Owner);
         await _context.SaveChangesAsync(cancellationToken);
 
         return new ChecklistTaskDto(
@@ -63,7 +67,7 @@ public class SaveChecklistTaskCommandHandler : IRequestHandler<SaveChecklistTask
             DueDate: task.DueDate,
             IsCompleted: task.IsCompleted,
             Notes: task.Notes,
-            CreatedAt: task.CreatedAt
+            CreatedAt: task.CreatedAt, Owner: task.Owner, WeddingProfileId: task.WeddingProfileId, ContractId: task.ContractId
         );
     }
 }

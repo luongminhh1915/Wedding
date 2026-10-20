@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
+import { Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { QuickLogin } from "../../journey/planner/QuickLogin";
+import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
 
-export default function LoginForm() {
+export default function LoginForm({ embedded = false, onComplete }: { embedded?: boolean; onComplete?: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { login, isLoggingIn } = useAuth();
   const navigate = useNavigate();
@@ -13,27 +16,14 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoggingIn) return;
     setErrorMessage("");
 
     try {
-      const res = await login({ email, password });
-      // Điều hướng theo phân quyền RBAC
-      if (res.user.role === "VendorOwner") {
-        navigate("/vendor/dashboard");
-      } else if (
-        ["Moderator", "Finance", "CustomerCare", "SuperAdmin"].includes(
-          res.user.role,
-        )
-      ) {
-        navigate("/admin/dashboard");
-      } else {
-        const returnTo = (location.state as { from?: string } | null)?.from;
-        navigate(
-          returnTo?.startsWith("/customer/") || returnTo?.startsWith("/planner")
-            ? returnTo
-            : "/customer/dashboard",
-        );
-      }
+      await login({ email: email.trim(), password });
+      onComplete?.();
+      const returnTo = safeReturnPath((location.state as { from?: string } | null)?.from) ?? useIntentStore.getState().returnTo;
+      navigate("/auth/continue", { replace: true, state: { from: returnTo } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setErrorMessage(
@@ -44,8 +34,8 @@ export default function LoginForm() {
   };
 
   return (
-    <main className="auth-page">
-      <div className="auth-story">
+    <main className={embedded ? "auth-modal-content" : "auth-page"}>
+      <div className="auth-story" hidden={embedded}>
         <span className="wm-eyebrow">CHÀO MỪNG ĐẾN VỚI WEDDING MATCH</span>
         <h1>
           Mọi thứ cho
@@ -61,15 +51,16 @@ export default function LoginForm() {
       <div className="auth-card">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <h2>Hẹn gặp lại, hai bạn!</h2>
+          <h2>Chào mừng bạn trở lại!</h2>
           <p className="text-xs text-slate-400 mt-3">
-            Đăng nhập để mở không gian cưới của bạn
+            Một tài khoản, đúng không gian theo vai trò của bạn
           </p>
         </div>
 
         {/* Error Alert */}
+        {(location.state as { passwordChanged?: boolean } | null)?.passwordChanged && <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Đã đổi mật khẩu. Vui lòng đăng nhập lại bằng mật khẩu mới.</p>}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-sm">
+          <div role="alert" className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
@@ -86,6 +77,7 @@ export default function LoginForm() {
                 type="email"
                 aria-label="Email đăng nhập"
                 autoComplete="username"
+                maxLength={150}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -102,15 +94,16 @@ export default function LoginForm() {
             <div className="relative">
               <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 aria-label="Mật khẩu"
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition"
+                className="w-full pl-11 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition"
               />
+              <button type="button" aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} aria-pressed={showPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
             </div>
           </div>
 
@@ -129,6 +122,8 @@ export default function LoginForm() {
             )}
           </button>
         </form>
+        <QuickLogin onComplete={onComplete} />
+        <p className="text-xs text-slate-500 mt-4 leading-relaxed">Khách hàng, nhà cung cấp và nhân sự dùng chung trang đăng nhập. Tài khoản kiểm duyệt, kế toán, CSKH do quản trị viên cấp; không đăng ký quyền nội bộ tại đây.</p>
 
         {/* Quick Test Accounts Box */}
         {import.meta.env.DEV && (
@@ -204,6 +199,7 @@ export default function LoginForm() {
           <Link
             to="/register"
             state={location.state}
+            onClick={onComplete}
             className="font-semibold text-rose-600 hover:text-rose-700 transition"
           >
             Đăng ký ngay

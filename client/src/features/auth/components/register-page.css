@@ -1,0 +1,40 @@
+.auth-register .auth-card { width: 100%; }
+.wm-register-context { margin: 0 0 20px; padding: 12px 15px; border-radius: 14px; background: #f8f5e9; color: #59647a; font-size: 12px; line-height: 1.7; }
+.wm-province-field { position: relative; min-width: 0; }
+.wm-province-field > label { display: block; margin-bottom: 6px; color: #334155; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em; }
+.wm-province-input { display: flex; align-items: center; gap: 8px; padding-inline: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; color: #69778b; }
+.wm-province-input:focus-within { outline: 2px solid #c9a740; outline-offset: 1px; background: white; }
+.wm-province-input > svg { flex: none; }
+.wm-province-input > input { min-width: 0; width: 100%; padding: 11px 0; border: 0; background: transparent; color: #25334c; font-size: 14px; outline: 0; }
+.wm-province-input:has(input[aria-invalid="true"]) { border-color: #be4343; }
+.wm-province-menu { position: absolute; z-index: 20; inset: auto 0; margin-top: 5px; border: 1px solid #d9dee5; border-radius: 12px; background: #fff; box-shadow: 0 12px 28px #25334c20; overflow: hidden; }
+.wm-province-menu ul { max-height: 230px; max-height: min(230px, 35dvh); margin: 0; padding: 5px; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.wm-province-menu li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; padding: 10px 12px; border-radius: 8px; color: #25334c; font-size: 14px; cursor: pointer; }
+.wm-province-menu li[data-active="true"], .wm-province-menu li:hover { background: #f5f2e7; }
+.wm-province-menu li[aria-selected="true"] { font-weight: 650; }
+.wm-province-menu > p { padding: 14px; font-size: 13px; color: #68758a; }
+.wm-province-menu > small { display: block; padding: 9px 12px; border-top: 1px solid #edf0f3; color: #68758a; background: #fafafa; font-size: 10px; }
+.wm-province-hint { margin-top: 6px; color: #64748b; font-size: 12px; line-height: 1.6; }
+.wm-registration-error { margin-top: 6px; color: #b91c1c; font-size: 12px; }
+.wm-business-group-options { display: grid; gap: 8px; max-height: 330px; overflow-y: auto; padding: 3px; overscroll-behavior: contain; }
+.wm-business-group-option { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; cursor: pointer; }
+.wm-business-group-option[data-selected="true"] { border-color: #b5a46c; background: #faf8ef; }
+.wm-business-group-option input, .wm-policy-acknowledgment input { flex: none; margin-top: 3px; width: 17px; height: 17px; accent-color: #25334c; }
+.wm-business-group-option input:focus-visible, .wm-policy-acknowledgment input:focus-visible { outline: 2px solid #c9a740; outline-offset: 3px; }
+.wm-business-group-option > span { flex: 1; min-width: 0; }
+.wm-business-group-option strong { display: block; color: #25334c; font-size: 13px; line-height: 1.5; }
+.wm-business-group-option small { display: block; margin-top: 4px; color: #64748b; font-size: 11px; line-height: 1.5; }
+.wm-business-group-option > b { flex: none; color: #25334c; font-size: 14px; white-space: nowrap; }
+.wm-business-group-summary { margin-top: 12px; padding: 12px; border-radius: 12px; background: #f5f2e8; color: #59647a; font-size: 12px; line-height: 1.6; }
+.wm-business-group-summary dl { margin-top: 8px; }
+.wm-business-group-summary dl > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 5px; }
+.wm-business-group-summary dd { flex: none; font-weight: 650; color: #25334c; }
+.wm-policy-acknowledgment { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; font-size: 12px; color: #475569; line-height: 1.7; }
+.wm-policy-unavailable { border: 1px solid #e6d9af; border-radius: 12px; padding: 12px; background: #faf8ef; color: #66552d; font-size: 12px; line-height: 1.6; }
+@media (max-width: 640px) {
+  .auth-register.auth-page { max-width: 540px; gap: 20px; margin-block: 24px 40px; padding-inline: 14px; }
+  .auth-register .auth-card { padding: 24px 18px; border-radius: 20px; }
+  .auth-register .auth-card h2 { font-size: 25px; }
+  .auth-register .auth-story h1 { font-size: 30px; }
+  .auth-register .auth-story > p { font-size: 12px; }
+}

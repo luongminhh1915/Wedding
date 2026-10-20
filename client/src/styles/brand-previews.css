@@ -650,6 +650,14 @@
   color: #25334c;
 }
 
+/* Keep the account and logout controls inside the header on compact laptops. */
+@media (min-width: 1151px) and (max-width: 1350px) {
+  .wm-header { gap: 14px; padding-inline: 20px; }
+  .wm-desktop-nav { gap: 2px; }
+  .wm-desktop-nav > a,
+  .wm-nav-menu > summary { padding-inline: 12px; font-size: 12px; }
+  .wm-header .wm-account { max-width: 170px; }
+}
 @media (max-width: 1150px) {
   .wm-header {
     gap: 15px;
@@ -745,9 +753,26 @@
 }
 @media (max-width: 600px) {
   .wm-header {
-    margin-inline: 15px;
+    margin-inline: 10px;
     height: 62px;
-    padding-inline: 15px;
+    padding-inline: 10px;
+    gap: 6px;
+  }
+  .wm-header-actions {
+    min-width: 0;
+    flex-shrink: 1;
+    gap: 4px;
+  }
+  .wm-header .wm-account {
+    min-width: 0;
+    padding: 4px;
+    gap: 0;
+  }
+  .wm-header .wm-account .account-name {
+    display: none;
+  }
+  .wm-header .wm-logout {
+    padding: 2px;
   }
   .wm-header .wm-login {
     padding: 12px 16px;

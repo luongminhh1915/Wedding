@@ -3,9 +3,22 @@
 *.db-shm
 *.db-wal
 advance_payments.json
+**/App_Data/invitation-uploads/
 
 # Build output
 **/[Bb]in/
 **/[Oo]bj/
 client/node_modules/
 client/dist/
+
+# Deployment artifacts, private uploads, credentials and offline backups
+artifacts/
+.deployment/
+**/private/
+**/App_Data/listing-uploads/
+**/wwwroot/uploads/
+*.bak
+*.bacpac
+*.publishsettings
+*.pubxml.user
+**/appsettings.Production.json

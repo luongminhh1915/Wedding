@@ -12,6 +12,8 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.HasKey(r => r.Id);
 
         builder.Property(r => r.Rating).IsRequired();
+        builder.Ignore(r => r.AverageRating);
+        builder.HasIndex(r => new { r.CustomerId, r.ListingId }).IsUnique();
         builder.Property(r => r.Content).HasMaxLength(3000).IsRequired();
         builder.Property(r => r.PhotosJson).HasMaxLength(4000);
         builder.Property(r => r.VendorReply).HasMaxLength(2000);

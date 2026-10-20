@@ -20,6 +20,8 @@ export interface WeddingInvitation {
   notAttendingCount: number;
   totalAccompanying: number;
   estimatedTables: number;
+  isPremium?: boolean; // P2
+  templateId?: string; lang?: string; contentJson?: string;
 }
 
 export interface SaveInvitationRequest {
@@ -35,6 +37,7 @@ export interface SaveInvitationRequest {
   musicUrl?: string;
   templateStyle: string;
   bankInfo?: string;
+  templateId?: string; lang?: string; contentJson?: string; isPublished?: boolean;
 }
 
 export interface GuestRsvp {
@@ -42,7 +45,7 @@ export interface GuestRsvp {
   invitationId: string;
   guestName: string;
   phoneNumber?: string;
-  status: 'Attending' | 'NotAttending';
+  status: 'Attending' | 'NotAttending' | 'Tentative';
   companionCount: number;
   wishes?: string;
   dietaryPreference?: string;
@@ -70,15 +73,17 @@ export interface PublicInvitation {
   templateStyle: string;
   bankInfo?: string;
   recentWishes: PublicWishItem[];
+  templateId?: string; lang?: string; contentJson?: string;
 }
 
 export interface SubmitRsvpRequest {
   guestName: string;
   phoneNumber?: string;
-  status: 'Attending' | 'NotAttending';
+  status: 'Attending' | 'NotAttending' | 'Tentative';
   companionCount: number;
   wishes?: string;
   dietaryPreference?: string;
+  type?: 'Attend' | 'Wish'; submissionKey?: string;
 }
 
 export interface RsvpResponse {

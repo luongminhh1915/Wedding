@@ -1,16 +1,19 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Eye, Gift, ImageIcon, MapPin } from "lucide-react";
+import { ArrowUpRight, Eye, Gift, ImageIcon, MapPin, ShoppingBag } from "lucide-react";
 import type { ListingSummaryDto } from "../../../types/listing.types";
 
 export default function ListingCard({
   listing,
+  returnPath,
 }: {
   listing: ListingSummaryDto;
+  returnPath?: string;
 }) {
   return (
     <article className="listing-card">
       <Link
         to={`/listings/${listing.id}`}
+        state={returnPath ? { browseReturn: returnPath } : undefined}
         aria-label={`Xem chi tiết ${listing.title}`}
       >
         <div className="listing-card-image">
@@ -53,6 +56,7 @@ export default function ListingCard({
           <ArrowUpRight size={15} />
         </span>
       </div>
+      <Link to={`/combo?listing=${listing.id}`} className="listing-combo-link"><ShoppingBag size={14} /> Chọn dịch vụ để ghép combo</Link>
     </article>
   );
 }

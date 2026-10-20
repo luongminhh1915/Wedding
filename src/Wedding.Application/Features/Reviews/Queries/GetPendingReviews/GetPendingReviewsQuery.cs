@@ -46,7 +46,9 @@ public class GetPendingReviewsQueryHandler : IRequestHandler<GetPendingReviewsQu
             Status: r.Status.ToString(),
             VendorReply: r.VendorReply,
             VendorRepliedAt: r.VendorRepliedAt,
-            CreatedAt: r.CreatedAt
+            CreatedAt: r.CreatedAt,
+            QualityRating: r.QualityRating, ServiceRating: r.ServiceRating, PunctualityRating: r.PunctualityRating, ValueRating: r.ValueRating, AverageRating: r.AverageRating,
+            ModerationFlag: r.ModerationFlag, ModerationDeadline: r.CreatedAt.AddHours(24)
         )).ToList();
     }
 }

@@ -16,7 +16,7 @@ public class LoginCommandValidator : AbstractValidator<LoginCommand>
 {
     public LoginCommandValidator()
     {
-        RuleFor(x => x.Email).NotEmpty().WithMessage("Email không được để trống.").EmailAddress().WithMessage("Email không hợp lệ.");
+        RuleFor(x => x.Email).ValidEmail();
         RuleFor(x => x.Password).NotEmpty().WithMessage("Mật khẩu không được để trống.");
     }
 }
@@ -39,7 +39,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponseDto
 
     public async Task<AuthResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var emailLower = request.Email.Trim().ToLowerInvariant();
+        var validation = new LoginCommandValidator().Validate(request);
+        if (!validation.IsValid) throw new DomainException(validation.Errors[0].ErrorMessage);
+        var emailLower = AuthInputRules.Email(request.Email);
         var user = await _context.Users
             .Include(u => u.Vendor)
             .FirstOrDefaultAsync(u => u.Email == emailLower, cancellationToken);

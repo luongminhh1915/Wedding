@@ -10,10 +10,14 @@ public class User : BaseEntity
     public string Email { get; private set; } = string.Empty;
     public string PhoneNumber { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
+    // Credential, contact, and status changes revoke previously issued access tokens.
+    public int SecurityVersion { get; private set; }
     public UserRole Role { get; private set; }
     public string? AvatarUrl { get; private set; }
     public bool IsActive { get; private set; } = true;
     public DateTime? LastLoginAt { get; private set; }
+    public string? GoogleSubject { get; private set; }
+    public DateTime? PhoneVerifiedAt { get; private set; }
 
     // Navigation Properties
     public Vendor? Vendor { get; private set; }
@@ -60,7 +64,12 @@ public class User : BaseEntity
 
     public void UpdatePassword(string newPasswordHash)
     {
+        if (string.IsNullOrWhiteSpace(newPasswordHash))
+            throw new DomainException("Mật khẩu mới không hợp lệ.");
+
+        var nextSecurityVersion = checked(SecurityVersion + 1);
         PasswordHash = newPasswordHash;
+        SecurityVersion = nextSecurityVersion;
         SetUpdated();
     }
 
@@ -71,7 +80,37 @@ public class User : BaseEntity
 
     public void SetStatus(bool isActive)
     {
+        if (IsActive == isActive) return;
+        var nextSecurityVersion = checked(SecurityVersion + 1);
         IsActive = isActive;
+        SecurityVersion = nextSecurityVersion;
+        SetUpdated();
+    }
+
+    public void LinkGoogle(string subject)
+    {
+        if (Role != UserRole.Customer || string.IsNullOrWhiteSpace(subject)) throw new DomainException("Chỉ tài khoản khách hàng được liên kết Google.");
+        if (GoogleSubject != null && GoogleSubject != subject) throw new DomainException("Tài khoản đã liên kết Google khác.");
+        GoogleSubject = subject; SetUpdated();
+    }
+
+    public void VerifyPhone(string phone)
+    {
+        PhoneNumber = phone; PhoneVerifiedAt = DateTime.UtcNow; SetUpdated();
+    }
+
+    /// <summary>A contact number is self-reported, not proof of phone ownership.</summary>
+    public void UpdateContactPhone(string phoneNumber)
+    {
+        var normalized = phoneNumber?.Trim();
+        if (normalized == null || !System.Text.RegularExpressions.Regex.IsMatch(normalized, "^0[0-9]{9}$"))
+            throw new DomainException("Số điện thoại cần 10 chữ số, bắt đầu bằng 0.");
+        if (PhoneNumber == normalized) return;
+
+        var nextSecurityVersion = checked(SecurityVersion + 1);
+        PhoneNumber = normalized;
+        PhoneVerifiedAt = null;
+        SecurityVersion = nextSecurityVersion;
         SetUpdated();
     }
 }

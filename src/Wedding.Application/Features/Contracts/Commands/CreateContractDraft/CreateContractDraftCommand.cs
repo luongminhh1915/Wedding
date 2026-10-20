@@ -6,6 +6,7 @@ using Wedding.Application.Features.Contracts.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.Application.Features.Contracts.Commands.CreateContractDraft;
 
@@ -15,7 +16,8 @@ public record CreateContractDraftCommand(
     decimal ContractValue,
     decimal DepositAmount,
     string? ContractImageUrl,
-    DateTime? WeddingDate
+    DateTime? WeddingDate,
+    string? CancellationPolicy = null
 ) : IRequest<ContractDto>;
 
 public class CreateContractDraftCommandValidator : AbstractValidator<CreateContractDraftCommand>
@@ -41,7 +43,8 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
         _currentUserService = currentUserService;
     }
 
-    public async Task<ContractDto> Handle(CreateContractDraftCommand request, CancellationToken cancellationToken)
+    public Task<ContractDto> Handle(CreateContractDraftCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => CreateAsync(request, ct), cancellationToken);
+    private async Task<ContractDto> CreateAsync(CreateContractDraftCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để tạo hợp đồng.");
@@ -52,6 +55,7 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
 
         var lead = await _context.Leads
             .Include(l => l.Customer)
+            .Include(l => l.Listing)
             .FirstOrDefaultAsync(l => l.Id == request.LeadId, cancellationToken)
             ?? throw new NotFoundException("Yêu cầu tư vấn không tồn tại.");
 
@@ -60,15 +64,15 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
             throw new DomainException("Bạn không phải nhà cung cấp được chỉ định cho yêu cầu tư vấn này.");
         }
 
+        CustomerOrderJourney.EnsureActiveLead(lead);
+
         // Kiểm tra xem Lead này đã có hợp đồng nào đang chờ xác nhận hoặc đã xác nhận chưa
         var existingContract = await _context.BookingContracts
-            .AnyAsync(c => c.LeadId == lead.Id && 
-                          (c.Status == ContractStatus.PendingVerification || c.Status == ContractStatus.Confirmed), 
-                      cancellationToken);
+            .AnyAsync(c => c.LeadId == lead.Id, cancellationToken);
 
         if (existingContract)
         {
-            throw new DomainException("Yêu cầu tư vấn này đã có hợp đồng đang xử lý.");
+            throw new DomainException("Yêu cầu này đã có hợp đồng. Hãy sửa và gửi lại bản nháp hoặc tạo yêu cầu mới để giữ lịch sử.");
         }
 
         Guid? voucherId = null;
@@ -93,7 +97,7 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
                 throw new DomainException($"Mã ưu đãi '{cleanCode}' đã hết hạn 30 ngày (BR-004).");
             }
 
-            if (voucher.CustomerId != lead.CustomerId)
+            if (voucher.CustomerId != lead.CustomerId || voucher.LeadId != lead.Id)
             {
                 throw new DomainException("Mã ưu đãi không thuộc về khách hàng của hợp đồng này.");
             }
@@ -115,7 +119,9 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
             weddingDate: request.WeddingDate ?? lead.WeddingDate
         );
 
-        lead.MarkContracted();
+        contract.SetCancellationPolicy(request.CancellationPolicy ?? lead.Listing?.CancellationPolicy);
+        var appointmentCredit = (await _context.Appointments.Where(a => a.LeadId == lead.Id && a.DepositPaid && a.RefundDue == 0 && a.RefundedAt == null).ToListAsync(cancellationToken)).Sum(a => a.DepositAmount);
+        contract.ApplyAppointmentDepositCredit(appointmentCredit);
 
         _context.BookingContracts.Add(contract);
         await _context.SaveChangesAsync(cancellationToken);
@@ -142,7 +148,9 @@ public class CreateContractDraftCommandHandler : IRequestHandler<CreateContractD
             CompletedAt: contract.CompletedAt,
             CancellationReason: contract.CancellationReason,
             CreatedAt: contract.CreatedAt,
-            Commissions: new List<ContractCommissionDto>()
+            Commissions: new List<ContractCommissionDto>(),
+            CancellationPolicySnapshot: contract.CancellationPolicySnapshot,
+            AppointmentDepositCredit: contract.AppointmentDepositCredit
         );
     }
 }

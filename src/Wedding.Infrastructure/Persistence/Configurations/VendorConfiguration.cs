@@ -20,6 +20,7 @@ public class VendorConfiguration : IEntityTypeConfiguration<Vendor>
         builder.Property(v => v.Bio).HasMaxLength(2000);
         builder.Property(v => v.LogoUrl).HasMaxLength(500);
         builder.Property(v => v.CoverImageUrl).HasMaxLength(500);
+        builder.Property(v => v.PartnershipPolicyVersion).HasMaxLength(50);
 
         builder.Property(v => v.CommissionRate).HasPrecision(5, 4); // VD: 0.0800 = 8%
         builder.Property(v => v.RatingAvg).HasPrecision(3, 2);      // VD: 4.85

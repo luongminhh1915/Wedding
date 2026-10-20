@@ -15,7 +15,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).HasMaxLength(150).IsRequired();
         builder.Property(u => u.PhoneNumber).HasMaxLength(20).IsRequired();
         builder.Property(u => u.PasswordHash).IsRequired();
+        builder.Property(u => u.SecurityVersion).HasDefaultValue(0).IsConcurrencyToken();
         builder.Property(u => u.AvatarUrl).HasMaxLength(500);
+        builder.Property(u => u.GoogleSubject).HasMaxLength(255);
+        builder.HasIndex(u => u.GoogleSubject).IsUnique().HasFilter("[GoogleSubject] IS NOT NULL");
         builder.Property(u => u.Role).HasConversion<string>().HasMaxLength(30).IsRequired();
 
         builder.HasIndex(u => u.Email).IsUnique();

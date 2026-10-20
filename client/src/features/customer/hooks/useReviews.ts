@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Review, SubmitReviewRequest, EligibleContract } from '../../../types/review.types';
+import type { Review, PublicReview, SubmitReviewRequest, EligibleContract } from '../../../types/review.types';
+import { useAuthStore } from '../../../store/authStore';
 
 export function useListingReviews(listingId?: string) {
   return useQuery({
     queryKey: ['listing-reviews', listingId],
-    queryFn: async (): Promise<Review[]> => {
+    queryFn: async (): Promise<PublicReview[]> => {
       if (!listingId) return [];
       const res = await fetch(`/api/reviews/listing/${listingId}`);
       if (!res.ok) return [];
@@ -17,7 +18,7 @@ export function useListingReviews(listingId?: string) {
 export function useVendorReviews(vendorId?: string) {
   return useQuery({
     queryKey: ['vendor-reviews', vendorId],
-    queryFn: async (): Promise<Review[]> => {
+    queryFn: async (): Promise<PublicReview[]> => {
       if (!vendorId) return [];
       const res = await fetch(`/api/reviews/vendor/${vendorId}`);
       if (!res.ok) return [];
@@ -27,18 +28,24 @@ export function useVendorReviews(vendorId?: string) {
   });
 }
 
-export function useEligibleContracts() {
+export function useEligibleContracts(enabled = true) {
+  const user = useAuthStore(state => state.user);
   return useQuery({
-    queryKey: ['eligible-contracts'],
-    queryFn: async (): Promise<EligibleContract[]> => {
+    queryKey: ['eligible-contracts', user?.id],
+    enabled: enabled && user?.role === 'Customer',
+    queryFn: async ({ signal }): Promise<EligibleContract[]> => {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/reviews/eligible-contracts', {
+        signal,
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       });
-      if (!res.ok) return [];
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || 'Chưa tải được hợp đồng đủ điều kiện. Vui lòng thử lại.');
+      }
       return res.json();
     }
   });
@@ -67,6 +74,7 @@ export function useSubmitReview() {
       return res.json();
     },
     onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: ['eligible-contracts'] });
       queryClient.invalidateQueries({ queryKey: ['listing-reviews', saved.listingId] });
       queryClient.invalidateQueries({ queryKey: ['vendor-reviews', saved.vendorId] });
       queryClient.invalidateQueries({ queryKey: ['moderation-reviews'] });

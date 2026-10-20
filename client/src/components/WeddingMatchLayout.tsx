@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   NavLink,
@@ -18,10 +18,15 @@ import {
   Wallet,
   CheckCheck,
   FileCheck2,
+  UserRound,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { useQueryClient } from "@tanstack/react-query";
 import { dashboardPath } from "../utils/navigation";
+import AuthModal from "../features/auth/components/AuthModal";
+import NotificationBell from "./NotificationBell";
+import ComboCartLink from "./ComboCartLink";
+import "../styles/combo-builder.css";
+import { useIntentStore } from "../store/intentStore";
 
 export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
   return (
@@ -39,8 +44,8 @@ export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
 }
 
 export function WeddingMatchHeader() {
+  const [authOpen, setAuthOpen] = useState(false);
   const { user, token, logout } = useAuthStore();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
@@ -58,7 +63,7 @@ export function WeddingMatchHeader() {
         <NavLink to="/" end>
           Trang chủ
         </NavLink>
-        <details
+        {user && user.role !== "Customer" ? <NavLink to={dashboardPath(user)}>{user.role === "VendorOwner" ? "Quản lý nhà cung cấp" : "Không gian quản trị"}</NavLink> : <details
           className="wm-nav-menu"
           data-active={
             location.pathname.startsWith("/customer/") &&
@@ -78,29 +83,38 @@ export function WeddingMatchHeader() {
             <Link to="/customer/dashboard?tab=budget">
               <Wallet size={17} /> Ngân sách cưới
             </Link>
+            <Link to="/combo"><Star size={17} /> Khám phá dịch vụ & combo</Link>
+            <Link to="/customer/dashboard?tab=combos"><PanelsTopLeft size={17} /> Lựa chọn của bạn</Link>
             <Link to="/customer/dashboard?tab=contracts">
               <FileCheck2 size={17} /> Hợp đồng & tư vấn
             </Link>
           </div>
-        </details>
-        <Link
+        </details>}
+        {(!user || user.role === "Customer") && <Link
           className={
             location.pathname.startsWith("/customer/") &&
             location.search.includes("tab=invitations")
               ? "active"
               : ""
           }
-          to="/customer/dashboard?tab=invitations"
+          to="/invitation"
         >
           Thiệp mời <ChevronDown size={13} />
-        </Link>
+        </Link>}
         <NavLink to="/browse">Dịch vụ</NavLink>
-        <Link to="/#cong-cu">Công cụ cưới</Link>
+        <NavLink to="/combo">Combo cưới</NavLink>
+        <NavLink to="/cam-nang">Cẩm nang</NavLink>
       </nav>
       <div className="wm-header-actions">
+        <ComboCartLink />
         {token && user ? (
           <>
-            <Link className="wm-account" to={dashboardPath(user)}>
+            <NotificationBell />
+            <Link
+              className="wm-account"
+              to="/account"
+              aria-label={`Tài khoản ${user.fullName}`}
+            >
               <span>{user.fullName.slice(0, 1)}</span>
               <span className="account-name">
                 {user.vendorBrandName || user.fullName}
@@ -111,19 +125,20 @@ export function WeddingMatchHeader() {
               aria-label="Đăng xuất"
               onClick={() => {
                 logout();
-                queryClient.clear();
-                navigate("/");
+                setAuthOpen(false);
+                navigate("/login", { replace: true });
               }}
             >
               <LogOut size={17} />
             </button>
           </>
         ) : (
-          <Link to="/login" className="wm-login">
+          <button type="button" className="wm-login" onClick={() => { useIntentStore.getState().remember(location.pathname + location.search); setAuthOpen(true); }}>
             Đăng nhập
-          </Link>
+          </button>
         )}
       </div>
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </header>
   );
 }
@@ -187,7 +202,13 @@ function MobileNavigation() {
   const { user } = useAuthStore();
   const { pathname, search } = useLocation();
   const tab = new URLSearchParams(search).get("tab");
-  const items = [
+  const items = user && user.role !== "Customer" ? [
+    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
+    { to: dashboardPath(user), label: user.role === "VendorOwner" ? "Quản lý NCC" : "Quản trị", icon: PanelsTopLeft, active: pathname === dashboardPath(user) },
+    { to: "/browse", label: "Dịch vụ", icon: Star, active: pathname === "/browse" || pathname.startsWith("/listings") },
+    { to: "/cam-nang", label: "Cẩm nang", icon: FileCheck2, active: pathname === "/cam-nang" },
+    { to: "/account", label: "Tài khoản", icon: UserRound, active: pathname === "/account" },
+  ] : [
     { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
     {
       to: "/customer/dashboard",
@@ -196,10 +217,10 @@ function MobileNavigation() {
       active: pathname.startsWith("/customer") && tab !== "invitations",
     },
     {
-      to: "/customer/dashboard?tab=invitations",
-      label: "Thiệp",
-      icon: Heart,
-      active: tab === "invitations",
+      to: "/combo",
+      label: "Combo",
+      icon: Star,
+      active: pathname === "/combo" || pathname.startsWith("/combo/"),
     },
     {
       to: "/browse",
@@ -208,12 +229,11 @@ function MobileNavigation() {
       active: pathname === "/browse" || pathname.startsWith("/listings"),
     },
     {
-      to: user ? dashboardPath(user) : "/login",
+      to: user ? "/account" : "/login",
       label: "Tài khoản",
-      icon: LayoutDashboard,
+      icon: UserRound,
       active:
-        pathname.includes("/admin") ||
-        pathname.includes("/vendor") ||
+        pathname === "/account" ||
         pathname === "/login",
     },
   ];

@@ -57,7 +57,8 @@ public class VendorReplyReviewCommandHandler : IRequestHandler<VendorReplyReview
             Status: review.Status.ToString(),
             VendorReply: review.VendorReply,
             VendorRepliedAt: review.VendorRepliedAt,
-            CreatedAt: review.CreatedAt
+            CreatedAt: review.CreatedAt,
+            QualityRating: review.QualityRating, ServiceRating: review.ServiceRating, PunctualityRating: review.PunctualityRating, ValueRating: review.ValueRating, AverageRating: review.AverageRating
         );
     }
 }

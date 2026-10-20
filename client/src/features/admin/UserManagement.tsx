@@ -1,13 +1,104 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Search, Shield, Lock, Unlock, Phone, Mail,
   Calendar, XCircle, AlertCircle, Building2,
-  UserCheck, UserX, Loader2
+  UserCheck, UserX, Loader2, UserPlus, Eye, EyeOff
 } from 'lucide-react';
-import { useUsers, useUpdateUserStatus } from './hooks/useUsers';
+import { useUsers, useUpdateUserStatus, userKeys } from './hooks/useUsers';
 import type { UserManagementDto } from '../../types/auth';
+import axiosClient from '../../services/axiosClient';
+import { useAuthStore } from '../../store/authStore';
+import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration } from '../auth/components/registrationValidation';
+import type { RegistrationErrors, RegistrationValues } from '../auth/components/registrationValidation';
+import { VendorBusinessGroupsEditor } from './VendorBusinessGroupsEditor';
+
+type StaffRole = 'Moderator' | 'Finance' | 'CustomerCare';
+const staffRoleNames: Record<StaffRole, string> = { Moderator: 'Kiểm duyệt', Finance: 'Tài chính', CustomerCare: 'Chăm sóc khách hàng' };
+
+function StaffCreationForm({ onCreated, onCancel }: { onCreated: (user: UserManagementDto) => void; onCancel: () => void }) {
+  const queryClient = useQueryClient();
+  const formRef = useRef<HTMLFormElement>(null);
+  const inFlight = useRef(false);
+  const [values, setValues] = useState<RegistrationValues>({ ...EMPTY_REGISTRATION });
+  const [role, setRole] = useState<StaffRole>('Moderator');
+  const [errors, setErrors] = useState<RegistrationErrors>({});
+  const [failure, setFailure] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const createStaff = useMutation({
+    mutationFn: async (body: { fullName: string; email: string; phoneNumber: string; password: string; role: StaffRole }) => {
+      const response = await axiosClient.post<UserManagementDto>('/api/users/staff', body);
+      return response.data;
+    },
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: userKeys.all }); },
+  });
+  const update = (field: keyof RegistrationValues, value: string) => {
+    setValues(current => ({ ...current, [field]: value }));
+    setErrors(current => ({ ...current, [field]: undefined }));
+    setFailure('');
+  };
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inFlight.current || createStaff.isPending) return;
+    setFailure('');
+    const nextErrors = validateRegistration(values, 'customer');
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>("[aria-invalid='true']")?.focus());
+      return;
+    }
+    inFlight.current = true;
+    try {
+      const fields = normalizeRegistration(values);
+      const user = await createStaff.mutateAsync({ fullName: fields.fullName, email: fields.email, phoneNumber: fields.phoneNumber, password: fields.password, role });
+      onCreated(user);
+    } catch (error: unknown) {
+      setFailure(registrationApiError(error));
+    } finally { inFlight.current = false; }
+  };
+  const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#c9a740]';
+  const fields: { key: 'fullName' | 'email' | 'phoneNumber' | 'password' | 'confirmPassword'; label: string; type: string; autoComplete: string; maxLength: number }[] = [
+    { key: 'fullName', label: 'Họ và tên', type: 'text', autoComplete: 'name', maxLength: 150 },
+    { key: 'email', label: 'Email đăng nhập', type: 'email', autoComplete: 'email', maxLength: 150 },
+    { key: 'phoneNumber', label: 'Số điện thoại', type: 'tel', autoComplete: 'tel-national', maxLength: 20 },
+    { key: 'password', label: 'Mật khẩu ban đầu', type: showPassword ? 'text' : 'password', autoComplete: 'new-password', maxLength: 72 },
+    { key: 'confirmPassword', label: 'Nhập lại mật khẩu', type: showPassword ? 'text' : 'password', autoComplete: 'new-password', maxLength: 72 },
+  ];
+  return <section className="rounded-2xl border border-[#ded8c6] bg-[#faf8f0] p-5 sm:p-6" aria-labelledby="create-staff-title">
+    <h3 id="create-staff-title" className="text-base font-semibold text-[#25334c]">Cấp tài khoản nhân sự</h3>
+    <p className="mt-2 text-sm leading-relaxed text-slate-600">Chỉ SuperAdmin được cấp tài khoản kiểm duyệt, tài chính và CSKH. Không tạo thêm SuperAdmin hoặc thay đổi tài khoản đang đăng nhập tại đây.</p>
+    {failure && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{failure}</p>}
+    <form ref={formRef} onSubmit={submit} noValidate aria-busy={createStaff.isPending} className="mt-5">
+      <fieldset disabled={createStaff.isPending} className="min-w-0">
+        <legend className="sr-only">Thông tin tài khoản nhân sự mới</legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {fields.map(field => <div key={field.key}>
+            <label htmlFor={`staff-${field.key}`} className="mb-1.5 block text-xs font-semibold text-slate-700">{field.label}</label>
+            <input id={`staff-${field.key}`} name={field.key} type={field.type} autoComplete={field.autoComplete} autoCapitalize={field.key === 'email' ? 'none' : undefined} spellCheck={field.key === 'email' ? false : undefined} maxLength={field.maxLength} required value={values[field.key]} onChange={event => update(field.key, event.target.value)} aria-invalid={errors[field.key] ? true : undefined} aria-describedby={errors[field.key] ? `staff-${field.key}-error` : field.key === 'password' ? 'staff-password-hint' : undefined} className={inputClass} />
+            {errors[field.key] && <p id={`staff-${field.key}-error`} className="mt-1.5 text-xs text-red-700">{errors[field.key]}</p>}
+          </div>)}
+          <div>
+            <label htmlFor="staff-role" className="mb-1.5 block text-xs font-semibold text-slate-700">Vai trò được cấp</label>
+            <select id="staff-role" value={role} onChange={event => setRole(event.target.value as StaffRole)} className={inputClass}>
+              {(Object.entries(staffRoleNames) as [StaffRole, string][]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <p id="staff-password-hint" className="text-xs leading-relaxed text-slate-500">Mật khẩu ít nhất 8 ký tự, tối đa 72 byte. Hệ thống chưa tự gửi email cấp tài khoản; hãy bàn giao thông tin qua kênh riêng an toàn.</p>
+          <button type="button" onClick={() => setShowPassword(value => !value)} aria-pressed={showPassword} className="flex items-center gap-1.5 text-xs text-[#25334c]">{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}{showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}</button>
+        </div>
+        <div className="mt-5 flex flex-wrap justify-end gap-3">
+          <button type="button" onClick={onCancel} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600">Đóng biểu mẫu</button>
+          <button type="submit" disabled={createStaff.isPending} className="flex items-center gap-2 rounded-xl bg-[#25334c] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{createStaff.isPending && <Loader2 size={16} className="animate-spin" />}{createStaff.isPending ? 'Đang cấp tài khoản...' : 'Xác nhận cấp tài khoản'}</button>
+        </div>
+      </fieldset>
+    </form>
+  </section>;
+}
 
 export default function UserManagement() {
+  const isSuperAdmin = useAuthStore(state => state.user?.role === 'SuperAdmin');
   const { data: users = [], isLoading, error } = useUsers();
   const updateStatusMutation = useUpdateUserStatus();
 
@@ -16,6 +107,8 @@ export default function UserManagement() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedUser, setSelectedUser] = useState<UserManagementDto | null>(null);
   const [confirmLockModal, setConfirmLockModal] = useState<{ user: UserManagementDto; targetStatus: boolean } | null>(null);
+  const [showStaffForm, setShowStaffForm] = useState(false);
+  const [staffSuccess, setStaffSuccess] = useState('');
 
   // Thống kê nhanh
   const stats = useMemo(() => {
@@ -101,6 +194,12 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
+      {isSuperAdmin && <div className="flex flex-wrap items-center justify-between gap-3">
+        <div><h2 className="text-lg font-semibold text-[#25334c]">Tài khoản & phân quyền</h2><p className="mt-1 text-sm text-slate-500">Khách hàng và NCC tự đăng ký; nhân sự nội bộ do quản trị viên cấp.</p></div>
+        {!showStaffForm && <button type="button" onClick={() => { setShowStaffForm(true); setStaffSuccess(''); }} className="flex items-center gap-2 rounded-xl bg-[#25334c] px-4 py-2.5 text-sm font-semibold text-white"><UserPlus size={17} />Cấp tài khoản nhân sự</button>}
+      </div>}
+      {isSuperAdmin && showStaffForm && <StaffCreationForm onCancel={() => setShowStaffForm(false)} onCreated={user => { setShowStaffForm(false); setStaffSuccess(`Đã cấp tài khoản ${user.email} với vai trò ${staffRoleNames[user.role as StaffRole] ?? user.role}. Phiên quản trị hiện tại được giữ nguyên.`); }} />}
+      {staffSuccess && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{staffSuccess}</p>}
       {/* Top Banner & Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -361,7 +460,7 @@ export default function UserManagement() {
       {/* User Detail Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+          <div className="max-h-[90dvh] overflow-y-auto bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between mb-5 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-rose-500 text-white font-bold flex items-center justify-center text-lg shadow-sm">
@@ -413,6 +512,7 @@ export default function UserManagement() {
                 </div>
               )}
 
+              {selectedUser.role === 'VendorOwner' && selectedUser.vendorId && <VendorBusinessGroupsEditor key={selectedUser.vendorId} vendorId={selectedUser.vendorId} />}
               <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 space-y-1">
                 <p><strong>User ID:</strong> <span className="font-mono">{selectedUser.id}</span></p>
                 {selectedUser.lastLoginAt && (

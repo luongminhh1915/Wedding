@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   MapPin,
@@ -14,29 +14,41 @@ import {
 } from "lucide-react";
 import { usePublicListingDetail } from "./hooks/useBrowse";
 import { SendLeadModal } from "./components/SendLeadModal";
+import { BookAppointmentModal } from "../journey/appointments/BookAppointmentModal";
 import { ReviewModal } from "./components/reviews/ReviewModal";
 import { ReviewList } from "./components/reviews/ReviewList";
+import { ServiceDetails } from "./components/ServiceDetails";
 import { useListingReviews } from "./hooks/useReviews";
+import { useAuthStore } from "../../store/authStore";
+import { isListingPreview, listingPreviewReturn } from "./listingPreview";
+import { serviceBrowseReturn } from "./serviceFilterModel";
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const browseReturn = serviceBrowseReturn((location.state as { browseReturn?: unknown } | null)?.browseReturn);
+  const [searchParams] = useSearchParams();
+  const role = useAuthStore(state => state.user?.role);
+  const isPreview = isListingPreview(role, searchParams.get('preview'));
+  const previewReturn = listingPreviewReturn(role);
   const {
     data: listing,
     isLoading,
     isError,
-  } = usePublicListingDetail(id ?? "");
+  } = usePublicListingDetail(id ?? "", isPreview ? searchParams.get('revision') : null);
   const [activeImg, setActiveImg] = useState(0);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isBookingOpen, setIsBookingOpen] = useState(false); // P3: đặt lịch hẹn
   const [shareStatus, setShareStatus] = useState("");
   const { data: reviews = [], refetch: refetchReviews } = useListingReviews(
-    id ?? "",
+    isPreview && listing?.status !== 'Active' ? undefined : id,
   );
 
   if (isLoading) return <LoadingState />;
   if (isError || !listing)
-    return <ErrorState onBack={() => navigate("/browse")} />;
+    return <ErrorState onBack={() => navigate(isPreview ? previewReturn : browseReturn)} />;
 
   const media = listing.media ?? [];
   const images = media.map((m) => m.mediaUrl);
@@ -44,6 +56,14 @@ export default function ListingDetailPage() {
 
   return (
     <main className="feature-content detail-page">
+      {isPreview && (
+        <section role="note" className="rounded-2xl border border-[#d4c894] bg-[#f5f1e6] p-4 mb-5 text-[#25334d]">
+          <h1 className="font-semibold">Xem trước như khách hàng</h1>
+          <p className="text-sm mt-1">Đây là bản xem trước chỉ đọc ({listing.status}). Xem trước không xuất bản dịch vụ; khách hàng chỉ thấy nội dung đã được duyệt và đang hoạt động.</p>
+          {listing.latestRevision && <p className="text-sm mt-2">Phiên bản #{listing.latestRevision.sequence} · {listing.latestRevision.status}. Nội dung này chưa thay thế bản công khai nếu chưa được duyệt.</p>}
+          <Link to={previewReturn} className="inline-block mt-2 text-sm underline">{role === 'VendorOwner' ? 'Về dịch vụ của tôi' : 'Về hàng chờ kiểm duyệt'}</Link>
+        </section>
+      )}
       {/* Breadcrumb header */}
       <div>
         <div className="detail-breadcrumb">
@@ -56,10 +76,10 @@ export default function ListingDetailPage() {
           </button>
           <span className="text-slate-300">/</span>
           <Link
-            to="/browse"
+            to={isPreview ? previewReturn : browseReturn}
             className="text-sm text-slate-500 hover:text-rose-500 transition"
           >
-            Khám phá
+            {isPreview ? (role === 'VendorOwner' ? "Dịch vụ của tôi" : "Kiểm duyệt") : "Khám phá"}
           </Link>
           <span className="text-slate-300">/</span>
           <span className="text-sm text-slate-700 font-medium truncate max-w-xs">
@@ -67,7 +87,7 @@ export default function ListingDetailPage() {
           </span>
 
           {/* Actions */}
-          <div className="ml-auto flex items-center gap-2">
+          {!isPreview && <div className="ml-auto flex items-center gap-2">
             <button
               aria-label="Sao chép đường dẫn dịch vụ"
               onClick={async () => {
@@ -85,7 +105,7 @@ export default function ListingDetailPage() {
             <span role="status" className="text-[10px]">
               {shareStatus}
             </span>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -194,8 +214,7 @@ export default function ListingDetailPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <strong className="text-slate-700">4.8</strong>
-                    <span className="text-slate-400">(--)</span>
+                    <strong className="text-slate-700">{reviews.length} đánh giá</strong>
                   </span>
                 </div>
               </div>
@@ -211,6 +230,8 @@ export default function ListingDetailPage() {
                 </p>
               </div>
 
+              <ServiceDetails details={listing.serviceDetails} cancellationPolicy={listing.cancellationPolicy} />
+
               {/* ── Reviews Section (Verified Buyer - BR-009 & FM-005) ──────── */}
               <div className="pt-6 border-t border-slate-100">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -220,17 +241,17 @@ export default function ListingDetailPage() {
                       Đánh Giá & Uy Tín Đối Tác ({reviews.length})
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Chỉ những khách hàng có hợp đồng hoàn tất mới được gắn
-                      nhãn [Verified Buyer]
+                      Chỉ những khách hàng có hợp đồng hoàn tất mới được
+                      tạo đánh giá mới. Đánh giá tư vấn cũ được giữ với nhãn riêng.
                     </p>
                   </div>
 
-                  <button
+                  {!isPreview && <button
                     onClick={() => setIsReviewModalOpen(true)}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold text-xs hover:from-amber-600 hover:to-rose-600 transition shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
                   >
                     <span>✍️ Viết Đánh Giá</span>
-                  </button>
+                  </button>}
                 </div>
 
                 <ReviewList reviews={reviews} onRefresh={refetchReviews} />
@@ -262,7 +283,7 @@ export default function ListingDetailPage() {
               </div>
 
               {/* Voucher highlight */}
-              <div className="mb-5 p-3 rounded-xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-100 flex items-center gap-3">
+              {!isPreview && <div className="mb-5 p-3 rounded-xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-100 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
                   <Gift className="w-5 h-5 text-rose-500" />
                 </div>
@@ -274,21 +295,29 @@ export default function ListingDetailPage() {
                     Mã 8 ký tự độc nhất · Hiệu lực 30 ngày
                   </p>
                 </div>
-              </div>
+              </div>}
 
               {/* CTA Button */}
-              <button
+              {!isPreview && <><button
                 onClick={() => setIsLeadModalOpen(true)}
                 className="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-sm shadow-lg shadow-rose-200 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 💌 Nhận Tư Vấn &amp; Ưu Đãi Ngay
               </button>
+              <button
+                onClick={() => setIsBookingOpen(true)}
+                className="wd btn btn-outline w-full mt-3"
+              >
+                📅 Đặt lịch hẹn xem trực tiếp
+              </button>
+              <Link to={`/combo?listing=${listing.id}`} className="listing-combo-link !m-0 mt-3">🛍 Chọn dịch vụ để thêm vào combo</Link>
               <p className="text-center text-[11px] text-slate-400 mt-2">
-                Miễn phí · Không ràng buộc · Phản hồi trong 2h
-              </p>
+                Miễn phí · Không ràng buộc · Thời gian phản hồi tùy nhà cung cấp
+              </p></>}
+              {isPreview && <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">Tư vấn, đặt lịch, thêm vào combo và viết đánh giá được tắt trong bản xem trước.</p>}
 
               {/* Stats */}
-              <div className="mt-5 pt-5 border-t border-slate-100 grid grid-cols-3 gap-3 text-center">
+              <div className="mt-5 pt-5 border-t border-slate-100 grid grid-cols-2 gap-3 text-center">
                 <div>
                   <p className="text-lg font-bold text-slate-800">
                     {listing.viewCount}
@@ -298,15 +327,9 @@ export default function ListingDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-slate-800">4.8★</p>
+                  <p className="text-lg font-bold text-slate-800">{reviews.length}</p>
                   <p className="text-[10px] text-slate-400 font-medium uppercase">
-                    Điểm đánh giá
-                  </p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-slate-800">24h</p>
-                  <p className="text-[10px] text-slate-400 font-medium uppercase">
-                    Phản hồi
+                    Đánh giá
                   </p>
                 </div>
               </div>
@@ -328,9 +351,6 @@ export default function ListingDetailPage() {
                   <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                     <MapPin className="w-3 h-3" /> {listing.location}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-bold mt-1">
-                    ✓ Đối tác được xác thực
-                  </span>
                 </div>
               </div>
             </div>
@@ -338,25 +358,33 @@ export default function ListingDetailPage() {
         </div>
       </div>
 
+      {!isPreview && isBookingOpen && (
+        <BookAppointmentModal
+          vendorId={listing.vendorId}
+          vendorName={listing.vendorBrandName}
+          onClose={() => setIsBookingOpen(false)}
+        />
+      )}
+
       {/* Modal gửi Lead & sinh Voucher 8 ký tự */}
-      <SendLeadModal
+      {!isPreview && <SendLeadModal
         isOpen={isLeadModalOpen}
         onClose={() => setIsLeadModalOpen(false)}
         listingId={listing.id}
         vendorId={listing.vendorId}
         vendorName={listing.vendorBrandName}
         listingTitle={listing.title}
-      />
+      />}
 
       {/* Modal đánh giá & chấm điểm Verified Buyer */}
-      <ReviewModal
+      {!isPreview && <ReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
         listingId={listing.id}
         listingTitle={listing.title}
         vendorBrandName={listing.vendorBrandName}
         onSuccess={refetchReviews}
-      />
+      />}
     </main>
   );
 }

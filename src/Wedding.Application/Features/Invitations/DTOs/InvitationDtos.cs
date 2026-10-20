@@ -6,7 +6,7 @@ public record WeddingInvitationDto(
     string Slug,
     string GroomName,
     string BrideName,
-    DateTime EventDate,
+    DateTimeOffset EventDate,
     string VenueName,
     string VenueAddress,
     string? MapUrl,
@@ -21,7 +21,9 @@ public record WeddingInvitationDto(
     int AttendingCount,
     int NotAttendingCount,
     int TotalAccompanying,
-    int EstimatedTables
+    int EstimatedTables,
+    bool IsPremium = false,
+    Guid? TemplateId = null, string Lang = "vi", string ContentJson = "{}"
 );
 
 public record GuestRsvpDto(
@@ -41,7 +43,7 @@ public record PublicInvitationDto(
     string Slug,
     string GroomName,
     string BrideName,
-    DateTime EventDate,
+    DateTimeOffset EventDate,
     string VenueName,
     string VenueAddress,
     string? MapUrl,
@@ -50,7 +52,8 @@ public record PublicInvitationDto(
     string? MusicUrl,
     string TemplateStyle,
     string? BankInfo,
-    List<PublicWishItemDto> RecentWishes
+    List<PublicWishItemDto> RecentWishes,
+    Guid? TemplateId = null, string Lang = "vi", string ContentJson = "{}"
 );
 
 public record PublicWishItemDto(

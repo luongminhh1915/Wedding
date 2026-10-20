@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Wedding.Application.Features.Chat.Commands.SendMessage;
+using Wedding.Infrastructure.Services;
 
 namespace Wedding.WebApi.Hubs;
 
@@ -10,11 +11,14 @@ public class ChatHub : Hub
 {
     private readonly IMediator _mediator;
     private readonly ILogger<ChatHub> _logger;
+    private readonly ChatRoomAccess _roomAccess;
+    private const string AccessDenied = "Không thể truy cập cuộc trò chuyện này. Vui lòng đăng nhập lại hoặc kiểm tra quyền truy cập.";
 
-    public ChatHub(IMediator mediator, ILogger<ChatHub> logger)
+    public ChatHub(IMediator mediator, ILogger<ChatHub> logger, ChatRoomAccess roomAccess)
     {
         _mediator = mediator;
         _logger = logger;
+        _roomAccess = roomAccess;
     }
 
     /// <summary>
@@ -22,9 +26,9 @@ public class ChatHub : Hub
     /// </summary>
     public async Task JoinLeadRoom(string leadId)
     {
-        var groupName = $"lead-{leadId}";
-        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        _logger.LogInformation("Connection {ConnectionId} đã tham gia phòng {GroupName}", Context.ConnectionId, groupName);
+        var membership = await RequireMembership(leadId, forSending: false);
+        await Groups.AddToGroupAsync(Context.ConnectionId, membership.GroupName, Context.ConnectionAborted);
+        _logger.LogInformation("Connection {ConnectionId} đã tham gia phòng chat được cấp quyền", Context.ConnectionId);
     }
 
     /// <summary>
@@ -32,9 +36,9 @@ public class ChatHub : Hub
     /// </summary>
     public async Task LeaveLeadRoom(string leadId)
     {
-        var groupName = $"lead-{leadId}";
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-        _logger.LogInformation("Connection {ConnectionId} đã rời phòng {GroupName}", Context.ConnectionId, groupName);
+        var membership = await RequireMembership(leadId, forSending: false);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, membership.GroupName, Context.ConnectionAborted);
+        _logger.LogInformation("Connection {ConnectionId} đã rời phòng chat được cấp quyền", Context.ConnectionId);
     }
 
     /// <summary>
@@ -42,11 +46,19 @@ public class ChatHub : Hub
     /// </summary>
     public async Task SendMessage(Guid leadId, string content, bool isQuote = false, decimal? quoteAmount = null, string? quoteDescription = null)
     {
+        var membership = await RequireMembership(leadId.ToString(), forSending: true);
+        if (isQuote && !membership.IsVendor) throw new HubException(AccessDenied);
         var command = new SendMessageCommand(leadId, content, isQuote, quoteAmount, quoteDescription);
-        var messageDto = await _mediator.Send(command);
+        var messageDto = await _mediator.Send(command, Context.ConnectionAborted);
 
-        var groupName = $"lead-{leadId}";
-        // Bắn tin nhắn realtime tới tất cả client đang có mặt trong phòng chat này
-        await Clients.Group(groupName).SendAsync("ReceiveMessage", messageDto);
+        var groups = await _roomAccess.GetCurrentRecipientGroupsAsync(leadId, Context.ConnectionAborted);
+        await Clients.Groups(groups).SendAsync("ReceiveMessage", messageDto, Context.ConnectionAborted);
+    }
+
+    private async Task<ChatRoomMembership> RequireMembership(string leadId, bool forSending)
+    {
+        if (!Guid.TryParse(leadId, out var parsed)) throw new HubException(AccessDenied);
+        return await _roomAccess.GetMembershipAsync(Context.User, parsed, forSending, Context.ConnectionAborted)
+            ?? throw new HubException(AccessDenied);
     }
 }
