@@ -88,17 +88,54 @@ public sealed class ListingEditTests
         Assert.Equal(3, await fixture.Db.ListingMedias.CountAsync());
     }
 
+    [Fact]
+    public async Task PendingApprovalCannotReplaceContentOrAlbum()
+    {
+        await using var fixture = await Fixture.Create();
+        fixture.Listing.SetStatus(ListingStatus.PendingApproval); await fixture.Db.SaveChangesAsync();
+        var mediaIds = await fixture.Db.ListingMedias.OrderBy(media => media.DisplayOrder).Select(media => media.Id).ToListAsync();
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Handler().Handle(fixture.Command([LocalImage]) with { Title = "Must not persist" }, default));
+        var saved = await fixture.Db.Listings.AsNoTracking().SingleAsync();
+        Assert.Equal("Original service", saved.Title); Assert.Equal(Description, saved.Description);
+        Assert.Equal(ListingStatus.PendingApproval, saved.Status);
+        Assert.Equal(3, await fixture.Db.ListingMedias.CountAsync());
+        Assert.Equal(mediaIds, await fixture.Db.ListingMedias.OrderBy(media => media.DisplayOrder).Select(media => media.Id).ToListAsync());
+        Assert.Equal(0, await fixture.Db.ListingRevisions.CountAsync());
+    }
+
     [Theory]
     [InlineData(ListingStatus.Active)]
-    [InlineData(ListingStatus.PendingApproval)]
     [InlineData(ListingStatus.Hidden)]
-    public async Task NonEditableStatesCannotReplaceContentOrAlbum(ListingStatus status)
+    public async Task PublishedEditsSaveAnExactDraftWithoutReplacingLiveContentAlbumOrPolicy(ListingStatus status)
     {
         await using var fixture = await Fixture.Create();
         fixture.Listing.SetStatus(status); await fixture.Db.SaveChangesAsync();
-        await Assert.ThrowsAsync<DomainException>(() => fixture.Handler().Handle(fixture.Command([LocalImage]) with { Title = "Must not persist" }, default));
-        Assert.Equal("Original service", (await fixture.Db.Listings.AsNoTracking().SingleAsync()).Title);
-        Assert.Equal(3, await fixture.Db.ListingMedias.CountAsync());
+        var before = await fixture.Db.Listings.AsNoTracking().SingleAsync();
+        var beforeMedia = await fixture.Db.ListingMedias.AsNoTracking().OrderBy(media => media.DisplayOrder).ToListAsync();
+        var proposal = fixture.Command([LocalImage]) with { Title = "Proposed service", MinPrice = 1400, MaxPrice = 2800,
+            Description = "Proposed description", Location = "Hà Nội", ServiceDetails = new(ShortDescription: "Proposed metadata") };
+        await fixture.Handler().Handle(proposal, default);
+        var saved = await fixture.Db.Listings.AsNoTracking().SingleAsync();
+        var liveMedia = await fixture.Db.ListingMedias.AsNoTracking().OrderBy(media => media.DisplayOrder).ToListAsync();
+        Assert.Equal(before.Title, saved.Title); Assert.Equal(before.Description, saved.Description);
+        Assert.Equal(before.MinPrice, saved.MinPrice); Assert.Equal(before.MaxPrice, saved.MaxPrice); Assert.Equal(before.Location, saved.Location);
+        Assert.Equal(status, saved.Status); Assert.Equal(before.IsActive, saved.IsActive);
+        Assert.Equal(before.CancellationPolicy, saved.CancellationPolicy); Assert.Equal(before.ServiceDetailsJson, saved.ServiceDetailsJson);
+        Assert.Equal(before.UpdatedAt, saved.UpdatedAt);
+        Assert.Equal(beforeMedia.Select(media => media.Id), liveMedia.Select(media => media.Id));
+        Assert.Equal(beforeMedia.Select(media => media.MediaUrl), liveMedia.Select(media => media.MediaUrl));
+        Assert.Equal(beforeMedia.Select(media => media.IsFeatured), liveMedia.Select(media => media.IsFeatured));
+        Assert.Equal(3, liveMedia.Count);
+        var revisions = await fixture.Db.ListingRevisions.AsNoTracking().OrderBy(revision => revision.Sequence).ToListAsync();
+        Assert.Equal(new[] { "Baseline", "Draft" }, revisions.Select(revision => revision.Status));
+        var baseline = ListingPublication.Read(revisions[0]); var draft = ListingPublication.Read(revisions[1]);
+        Assert.Equal(before.Title, baseline.Title); Assert.Equal(before.Description, baseline.Description);
+        Assert.Equal(beforeMedia.Select(media => media.MediaUrl), baseline.ImageUrls);
+        Assert.Equal(fixture.Owner.Id, revisions[1].CreatedById); Assert.Null(revisions[1].SubmittedAt); Assert.Null(revisions[1].ReviewedById);
+        Assert.Equal(proposal.Title, draft.Title); Assert.Equal(proposal.Description, draft.Description);
+        Assert.Equal(proposal.MinPrice, draft.MinPrice); Assert.Equal(proposal.MaxPrice, draft.MaxPrice); Assert.Equal(proposal.Location, draft.Location);
+        Assert.Equal(new[] { LocalImage }, draft.ImageUrls);
+        Assert.Equal("Proposed metadata", ListingServiceDetails.Read(draft.ServiceDetailsJson)?.ShortDescription);
     }
 
     [Fact]

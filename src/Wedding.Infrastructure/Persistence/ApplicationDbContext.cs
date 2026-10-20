@@ -19,7 +19,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<BusinessGroup> BusinessGroups => Set<BusinessGroup>();
+    public DbSet<VendorBusinessGroup> VendorBusinessGroups => Set<VendorBusinessGroup>();
     public DbSet<Listing> Listings => Set<Listing>();
+    public DbSet<ListingRevision> ListingRevisions => Set<ListingRevision>();
     public DbSet<ListingMedia> ListingMedias => Set<ListingMedia>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<Voucher> Vouchers => Set<Voucher>();
@@ -40,6 +43,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AppointmentType> AppointmentTypes => Set<AppointmentType>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<ComboTemplate> ComboTemplates => Set<ComboTemplate>();
+    public DbSet<ComboTemplateRevision> ComboTemplateRevisions => Set<ComboTemplateRevision>();
     public DbSet<ComboTemplateItem> ComboTemplateItems => Set<ComboTemplateItem>();
     public DbSet<ComboOrder> ComboOrders => Set<ComboOrder>();
     public DbSet<ComboOrderItem> ComboOrderItems => Set<ComboOrderItem>();
@@ -93,6 +97,29 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         if (ChangeTracker.Entries<AuditLog>().Any(e => e.State is EntityState.Modified or EntityState.Deleted))
             throw new InvalidOperationException("Audit logs are append-only and must be retained for at least 24 months.");
+        foreach (var entry in ChangeTracker.Entries<BookingContract>().Where(entry => entry.State == EntityState.Modified))
+        {
+            var alreadyConfirmed = entry.OriginalValues.GetValue<DateTime?>(nameof(BookingContract.ConfirmedAt)).HasValue ||
+                entry.OriginalValues.GetValue<Wedding.Domain.Enums.ContractStatus>(nameof(BookingContract.Status)) is
+                    Wedding.Domain.Enums.ContractStatus.Confirmed or Wedding.Domain.Enums.ContractStatus.Completed or Wedding.Domain.Enums.ContractStatus.Disputed;
+            var snapshotFields = new[] { nameof(BookingContract.CommissionRateSnapshot), nameof(BookingContract.CommissionCategoryIdSnapshot),
+                nameof(BookingContract.CommissionCategoryNameSnapshot), nameof(BookingContract.CommissionBusinessGroupIdSnapshot),
+                nameof(BookingContract.CommissionBusinessGroupNameSnapshot), nameof(BookingContract.CommissionRateSourceSnapshot),
+                nameof(BookingContract.CommissionPolicyVersionSnapshot) };
+            if (alreadyConfirmed && snapshotFields.Any(field => entry.Property(field).IsModified))
+                throw new InvalidOperationException("Confirmed commission/category snapshots are immutable, including missing historical metadata; use a separately approved adjustment record instead of backfilling or overwriting.");
+        }
+        if (ChangeTracker.Entries<ListingRevision>().Any(entry => entry.State == EntityState.Deleted ||
+            entry.State == EntityState.Modified && (entry.Property(revision => revision.ContentJson).IsModified ||
+                entry.Property(revision => revision.ListingId).IsModified || entry.Property(revision => revision.Sequence).IsModified ||
+                entry.Property(revision => revision.CreatedById).IsModified || entry.Property(revision => revision.CreatedAt).IsModified)))
+            throw new InvalidOperationException("Listing content snapshots and their authors are immutable; append a new revision.");
+        if (ChangeTracker.Entries<ComboTemplateRevision>().Any(entry => entry.State == EntityState.Deleted ||
+            entry.State == EntityState.Modified && (entry.Property(revision => revision.SnapshotJson).IsModified ||
+                entry.Property(revision => revision.ComboTemplateId).IsModified || entry.Property(revision => revision.Sequence).IsModified ||
+                entry.Property(revision => revision.CreatedById).IsModified || entry.Property(revision => revision.CreatedByRole).IsModified ||
+                entry.Property(revision => revision.CreatedAt).IsModified)))
+            throw new InvalidOperationException("Combo proposal snapshots and their authors are immutable; create a new revision instead.");
         var auditedTypes = new[] { typeof(BookingContract), typeof(Commission), typeof(CommissionSettlement), typeof(PaymentTransaction), typeof(AdvancePayment), typeof(VendorVerification), typeof(VendorTaxProfile), typeof(Dispute), typeof(Listing), typeof(Review) };
         var changes = ChangeTracker.Entries().Where(e => auditedTypes.Contains(e.Entity.GetType()) && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).ToArray();
         foreach (var change in changes)

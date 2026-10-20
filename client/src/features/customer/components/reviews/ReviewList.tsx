@@ -8,6 +8,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { PublicReview } from "../../../../types/review.types";
+import { reviewHistoryLabel } from "./reviewPolicyModel";
 import { useAuth } from "../../../auth/hooks/useAuth";
 import {
   useVendorReplyReview,
@@ -86,6 +87,7 @@ export function ReviewList({
 
   return (
     <div className="space-y-4">
+      {reviews.some(review => !review.isVerifiedBuyer) && <p className="text-xs text-slate-500 rounded-xl border border-slate-200 p-3">Đánh giá tư vấn cũ vẫn được giữ nguyên và ghi nhãn riêng. Đánh giá mới chỉ được gửi từ hợp đồng đã Hoàn tất; không tự đổi nhãn hoặc trọng số của dữ liệu cũ.</p>}
       {reviews.map((review) => {
         let photos: string[] = [];
         try {
@@ -121,7 +123,7 @@ export function ReviewList({
                     </span>
                   ) : (
                     <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
-                      Trải nghiệm tư vấn
+                      {reviewHistoryLabel(false)}
                     </span>
                   )}
 

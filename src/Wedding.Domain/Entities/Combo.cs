@@ -18,6 +18,14 @@ public class ComboTemplate : BaseEntity
     public decimal? SingleVendorDiscount { get; private set; }
     public string ModerationStatus { get; private set; } = "Approved";
     public string? Region { get; private set; }
+    public string? ContentJson { get; private set; }
+    public DateTime? ValidFromUtc { get; private set; }
+    public DateTime? ValidUntilUtc { get; private set; }
+    public string? ReviewNote { get; private set; }
+    // Existing templates remain dynamic; fixed package prices are always explicitly authored.
+    public string PricingMode { get; private set; } = "Dynamic";
+    public decimal? ComboPrice { get; private set; }
+    public decimal? OriginalPrice { get; private set; }
 
     public ICollection<ComboTemplateItem> Items { get; private set; } = new List<ComboTemplateItem>();
 
@@ -43,7 +51,37 @@ public class ComboTemplate : BaseEntity
         if (ModerationStatus != "Pending") throw new DomainException("Chỉ duyệt combo đang chờ. Combo đã ẩn cần được NCC chỉnh sửa và gửi lại.");
         ModerationStatus = approve ? "Approved" : "Rejected"; IsActive = approve; SetUpdated();
     }
-    public void Archive() { IsActive = false; ModerationStatus = "Archived"; SetUpdated(); }
+    public void StageUnpublished(Guid ownerVendorId, string status, string? reviewNote = null)
+    {
+        if (ModerationStatus == "Approved" && Items.Count > 0)
+            throw new DomainException("Không được thay thế bản combo đã công khai bằng bản chờ duyệt.");
+        if (status is not ("Draft" or "Pending" or "Rejected")) throw new DomainException("Trạng thái bản nháp không hợp lệ.");
+        OwnerVendorId = ownerVendorId; ModerationStatus = status; ReviewNote = reviewNote; IsActive = false; SetUpdated();
+    }
+    public void Publish(Guid ownerVendorId, string? region, decimal? discount, string? contentJson,
+        DateTime? validFromUtc, DateTime? validUntilUtc, bool active, string? reviewNote)
+    {
+        SetScope(ownerVendorId, region, discount, true);
+        ContentJson = contentJson; ValidFromUtc = validFromUtc; ValidUntilUtc = validUntilUtc;
+        IsActive = active; ReviewNote = reviewNote; SetUpdated();
+    }
+    public void RecordLegacyReview(bool approve, string? note)
+    {
+        Review(approve); ReviewNote = note; SetUpdated();
+    }
+    public void SetActivity(bool active)
+    {
+        if (active && ModerationStatus != "Approved") throw new DomainException("Chỉ combo đã duyệt được hoạt động.");
+        IsActive = active; SetUpdated();
+    }
+    public void Archive() => SetActivity(false);
+    public void SetPackagePricing(string mode, decimal? price, decimal? originalPrice)
+    {
+        if (mode is not ("Dynamic" or "FixedPrice")) throw new DomainException("Loại giá combo không hợp lệ.");
+        if (mode == "FixedPrice" && (!price.HasValue || price < 0 || price > 100000000000m || price != decimal.Truncate(price.Value) || originalPrice < 0))
+            throw new DomainException("Giá combo cố định phải theo đồng nguyên và không âm.");
+        PricingMode = mode; ComboPrice = mode == "FixedPrice" ? price : null; OriginalPrice = mode == "FixedPrice" ? originalPrice : null; SetUpdated();
+    }
 }
 
 public class ComboTemplateItem : BaseEntity
@@ -54,6 +92,7 @@ public class ComboTemplateItem : BaseEntity
     public bool IsOptional { get; private set; }
     public Guid? ServiceItemId { get; private set; }
     public string AllowedItemIdsJson { get; private set; } = "[]";
+    public string? ComponentSnapshotJson { get; private set; }
 
     public ComboTemplate ComboTemplate { get; private set; } = null!;
     public Category Category { get; private set; } = null!;
@@ -64,6 +103,7 @@ public class ComboTemplateItem : BaseEntity
     public static ComboTemplateItem Create(Guid templateId, Guid categoryId, Guid listingId, bool isOptional)
         => new() { ComboTemplateId = templateId, CategoryId = categoryId, ListingId = listingId, IsOptional = isOptional };
     public void ConfigureItems(Guid serviceItemId, string allowedItemIdsJson) { ServiceItemId = serviceItemId; AllowedItemIdsJson = allowedItemIdsJson; }
+    public void FreezeComponent(string snapshotJson) => ComponentSnapshotJson = snapshotJson;
 }
 
 /// <summary>P5 – Đơn combo khách gửi; mỗi dòng sinh 1 Lead tới NCC tương ứng.</summary>
@@ -92,13 +132,15 @@ public class ComboOrder : BaseEntity
     public static decimal DiscountFor(int itemCount) => itemCount >= 7 ? 0.08m : itemCount >= 5 ? 0.05m : itemCount >= 3 ? 0.03m : 0m;
 
     public static ComboOrder Create(Guid customerId, Guid? templateId, DateTime? weddingDate, int? guestCount, string? note,
-        IReadOnlyList<(Guid ListingId, Guid VendorId, Guid CategoryId, string Title, decimal Price)> lines)
+        IReadOnlyList<(Guid ListingId, Guid VendorId, Guid CategoryId, string Title, decimal Price)> lines, bool fixedPackage = false)
     {
         if (lines.Count == 0) throw new DomainException("Combo phải có ít nhất 1 hạng mục.");
         if (lines.Select(l => l.VendorId).Distinct().Count() != 1)
             throw new DomainException("Mỗi combo chỉ được chứa dịch vụ của một nhà cung cấp.");
-        if (lines.Select(l => l.CategoryId).Distinct().Count() != lines.Count)
+        if (!fixedPackage && lines.Select(l => l.CategoryId).Distinct().Count() != lines.Count)
             throw new DomainException("Mỗi hạng mục chỉ được chọn 1 dịch vụ.");
+        if (fixedPackage && (lines.Count < 2 || lines.Select(l => l.ListingId).Distinct().Count() != lines.Count))
+            throw new DomainException("Combo cố định cần ít nhất hai dịch vụ độc lập khác nhau.");
         var order = new ComboOrder
         {
             Code = $"CB-{Guid.NewGuid():N}"[..15].ToUpperInvariant(),
@@ -144,6 +186,17 @@ public class ComboOrder : BaseEntity
         if (Items.Select(i => i.VendorId).Distinct().Count() != 1) throw new DomainException("Không thể gửi lại bản nháp cũ chứa nhiều nhà cung cấp.");
         Status = ComboOrderStatus.Submitted; PriceLockUntil = DateTime.UtcNow.AddDays(7); SetUpdated();
     }
+    public void SetFixedPricing(decimal total, string region, bool draft)
+    {
+        if (total < 0 || total > Subtotal || total != decimal.Truncate(total))
+            throw new DomainException("Giá combo cần báo giá riêng khi vượt tổng giá bán lẻ.");
+        Region = region; DiscountAmount = Subtotal - total; Total = total;
+        DiscountPercent = Subtotal == 0 ? 0 : DiscountAmount / Subtotal;
+        var sorted = Items.OrderBy(i => i.Id).ToList();
+        var shares = ComboMoney.AllocateDiscount(sorted.Select(i => i.Price).ToList(), DiscountAmount);
+        for (var index = 0; index < sorted.Count; index++) sorted[index].SetDiscount(shares[index]);
+        Status = draft ? ComboOrderStatus.Draft : ComboOrderStatus.Submitted; PriceLockUntil = draft ? null : DateTime.UtcNow.AddDays(7); SetUpdated();
+    }
     public void ExpirePriceLock() { if (Status is not (ComboOrderStatus.Completed or ComboOrderStatus.Cancelled or ComboOrderStatus.Draft)) { Status = ComboOrderStatus.Expired; SetUpdated(); } }
 
     public void Cancel()
@@ -186,6 +239,7 @@ public class ComboOrderItem : BaseEntity
     public Guid? ServiceItemId { get; private set; }
     public Guid? BudgetItemId { get; private set; }
     public string SelectionJson { get; private set; } = "{}";
+    public string? ComponentSnapshotJson { get; private set; }
     public string CancellationPolicySnapshot { get; private set; } = string.Empty;
     public int Quantity { get; private set; } = 1;
     public string Unit { get; private set; } = "Package";
@@ -204,5 +258,6 @@ public class ComboOrderItem : BaseEntity
     public void SetSelection(Guid serviceItemId, int quantity, string unit, string selectionJson, string cancellationPolicy)
     { ServiceItemId = serviceItemId; Quantity = quantity; Unit = unit; SelectionJson = selectionJson; CancellationPolicySnapshot = cancellationPolicy; }
     public void AttachBudget(Guid budgetItemId) => BudgetItemId = budgetItemId;
+    public void FreezeComponent(string snapshotJson) => ComponentSnapshotJson = snapshotJson;
     public void SetStatus(ComboItemStatus status) { Status = status; SetUpdated(); }
 }

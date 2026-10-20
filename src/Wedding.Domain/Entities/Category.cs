@@ -10,11 +10,14 @@ public class Category : BaseEntity
     public string? Icon { get; private set; }
     public string? Description { get; private set; }
     public decimal DefaultCommissionRate { get; private set; } // FM-001 (0.03 - 0.12)
+    public Guid? BusinessGroupId { get; private set; }
+    public bool RequiresCommissionBasisApproval { get; private set; }
     public int DisplayOrder { get; private set; } = 0;
     public bool IsActive { get; private set; } = true;
 
     // Navigation Properties
     public ICollection<Listing> Listings { get; private set; } = new List<Listing>();
+    public BusinessGroup? BusinessGroup { get; private set; }
 
     private Category() { } // Dành cho EF Core
 

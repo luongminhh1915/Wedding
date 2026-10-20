@@ -77,6 +77,6 @@ public class GetCustomerContractsQueryHandler : IRequestHandler<GetCustomerContr
             RejectReason: c.RejectReason,
             RevisionCount: c.RevisionCount,
             AppointmentDepositCredit: c.AppointmentDepositCredit
-        )).ToList();
+        ).WithCategorySnapshot(c)).ToList();
     }
 }

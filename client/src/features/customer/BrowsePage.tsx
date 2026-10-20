@@ -1,36 +1,32 @@
-import { useCallback, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
   Loader2,
   Search,
   RotateCcw,
+  X,
 } from "lucide-react";
 import CategoryBar from "./components/CategoryBar";
 import SearchFilterBar from "./components/SearchFilterBar";
 import ListingCard from "./components/ListingCard";
 import { usePublicCategories, usePublicListings } from "./hooks/useBrowse";
 import type { PublicListingsFilter } from "../../types/category.types";
-
-const initialFilter: PublicListingsFilter = {
-  sortBy: "newest",
-  page: 1,
-  pageSize: 12,
-};
+import { clearServiceFilterSearch, readServiceFilters, serviceFilterChips, serviceFilterSearch } from "./serviceFilterModel";
+import "../../styles/service-search.css";
 
 export default function BrowsePage() {
-  const [filter, setFilter] = useState<PublicListingsFilter>(initialFilter);
-  const [filterRevision, setFilterRevision] = useState(0);
-  const updateFilter = useCallback(
-    (changes: PublicListingsFilter) => setFilter((f) => ({ ...f, ...changes })),
-    [],
-  );
-  const resetFilter = () => {
-    setFilter(initialFilter);
-    setFilterRevision((value) => value + 1);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const filter = readServiceFilters(location.search);
+  const updateFilter = (changes: PublicListingsFilter) => {
+    const next = { ...filter, ...changes };
+    navigate({ pathname: location.pathname, search: serviceFilterSearch(next, location.search) });
   };
-  const { data: categories = [], isLoading: catLoading } =
+  const resetFilter = () => {
+    navigate({ pathname: location.pathname, search: clearServiceFilterSearch(location.search) });
+  };
+  const { data: categories = [], isLoading: catLoading, isError: catError, refetch: refetchCategories } =
     usePublicCategories();
   const {
     data: result,
@@ -42,15 +38,15 @@ export default function BrowsePage() {
   const totalPages = result?.totalPages ?? 1;
   const currentPage = result?.page ?? 1;
   const firstPage = Math.max(1, Math.min(currentPage - 3, totalPages - 6));
+  const chips = serviceFilterChips(filter, categories);
+  const returnPath = `/browse${serviceFilterSearch(filter)}`;
 
   return (
-    <main>
-      <section className="page-intro">
-        <span className="wm-eyebrow">NHỮNG NGƯỜI BẠN ĐỒNG HÀNH</span>
+    <main className="service-browse-page">
+      <section className="page-intro service-browse-intro">
+        <span className="wm-eyebrow">DỊCH VỤ CHO NGÀY VUI</span>
         <h1>
-          Vendor hợp gu,
-          <br />
-          <em>ngày cưới như mơ.</em>
+          Tìm người đồng hành,<br /><em>cùng viết ngày hạnh phúc.</em>
         </h1>
         <p>
           Tìm những dịch vụ phù hợp với câu chuyện, phong cách và ngân sách của
@@ -58,10 +54,8 @@ export default function BrowsePage() {
         </p>
       </section>
       <div className="browse-content space-y-6">
-        <section className="browse-combo-banner">
-          <div><h2>Chọn combo riêng của nhà cung cấp</h2><p>Chọn combo của một NCC, tùy chỉnh dịch vụ trong cùng NCC rồi bấm “Bước tiếp theo” để kiểm tra và xin báo giá. Chưa thanh toán.</p></div>
-          <Link to={`/combo${filter.categoryId ? `?category=${filter.categoryId}` : ""}`} className="combo-primary">Mở giỏ combo →</Link>
-        </section>
+        <SearchFilterBar key={location.search} filter={filter} categories={categories} onChange={updateFilter} onReset={resetFilter} />
+        {catError && <p role="alert" className="service-filter-error">Chưa tải được danh mục dịch vụ. Các bộ lọc khác vẫn dùng được. <button type="button" className="service-filter-reset" onClick={() => void refetchCategories()}>Thử lại danh mục</button></p>}
         {catLoading ? (
           <div className="flex gap-3 overflow-hidden">
             {Array.from({ length: 6 }, (_, i) => (
@@ -76,16 +70,15 @@ export default function BrowsePage() {
             categories={categories}
             selectedId={filter.categoryId ?? null}
             onSelect={(id) =>
-              setFilter((f) => ({ ...f, categoryId: id ?? undefined, page: 1 }))
+              updateFilter({ categoryId: id ?? undefined, page: 1 })
             }
           />
         )}
-        <SearchFilterBar
-          key={`filters-${filterRevision}`}
-          filter={filter}
-          onChange={updateFilter}
-        />
-        <div className="flex items-center justify-between text-xs text-slate-400 py-2">
+        {chips.length > 0 && <div className="service-applied-filters" aria-label="Bộ lọc đang áp dụng">
+          <span>Đang lọc:</span>{chips.map(chip => <button type="button" key={chip.key} onClick={() => updateFilter({ ...chip.clear, page: 1 })} aria-label={`Bỏ bộ lọc ${chip.label}`}>{chip.label}<X size={13} aria-hidden="true" /></button>)}
+          <button type="button" className="service-filter-reset" onClick={resetFilter}>Xóa tất cả</button>
+        </div>}
+        <div className="service-results-heading">
           <p>
             {isFetching ? (
               <span className="flex items-center gap-2">
@@ -95,7 +88,7 @@ export default function BrowsePage() {
             ) : (
               <>
                 Khám phá{" "}
-                <strong className="text-rose-600">
+                <strong>
                   {result?.totalCount ?? 0}
                 </strong>{" "}
                 gói dịch vụ cưới
@@ -106,6 +99,10 @@ export default function BrowsePage() {
             Ngày cưới của bạn · Lựa chọn của bạn
           </span>
         </div>
+        <section className="browse-combo-banner service-combo-banner">
+          <div><h2>Muốn chọn nhiều dịch vụ cùng một nhà cung cấp?</h2><p>Khám phá combo riêng của shop, tùy chỉnh rồi gửi yêu cầu báo giá. Chưa thanh toán.</p></div>
+          <Link to={`/combo${filter.categoryId ? `?category=${filter.categoryId}` : ""}`} className="combo-primary">Khám phá combo →</Link>
+        </section>
         {isError ? (
           <div className="overview-panel text-center py-16" role="alert">
             <RotateCcw className="mx-auto mb-4 text-rose-400" size={28} />
@@ -146,7 +143,7 @@ export default function BrowsePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {result.items.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+              <ListingCard key={listing.id} listing={listing} returnPath={returnPath} />
             ))}
           </div>
         )}
@@ -159,7 +156,7 @@ export default function BrowsePage() {
               aria-label="Trang trước"
               disabled={currentPage <= 1}
               onClick={() =>
-                setFilter((f) => ({ ...f, page: currentPage - 1 }))
+                updateFilter({ page: currentPage - 1 })
               }
               className="p-2 rounded-xl border border-slate-200 disabled:opacity-30"
             >
@@ -172,8 +169,8 @@ export default function BrowsePage() {
               <button
                 key={page}
                 aria-current={page === currentPage ? "page" : undefined}
-                onClick={() => setFilter((f) => ({ ...f, page }))}
-                className={`w-9 h-9 rounded-xl text-xs ${page === currentPage ? "bg-rose-500 text-white" : "border border-slate-200 text-slate-500"}`}
+                onClick={() => updateFilter({ page })}
+                className={`w-9 h-9 rounded-xl text-xs ${page === currentPage ? "bg-[#25334d] text-white" : "border border-slate-200 text-slate-500"}`}
               >
                 {page}
               </button>
@@ -182,7 +179,7 @@ export default function BrowsePage() {
               aria-label="Trang sau"
               disabled={currentPage >= totalPages}
               onClick={() =>
-                setFilter((f) => ({ ...f, page: currentPage + 1 }))
+                updateFilter({ page: currentPage + 1 })
               }
               className="p-2 rounded-xl border border-slate-200 disabled:opacity-30"
             >

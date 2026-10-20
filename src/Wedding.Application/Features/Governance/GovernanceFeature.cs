@@ -186,7 +186,7 @@ public class GetArticlesQueryHandler : IRequestHandler<GetArticlesQuery, List<Ar
         if (!string.IsNullOrWhiteSpace(r.Slug)) q = q.Where(a => a.Slug == r.Slug);
         var list = await q.AsNoTracking().OrderByDescending(a => a.PublishedAt ?? a.CreatedAt).Take(100).ToListAsync(ct);
         var ids = list.Select(a => a.Id).ToList();
-        var pins = await _context.ArticleListingPins.AsNoTracking().Where(p => ids.Contains(p.ArticleId) && p.Listing.Status == ListingStatus.Active).ToListAsync(ct);
+        var pins = await _context.ArticleListingPins.AsNoTracking().Where(p => ids.Contains(p.ArticleId) && p.Listing.Status == ListingStatus.Active && p.Listing.IsActive && p.Listing.Vendor.IsActive && p.Listing.Vendor.User.IsActive).ToListAsync(ct);
         return list.Select(a => new ArticleDto(a.Id, a.Title, a.Slug, a.Excerpt,
             r.Slug == null ? "" : a.Content, a.ThumbnailUrl, a.Category, a.IsPublished, a.PublishedAt, a.ViewCount, pins.Where(p => p.ArticleId == a.Id).Select(p => p.ListingId).ToList())).ToList();
     }

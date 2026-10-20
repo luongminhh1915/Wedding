@@ -54,7 +54,7 @@ public class UpdateArticleHandler(IApplicationDbContext db, IAuditLogger audit) 
         var slug = r.Slug.Trim().ToLowerInvariant();
         if (await db.Articles.AnyAsync(a => a.Id != r.Id && a.Slug == slug, ct)) throw new DomainException("Slug đã tồn tại.");
         var ids = r.ListingIds?.Distinct().Take(10).ToList() ?? new();
-        if (await db.Listings.CountAsync(l => ids.Contains(l.Id) && l.Status == ListingStatus.Active, ct) != ids.Count) throw new DomainException("Chỉ được ghim dịch vụ đang hoạt động.");
+        if (await db.Listings.CountAsync(l => ids.Contains(l.Id) && l.Status == ListingStatus.Active && l.IsActive && l.Vendor.IsActive && l.Vendor.User.IsActive, ct) != ids.Count) throw new DomainException("Chỉ được ghim dịch vụ đang hoạt động.");
         article.Update(r.Title, slug, r.Excerpt, r.Content, r.ThumbnailUrl, r.Category);
         if (r.Publish && !article.IsPublished) article.Publish(); else if (!r.Publish) article.Unpublish();
         db.ArticleListingPins.RemoveRange(await db.ArticleListingPins.Where(p => p.ArticleId == r.Id).ToListAsync(ct));
@@ -81,7 +81,7 @@ public class EmergencyMatchHandler(IApplicationDbContext db, ICurrentUserService
         var contract = await db.BookingContracts.Include(c => c.Customer).FirstOrDefaultAsync(c => c.Id == r.ContractId, token) ?? throw new NotFoundException("Không có hợp đồng.");
         if (contract.Status != ContractStatus.Disputed) throw new DomainException("Emergency matching chỉ áp dụng khi hợp đồng đang tranh chấp. Hợp đồng cũ vẫn giữ để xử lý tài chính.");
         var listing = await db.Listings.Include(l => l.Vendor).FirstOrDefaultAsync(l => l.Id == r.ReplacementListingId, token) ?? throw new NotFoundException("Không tìm thấy dịch vụ thay thế.");
-        if (!listing.Vendor.IsVerified || !listing.Vendor.IsActive || listing.Status != ListingStatus.Active || listing.VendorId == contract.VendorId) throw new DomainException("Chọn NCC khác, đã xác minh và có dịch vụ hoạt động.");
+        if (!listing.Vendor.IsVerified || !listing.Vendor.IsActive || listing.Status != ListingStatus.Active || !listing.IsActive || listing.VendorId == contract.VendorId) throw new DomainException("Chọn NCC khác, đã xác minh và có dịch vụ hoạt động.");
         if (await db.EmergencyMatches.AnyAsync(e => e.ContractId == r.ContractId && e.ReplacementListingId == r.ReplacementListingId, token)) throw new DomainException("Đã tạo yêu cầu hỗ trợ này.");
         var lead = Lead.Create(contract.CustomerId, listing.VendorId, listing.Id, contract.Customer.PhoneNumber, contract.WeddingDate, null, contract.ContractValue, r.Reason);
         lead.AttachSource("EmergencyMatch"); db.Leads.Add(lead); db.Vouchers.Add(Voucher.Create(lead.Id, contract.CustomerId));

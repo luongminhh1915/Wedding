@@ -1,4 +1,5 @@
 import { normalizeProvince } from "../../../data/vietnamProvinces.ts";
+import type { RegisterVendorRequest } from "../../../types/auth.ts";
 
 export type RegistrationRole = "customer" | "vendor";
 
@@ -10,14 +11,15 @@ export type RegistrationValues = {
   confirmPassword: string;
   brandName: string;
   city: string;
-  commissionRate: string;
+  businessGroupIds: string[];
+  partnershipPolicyAccepted: boolean;
 };
 
 export type RegistrationErrors = Partial<Record<keyof RegistrationValues, string>>;
 
 export const EMPTY_REGISTRATION: RegistrationValues = {
   fullName: "", email: "", phoneNumber: "", password: "", confirmPassword: "",
-  brandName: "", city: "", commissionRate: "0.08",
+  brandName: "", city: "", businessGroupIds: [], partnershipPolicyAccepted: false,
 };
 
 export function normalizeRegistration(values: RegistrationValues): RegistrationValues {
@@ -31,7 +33,7 @@ export function normalizeRegistration(values: RegistrationValues): RegistrationV
   };
 }
 
-export function validateRegistration(values: RegistrationValues, role: RegistrationRole): RegistrationErrors {
+export function validateRegistration(values: RegistrationValues, role: RegistrationRole, availableBusinessGroupIds: readonly string[] = []): RegistrationErrors {
   const fields = normalizeRegistration(values);
   const errors: RegistrationErrors = {};
   if (!fields.fullName || fields.fullName.length > 150) errors.fullName = "Họ và tên cần có từ 1 đến 150 ký tự.";
@@ -46,9 +48,22 @@ export function validateRegistration(values: RegistrationValues, role: Registrat
   if (role === "vendor") {
     if (!fields.brandName || fields.brandName.length > 200) errors.brandName = "Tên thương hiệu cần có từ 1 đến 200 ký tự.";
     if (!normalizeProvince(fields.city)) errors.city = "Chọn một tỉnh / thành phố trong danh sách 34 địa phương hiện hành.";
-    if (!["0.03", "0.08", "0.1", "0.12"].includes(fields.commissionRate)) errors.commissionRate = "Chọn nhóm dịch vụ và mức hoa hồng được hỗ trợ.";
+    if (availableBusinessGroupIds.length === 0) errors.businessGroupIds = "Chưa tải được chính sách nhóm dịch vụ. Vui lòng thử lại trước khi đăng ký.";
+    else if (fields.businessGroupIds.length === 0 || new Set(fields.businessGroupIds).size !== fields.businessGroupIds.length || fields.businessGroupIds.some(id => !availableBusinessGroupIds.includes(id)))
+      errors.businessGroupIds = "Chọn ít nhất một nhóm dịch vụ trong chính sách hiện hành.";
+    if (!fields.partnershipPolicyAccepted) errors.partnershipPolicyAccepted = "Vui lòng xác nhận đã đọc chính sách hợp tác theo các nhóm đã chọn.";
   }
   return errors;
+}
+
+// Explicit allowlist: never send a rate, policy version, role or other client-controlled financial value.
+export function vendorRegistrationRequest(values: RegistrationValues): RegisterVendorRequest {
+  if (!values.partnershipPolicyAccepted) throw new Error("Cần xác nhận chính sách hợp tác trước khi đăng ký.");
+  const fields = normalizeRegistration(values);
+  return {
+    fullName: fields.fullName, email: fields.email, phoneNumber: fields.phoneNumber, password: fields.password,
+    brandName: fields.brandName, city: fields.city, businessGroupIds: [...fields.businessGroupIds], partnershipPolicyAccepted: true,
+  };
 }
 
 // Supports both ASP.NET validation dictionaries and the API's message arrays.

@@ -13,14 +13,30 @@ public class Listing : BaseEntity
     public decimal MinPrice { get; private set; }
     public decimal MaxPrice { get; private set; }
     public string Description { get; private set; } = string.Empty;
+    public string? ServiceDetailsJson { get; private set; }
     public string Location { get; private set; } = string.Empty;
     public ListingStatus Status { get; private set; } = ListingStatus.Draft;
+    public bool IsActive { get; private set; } = true;
+    // The price/options facet of this source service. Legacy sibling rows are retained separately.
+    public Guid? PricingServiceItemId { get; private set; }
+    public void AttachPricingServiceItem(Guid id)
+    {
+        if (id == Guid.Empty || PricingServiceItemId.HasValue && PricingServiceItemId != id)
+            throw new DomainException("Không thể thay thế dịch vụ giá đã liên kết. Các dịch vụ cũ và giao dịch của chúng được giữ nguyên.");
+        PricingServiceItemId = id;
+    }
     public string? RejectionReason { get; private set; }
     public int ViewCount { get; private set; } = 0;
     public int FavoriteCount { get; private set; } = 0;
     public DateTime? ModeratedAt { get; private set; }
     public string CancellationPolicy { get; private set; } = "Hủy trước 90 ngày: hoàn 100% cọc; trước 30–89 ngày: hoàn 50% cọc; dưới 30 ngày: không hoàn cọc. NCC hủy: hoàn 100% cọc.";
     public void SetCancellationPolicy(string policy) { if (string.IsNullOrWhiteSpace(policy) || policy.Length > 4000) throw new DomainException("Chính sách hủy cần từ 1 đến 4000 ký tự."); CancellationPolicy = policy.Trim(); SetUpdated(); }
+    public void SetServiceDetailsJson(string? json)
+    {
+        if (json?.Length > 60000) throw new DomainException("Tổng nội dung dịch vụ tối đa 60.000 ký tự lưu trữ.");
+        ServiceDetailsJson = json;
+        SetUpdated();
+    }
 
     // Navigation Properties
     public Vendor Vendor { get; private set; } = null!;
@@ -96,6 +112,8 @@ public class Listing : BaseEntity
         Status = status;
         SetUpdated();
     }
+
+    public void SetActivity(bool active) { IsActive = active; SetUpdated(); }
 
     public void IncrementViewCount()
     {

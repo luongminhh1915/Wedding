@@ -5,6 +5,7 @@ import type {
 } from "../comboApi";
 import { quantityFor, type ComboCart } from "./cartModel.ts";
 import { comboMediaSources } from "./comboMedia.ts";
+import { fixedComboOptions, fixedComboSummary } from "./fixedComboModel.ts";
 
 export interface DetailVendor {
   id: string;
@@ -27,6 +28,7 @@ export type DetailOption = CatalogOption & {
 export type DetailCatalog = CatalogBuilder & {
   vendors?: DetailVendor[];
   previewGuestCount?: number;
+  previewOnly?: boolean;
 };
 export interface DetailSlot {
   categoryId: string;
@@ -44,6 +46,18 @@ export interface ComboDetailModel {
   optional: DetailSlot[];
   photos: string[];
   canChoose: boolean;
+  readOnly?: boolean;
+}
+/** Private preview options come only from the authorized endpoint, never from fabricated public fallbacks. */
+export function previewDetailCatalog(data: CatalogBuilder | undefined, template: CatalogTemplate): DetailCatalog {
+  const categories = (data?.categories ?? []).map(category => ({ ...category, options: [] as CatalogOption[] }));
+  for (const slot of template.items) {
+    let category = categories.find(category => category.categoryId === slot.categoryId);
+    if (!category) { category = { categoryId: slot.categoryId, name: "Hạng mục dịch vụ", slug: "", options: [] }; categories.push(category); }
+    const ids = new Set([slot.serviceItemId, ...(slot.allowedItemIds ?? [])]);
+    category.options.push(...(template.previewOptions ?? []).filter(option => ids.has(option.serviceItemId) && !category!.options.some(current => current.serviceItemId === option.serviceItemId)));
+  }
+  return { categories, templates: [template], discountTiers: data?.discountTiers ?? [], vendors: data?.vendors ?? [], previewGuestCount: data?.previewGuestCount ?? 200, previewOnly: true };
 }
 export function mediaUrls(urls: (string | null | undefined)[]): string[] {
   return comboMediaSources(urls);
@@ -55,6 +69,7 @@ export function comboDetailModel(
   const template = data.templates.find((item) => item.id === id);
   if (!template) return null;
   const vendorId = template.ownerVendorId || null;
+  const fixed = template.pricingMode === "FixedPrice";
   const options = new Map<string, DetailOption>(
     data.categories.flatMap((category) =>
       category.options.map(
@@ -66,6 +81,10 @@ export function comboDetailModel(
       ),
     ),
   );
+  if (fixed) {
+    options.clear();
+    for (const item of fixedComboOptions(template)) options.set(item.serviceItemId, item);
+  }
   const slots = template.items.map((slot) => {
     const item = slot.serviceItemId
       ? options.get(slot.serviceItemId)
@@ -90,6 +109,7 @@ export function comboDetailModel(
   const vendor = data.vendors?.find((item) => item.id === vendorId);
   const photos = mediaUrls([
     template.imageUrl,
+    ...(template.content?.galleryUrls ?? []),
     vendor?.coverImageUrl,
     ...slots
       .filter((slot) => slot.valid)
@@ -110,11 +130,15 @@ export function comboDetailModel(
     required,
     optional,
     photos,
+    readOnly: data.previewOnly ?? false,
     canChoose:
       !!vendorId &&
       required.length > 0 &&
       slots.every((slot) => slot.valid) &&
-      new Set(slots.map((slot) => slot.categoryId)).size === slots.length,
+      (fixed
+        ? required.length >= 2 && optional.length === 0 && !template.requiresComponentReview && !!fixedComboSummary(template) &&
+          (template.components?.length ?? 0) === slots.length && new Set(slots.map(slot => slot.item?.serviceItemId)).size === slots.length
+        : new Set(slots.map((slot) => slot.categoryId)).size === slots.length),
   };
 }
 /** This is the base-price preview only; discounts, availability and the final RFQ price remain server-authoritative. */
@@ -122,6 +146,7 @@ export function detailBasePrice(
   model: ComboDetailModel,
   guests: number,
 ): number {
+  if (model.template.pricingMode === "FixedPrice") return fixedComboSummary(model.template)?.original ?? 0;
   return model.required.reduce(
     (total, slot) =>
       total +
@@ -140,7 +165,7 @@ export function chooseDetailTemplate(
     guestCount?: number;
   } | null,
 ): ComboCart {
-  if (!model.canChoose || !model.vendorId)
+  if (model.readOnly || !model.canChoose || !model.vendorId)
     throw new Error(
       "Combo cần đầy đủ dịch vụ khả dụng của cùng một nhà cung cấp.",
     );
@@ -158,6 +183,7 @@ export function chooseDetailTemplate(
     })),
     templateId: model.template.id,
     templateName: model.template.name,
+    pricingMode: model.template.pricingMode,
     templateVendorId: model.vendorId,
     vendorId: model.vendorId,
     draftId: undefined,

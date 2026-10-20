@@ -7,6 +7,7 @@ using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
 using Wedding.Application.Features.Planner;
 using Wedding.Application.Features.CustomerOrders;
+using Wedding.Application.Features.Listings;
 
 namespace Wedding.Application.Features.Contracts.Commands.ConfirmContract;
 
@@ -29,12 +30,16 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để xác nhận hợp đồng.");
 
+        var actor = await _context.Users.AsNoTracking().FirstOrDefaultAsync(user => user.Id == userId && user.IsActive, cancellationToken);
+        if (actor?.Role != UserRole.Customer || _currentUserService.Role != nameof(UserRole.Customer))
+            throw new DomainException("Chỉ tài khoản khách hàng đang hoạt động được xác nhận hợp đồng của mình.");
+
         var contract = await _context.BookingContracts
             .Include(c => c.Vendor)
             .Include(c => c.Customer)
             .Include(c => c.Voucher)
             .Include(c => c.Lead)
-                .ThenInclude(l => l.Listing).ThenInclude(l => l!.Category)
+                .ThenInclude(l => l.Listing).ThenInclude(l => l!.Category).ThenInclude(category => category.BusinessGroup)
             .Include(c => c.Commissions)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng không tồn tại.");
@@ -44,6 +49,26 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         {
             throw new DomainException("Chỉ khách hàng của hợp đồng mới có quyền xác nhận giao dịch (BR-005).");
         }
+        if (contract.Status == ContractStatus.PendingVerification && contract.CommissionRateSnapshot.HasValue)
+            throw new DomainException("Hợp đồng chờ xác nhận đã có snapshot hoa hồng cũ cần Admin/Tài chính đối chiếu; không tự gắn nguồn chính sách hoặc danh mục hiện tại vào dữ liệu đó.");
+        var categoryId = contract.Lead.Listing?.CategoryId
+            ?? throw new DomainException("Hợp đồng chưa liên kết một dịch vụ có danh mục xác định. Cần NCC/Admin kiểm tra trước khi xác nhận.");
+        var category = await ListingCategoryAccess.RequireForExistingAsync(_context, contract.VendorId, categoryId, cancellationToken);
+        // New shops inherit a known category policy. Never fall back to a guessed 8% or
+        // apply full-service 12% to the total contract before an approved basis exists.
+        // Existing positive legacy shop rates retain their previously agreed behavior.
+        if (contract.Vendor.CommissionRate == 0m)
+        {
+            await ListingCategoryAccess.RequireForCreateAsync(_context, contract.VendorId, categoryId, cancellationToken);
+            if (!category.IsActive || !category.BusinessGroupId.HasValue ||
+                category.BusinessGroup == null || !category.BusinessGroup.IsActive)
+                throw new DomainException("Danh mục dịch vụ chưa có chính sách hoa hồng hợp lệ. Vui lòng liên hệ nền tảng trước khi xác nhận hợp đồng.");
+            if (category.RequiresCommissionBasisApproval || category.BusinessGroup.RequiresCommissionBasisApproval)
+                throw new DomainException("Dịch vụ tổ chức cưới trọn gói cần cơ sở tính hoa hồng được Admin phê duyệt. Chưa thể xác nhận hợp đồng hoặc tính 12% trên toàn bộ giá trị gói.");
+        }
+        var rateSource = contract.Vendor.CommissionRate > 0m ? "LegacyVendor" : "CategoryDefault";
+        var resolvedRate = CommissionRules.ResolveRate(category.DefaultCommissionRate, contract.Vendor.CommissionRate);
+
         var weddingScope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
         CustomerOrderJourney.EnsureActiveLead(contract.Lead);
 
@@ -58,7 +83,8 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
 
         // P4: chốt (snapshot) tỷ lệ hoa hồng tại thời điểm khách xác nhận – thay đổi tỷ lệ sau này không ảnh hưởng HĐ cũ
         if (!contract.WeddingDate.HasValue) throw new DomainException("Cần ngày cưới để xác định thời điểm giải phóng K2.");
-        contract.SnapshotCommissionRate(CommissionRules.ResolveRate(contract.Lead.Listing?.Category.DefaultCommissionRate ?? 0.08m, contract.Vendor.CommissionRate));
+        contract.SnapshotCommissionRate(resolvedRate);
+        contract.SnapshotCommissionCategory(category, rateSource);
         var commissionRate = contract.CommissionRateSnapshot!.Value;
         var split = CommissionRules.Split(contract.ContractValue, commissionRate);
 
@@ -138,7 +164,12 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             CompletedAt: contract.CompletedAt,
             CancellationReason: contract.CancellationReason,
             CreatedAt: contract.CreatedAt,
-            Commissions: commissionDtos
-        );
+            Commissions: commissionDtos,
+            CancellationPolicySnapshot: contract.CancellationPolicySnapshot,
+            CommissionRateSnapshot: contract.CommissionRateSnapshot,
+            RejectReason: contract.RejectReason,
+            RevisionCount: contract.RevisionCount,
+            AppointmentDepositCredit: contract.AppointmentDepositCredit
+        ).WithCategorySnapshot(contract);
     }
 }

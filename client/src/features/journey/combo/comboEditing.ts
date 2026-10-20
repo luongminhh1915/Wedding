@@ -26,6 +26,7 @@ export function editableComboCart(
     draftId: order.status === "Draft" && vendorId ? order.id : undefined,
     templateId: matchingTemplate?.id ?? null,
     templateName: matchingTemplate?.name ?? "",
+    pricingMode: matchingTemplate?.pricingMode,
     templateVendorId: matchingTemplate?.ownerVendorId ?? null,
     vendorId,
     revisionOfId: revisionOfId || undefined,

@@ -70,7 +70,7 @@ public class ReviseCustomerLeadCommandHandler(IApplicationDbContext db, ICurrent
         var source = await db.Leads.Include(l => l.Vendor).SingleAsync(l => l.Id == r.Id && l.CustomerId == uid, token);
         if (!source.Vendor.IsActive || !source.Vendor.IsVerified) throw new DomainException("NCC không còn đủ điều kiện nhận yêu cầu mới.");
         var listingId = r.ListingId ?? source.ListingId;
-        if (listingId.HasValue && !await db.Listings.AnyAsync(l => l.Id == listingId && l.VendorId == source.VendorId && l.Status == ListingStatus.Active, token))
+        if (listingId.HasValue && !await db.Listings.AnyAsync(l => l.Id == listingId && l.VendorId == source.VendorId && l.Status == ListingStatus.Active && l.IsActive, token))
             throw new DomainException("Chỉ sửa sang dịch vụ đang hoạt động của cùng NCC.");
         var phone = string.IsNullOrWhiteSpace(r.PhoneNumber) ? source.RawPhoneNumber : r.PhoneNumber.Trim();
         if (phone.Length < 9 || phone.Length > 20 || phone.Any(c => !char.IsDigit(c) && c != '+')) throw new DomainException("Số điện thoại không hợp lệ.");

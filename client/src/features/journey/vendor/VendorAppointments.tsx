@@ -3,7 +3,6 @@ import { Check, Plus, UserCheck, UserX, X } from "lucide-react";
 import { apiError, useAppointmentAction, useSaveAppointmentType } from "../api";
 import { useBookingTypes, useDayExceptions, useSaveException, useVendorBookings, type BookingType } from "../bookingApi";
 import { useAuthStore } from "../../../store/authStore";
-import { ServiceItemManager } from "./ServiceItemManager";
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { vnd, vnDateTime } from "../format";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
@@ -29,7 +28,6 @@ export function VendorAppointments() {
 
   return (
     <div className="wd">
-      <ServiceItemManager />
       <Panel eyebrow={`${pending} lịch chờ duyệt`} title="Lịch hẹn của khách">
         <ErrorText>{act.isError ? apiError(act.error) : ""}</ErrorText>
         {missing && <p role="status" className="text-sm muted">Lịch hẹn trong thông báo không còn khả dụng trong tài khoản của bạn.</p>}

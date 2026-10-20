@@ -47,9 +47,10 @@ public class CommissionsController : ControllerBase
 
     /// <summary>
     /// [Vendor/Admin] Lấy danh sách thông báo chuyển tiền / yêu cầu thanh toán trước.
+    /// Nhà cung cấp chỉ nhận thông báo của shop mình; Finance/SuperAdmin nhận toàn bộ.
     /// </summary>
     [HttpGet("advance-requests")]
-    [Authorize]
+    [Authorize(Roles = "VendorOwner,Finance,SuperAdmin")]
     public async Task<IActionResult> GetAllAdvanceRequests()
     {
         var list = await _advancePaymentService.GetAllAsync();

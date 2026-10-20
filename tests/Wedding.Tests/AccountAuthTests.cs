@@ -19,6 +19,7 @@ namespace Wedding.Tests;
 public class AccountAuthTests
 {
     private const string Password = "A long test passphrase";
+    private static readonly Guid DecorGroupId = Guid.Parse("22222222-2222-2222-2222-222222222202");
 
     [Fact]
     public async Task CustomerRegistrationNormalizesInputAndLoginReturnsPersistedActor()
@@ -30,7 +31,7 @@ public class AccountAuthTests
         Assert.Equal("0901234567", registered.User.PhoneNumber);
         var login = await f.Login.Handle(new(" COUPLE@EXAMPLE.INVALID ", Password), default);
         Assert.Equal(registered.User.Id, login.User.Id); Assert.NotNull((await f.Db.Users.SingleAsync()).LastLoginAt);
-        await Assert.ThrowsAsync<DomainException>(() => f.Vendor.Handle(new("Other", "couple@example.invalid", "0901234568", Password, "Studio", "HCM"), default));
+        await Assert.ThrowsAsync<DomainException>(() => f.Vendor.Handle(new("Other", "couple@example.invalid", "0901234568", Password, "Studio", "HCM", BusinessGroupIds: [DecorGroupId], PartnershipPolicyAccepted: true), default));
         Assert.Single(await f.Db.Users.ToListAsync()); Assert.Empty(await f.Db.Vendors.ToListAsync());
     }
 
@@ -38,16 +39,16 @@ public class AccountAuthTests
     public async Task VendorRegistrationCreatesAtomicOneToOneProfileAndUniqueVietnameseSlug()
     {
         await using var f = await Fixture.Create();
-        var first = await f.Vendor.Handle(new(" Đại diện ", "OWNER@EXAMPLE.INVALID", "0901234567", Password, " Đám Cưới Đẹp ", " HCM ", .12m), default);
-        var second = await f.Vendor.Handle(new("Owner two", "second@example.invalid", "0901234568", Password, "Đám Cưới Đẹp", "HCM", .03m), default);
+        var first = await f.Vendor.Handle(new(" Đại diện ", "OWNER@EXAMPLE.INVALID", "0901234567", Password, " Đám Cưới Đẹp ", " HCM ", BusinessGroupIds: [DecorGroupId], PartnershipPolicyAccepted: true), default);
+        var second = await f.Vendor.Handle(new("Owner two", "second@example.invalid", "0901234568", Password, "Đám Cưới Đẹp", "HCM", BusinessGroupIds: [DecorGroupId], PartnershipPolicyAccepted: true), default);
         Assert.Equal("VendorOwner", first.User.Role); Assert.NotNull(first.User.VendorId);
         Assert.Equal(first.User.VendorId, (await f.Login.Handle(new(first.User.Email, Password), default)).User.VendorId);
         Assert.Equal("dam-cuoi-dep", (await f.Db.Vendors.SingleAsync(v => v.Id == first.User.VendorId)).Slug);
         Assert.Equal("dam-cuoi-dep-1", (await f.Db.Vendors.SingleAsync(v => v.Id == second.User.VendorId)).Slug);
         Assert.All(await f.Db.Vendors.ToListAsync(), vendor => Assert.False(vendor.IsVerified));
-        Assert.Equal(.12m, (await f.Db.Vendors.SingleAsync(v => v.Id == first.User.VendorId)).CommissionRate);
-        await Assert.ThrowsAsync<DomainException>(() => f.Vendor.Handle(new("Owner", "bad@example.invalid", "0901234567", Password, "Bad rate", "HCM", .15m), default));
-        await Assert.ThrowsAsync<DomainException>(() => f.Vendor.Handle(new("Owner", "bad2@example.invalid", "0901234567", Password, "Bad rate", "HCM", .04m), default));
+        Assert.Equal(0m, (await f.Db.Vendors.SingleAsync(v => v.Id == first.User.VendorId)).CommissionRate);
+        await Assert.ThrowsAsync<DomainException>(() => f.Vendor.Handle(new("Owner", "bad@example.invalid", "0901234567", Password, "Bad rate", "HCM", .15m, [DecorGroupId], true), default));
+        await Assert.ThrowsAsync<DomainException>(() => f.Vendor.Handle(new("Owner", "bad2@example.invalid", "0901234567", Password, "Bad rate", "HCM", .04m, [DecorGroupId], true), default));
         Assert.Equal(2, await f.Db.Users.CountAsync()); Assert.Equal(2, await f.Db.Vendors.CountAsync());
     }
 

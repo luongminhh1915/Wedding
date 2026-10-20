@@ -41,7 +41,8 @@ public class SchemaTests
             await RunBatches();
             db.ChangeTracker.Clear();
             Assert.Equal("original-password-hash", (await db.Users.SingleAsync()).PasswordHash);
-            Assert.Equal(7, await db.Categories.CountAsync());
+            Assert.Equal(8, await db.Categories.CountAsync());
+            Assert.Equal(5, await db.BusinessGroups.CountAsync());
             Assert.Equal(16, await db.InvitationTemplates.CountAsync());
             Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         }

@@ -82,6 +82,6 @@ public class GetContractDetailQueryHandler : IRequestHandler<GetContractDetailQu
             RejectReason: contract.RejectReason,
             RevisionCount: contract.RevisionCount,
             AppointmentDepositCredit: contract.AppointmentDepositCredit
-        );
+        ).WithCategorySnapshot(contract);
     }
 }

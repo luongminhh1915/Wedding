@@ -25,7 +25,7 @@ function Invoke-Checked([string]$Command, [string[]]$Arguments) {
 }
 function Get-SourceFingerprint {
     $inputs = @(
-        foreach ($folder in @('src', 'client/src', 'client/public', 'tests', 'tools', '.config')) {
+        foreach ($folder in @('src', 'client/src', 'client/tests', 'client/public', 'tests', 'tools', '.config')) {
             Get-ChildItem -LiteralPath (Join-Path $repo $folder) -File -Recurse | Where-Object {
                 $relative = [IO.Path]::GetRelativePath($repo, $_.FullName).Replace('\', '/')
                 $relative -notmatch '(^|/)(bin|obj|node_modules|dist|private|App_Data|uploads)(/|$)' -and
@@ -53,7 +53,10 @@ try {
         Invoke-Checked $npmCommand @('test')
         Invoke-Checked $npmCommand @('run', 'lint')
     } finally { Pop-Location }
-    Invoke-Checked 'dotnet' @('test', 'tests/Wedding.Tests/Wedding.Tests.csproj', '--artifacts-path', (Join-Path $run 'test-build'), '--results-directory', (Join-Path $run 'test-results'), '--logger', 'trx;LogFileName=backend.trx', '--verbosity', 'minimal')
+    # This gate shares the developer's SQL instance with real local data. Run test
+    # collections sequentially to avoid starting many disposable databases at once;
+    # each concurrency-specific test still exercises its own concurrent requests.
+    Invoke-Checked 'dotnet' @('test', 'tests/Wedding.Tests/Wedding.Tests.csproj', '--artifacts-path', (Join-Path $run 'test-build'), '--results-directory', (Join-Path $run 'test-results'), '--logger', 'trx;LogFileName=backend.trx', '--verbosity', 'minimal', '--', 'xUnit.ParallelizeTestCollections=false', 'xUnit.MaxParallelThreads=1', 'RunConfiguration.MaxCpuCount=1')
     $trx = [xml](Get-Content -LiteralPath (Join-Path $run 'test-results/backend.trx') -Raw)
     $counters = $trx.TestRun.ResultSummary.Counters
     if ([int]$counters.total -eq 0 -or [int]$counters.passed -ne [int]$counters.total) { throw 'Backend tests must all run and pass, without skipped SQL checks.' }

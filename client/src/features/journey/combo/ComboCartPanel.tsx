@@ -40,6 +40,7 @@ export function ComboCartPanel({
   const vendors = new Set(
     lines.flatMap((l) => (l.item ? [l.item.vendorId] : [])),
   );
+  const fixed = cart.pricingMode === "FixedPrice";
   const ready =
     !!cart.region.trim() && !!cart.weddingDate && cart.guestCount > 0;
   return (
@@ -66,7 +67,7 @@ export function ComboCartPanel({
       </p>
       {cart.templateName && (
         <p className="combo-template-source">
-          Tùy chỉnh từ: {cart.templateName}
+          {fixed ? "Gói giá cố định: " : "Tùy chỉnh từ: "}{cart.templateName}
         </p>
       )}
       {!lines.length ? (
@@ -82,24 +83,24 @@ export function ComboCartPanel({
               (l) => l.serviceItemId === selection.serviceItemId,
             );
             return (
-              <li key={selection.categoryId}>
+              <li key={selection.serviceItemId}>
                 <div className="combo-cart-line-top">
                   <span>{categoryName}</span>
-                  <button
+                  {!fixed && <button
                     type="button"
                     className="combo-icon-button"
                     aria-label={`Bỏ ${categoryName} khỏi giỏ`}
                     onClick={() => onRemove(selection.categoryId)}
                   >
                     <Trash2 size={15} />
-                  </button>
+                  </button>}
                 </div>
                 {item ? (
                   <>
                     <h3>{item.title}</h3>
                     <p>{item.vendorName}</p>
                     <p>
-                      {quantityFor(item.unit, cart.guestCount, selection.hours)}{" "}
+                      {fixed ? 1 : quantityFor(item.unit, cart.guestCount, selection.hours)}{" "}
                       {unitName[item.unit]}
                       {selection.variantIds.length + selection.addOnIds.length >
                         0 &&
@@ -120,13 +121,13 @@ export function ComboCartPanel({
                           `${vnd(item.price)}/${unitName[item.unit]}`
                         )}
                       </strong>
-                      <button
+                      {!fixed && <button
                         type="button"
                         className="combo-text-button"
                         onClick={() => onEdit(selection.categoryId)}
                       >
                         <Pencil size={12} /> Sửa / đổi
-                      </button>
+                      </button>}
                     </div>
                   </>
                 ) : (
@@ -139,6 +140,7 @@ export function ComboCartPanel({
           })}
         </ol>
       )}
+      {fixed && <p className="combo-notice">Gói giữ nguyên các dịch vụ đã duyệt. Sau khi gửi yêu cầu, bạn có thể chat với NCC để nhận đề xuất thay đổi riêng cho đơn. Nội dung mới chỉ áp dụng sau khi bạn xác nhận, không thay combo công khai.</p>}
       <div className="combo-cart-totals" aria-live="polite">
         {errorMessage && <p role="alert">{errorMessage}</p>}
         {price ? (
@@ -157,7 +159,7 @@ export function ComboCartPanel({
               </div>
             )}
             <div className="combo-grand-total">
-              <span>Tổng dự kiến</span>
+              <span>{fixed ? "Giá nguyên gói" : "Tổng dự kiến"}</span>
               <strong>{vnd(price.total)}</strong>
             </div>
             {price.plannerReservedBeforeCart != null && (

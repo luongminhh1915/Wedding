@@ -50,10 +50,25 @@ public class CombosController : ControllerBase
     [Authorize(Roles = "Moderator,SuperAdmin,VendorOwner")]
     public async Task<IActionResult> ArchiveTemplate(Guid id) => Ok(new { success = await _mediator.Send(new ArchiveComboTemplateCommand(id)) });
 
-    public record ComboReviewBody(bool Approve, string? Note);
+    public record ComboReviewBody(bool Approve, string? Note, Guid? RevisionId = null);
     [HttpPost("templates/{id:guid}/review")]
     [Authorize(Roles = "Moderator,SuperAdmin")]
-    public async Task<IActionResult> ReviewTemplate(Guid id, [FromBody] ComboReviewBody body) => Ok(await _mediator.Send(new ReviewComboTemplateCommand(id, body.Approve)));
+    public async Task<IActionResult> ReviewTemplate(Guid id, [FromBody] ComboReviewBody body) => Ok(await _mediator.Send(new ReviewComboTemplateCommand(id, body.Approve, body.Note, body.RevisionId)));
+
+    [HttpPost("templates/{id:guid}/submit")]
+    [Authorize(Roles = "Moderator,SuperAdmin,VendorOwner")]
+    public async Task<IActionResult> SubmitTemplate(Guid id) => Ok(await _mediator.Send(new SubmitComboTemplateCommand(id)));
+
+    public record ComboActivityBody(bool IsActive);
+    [HttpPost("templates/{id:guid}/activity")]
+    [Authorize(Roles = "Moderator,SuperAdmin,VendorOwner")]
+    public async Task<IActionResult> SetTemplateActivity(Guid id, [FromBody] ComboActivityBody body)
+        => Ok(new { success = await _mediator.Send(new SetComboTemplateActivityCommand(id, body.IsActive)) });
+
+    [HttpGet("templates/{id:guid}/preview")]
+    [Authorize(Roles = "Moderator,SuperAdmin,VendorOwner")]
+    public async Task<IActionResult> PreviewTemplate(Guid id, [FromQuery] Guid? revisionId = null)
+        => Ok(await _mediator.Send(new GetComboTemplatePreviewQuery(id, revisionId)));
 
     [HttpGet("vendor/items")]
     [Authorize(Roles = "VendorOwner")]
@@ -81,7 +96,10 @@ public class CombosController : ControllerBase
 
     [HttpPost("items/{id:guid}/review")]
     [Authorize(Roles = "Moderator,SuperAdmin")]
-    public async Task<IActionResult> ReviewItem(Guid id, [FromBody] ComboReviewBody body) => Ok(await _mediator.Send(new ReviewServiceItemCommand(id, body.Approve, body.Note)));
+    public async Task<IActionResult> ReviewItem(Guid id, [FromBody] ServiceItemReviewBody body)
+        => Ok(await _mediator.Send(new ReviewServiceItemCommand(id, body.Approve, body.Note, body.ReviewVersion)));
+
+    public record ServiceItemReviewBody(bool Approve, string? Note, string? ReviewVersion);
 
     [HttpGet("bundle-rules")]
     public async Task<IActionResult> BundleRules() => Ok(await _mediator.Send(new GetBundleRulesQuery()));

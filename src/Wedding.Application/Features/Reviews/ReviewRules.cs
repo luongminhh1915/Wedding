@@ -3,12 +3,22 @@ using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Reviews.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
+using Wedding.Domain.Exceptions;
 
 namespace Wedding.Application.Features.Reviews;
 
 public static class ReviewRules
 {
-    public static bool IsEligible(BookingContract c, DateTime now) => c.Status == ContractStatus.Completed || c.Status == ContractStatus.Confirmed && c.WeddingDate.HasValue && c.WeddingDate.Value.Date.AddDays(3).AddHours(-7) <= now;
+    // New submissions require actual completion, not a date-derived assumption of service use.
+    // Historical consultation reviews retain their stored flag and existing weighting.
+    public static bool IsEligible(BookingContract c, DateTime now) => c.Status == ContractStatus.Completed;
+    public static async Task<User> RequireActiveCustomerAsync(IApplicationDbContext db, ICurrentUserService current, CancellationToken ct)
+    {
+        if (!current.UserId.HasValue || current.UserId == Guid.Empty || current.Role != nameof(UserRole.Customer))
+            throw new DomainException("Chỉ khách hàng đang đăng nhập được gửi đánh giá hoặc xem hợp đồng đủ điều kiện.");
+        return await db.Users.AsNoTracking().SingleOrDefaultAsync(user => user.Id == current.UserId && user.IsActive && user.Role == UserRole.Customer, ct)
+            ?? throw new DomainException("Tài khoản khách hàng không hoạt động hoặc quyền đã thay đổi. Vui lòng đăng nhập lại.");
+    }
     public static (decimal Rating, int Count) Calculate(IEnumerable<Review> reviews)
     {
         var approved = reviews.Where(r => r.Status == ReviewStatus.Approved).ToList();

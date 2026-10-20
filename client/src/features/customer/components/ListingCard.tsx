@@ -4,13 +4,16 @@ import type { ListingSummaryDto } from "../../../types/listing.types";
 
 export default function ListingCard({
   listing,
+  returnPath,
 }: {
   listing: ListingSummaryDto;
+  returnPath?: string;
 }) {
   return (
     <article className="listing-card">
       <Link
         to={`/listings/${listing.id}`}
+        state={returnPath ? { browseReturn: returnPath } : undefined}
         aria-label={`Xem chi tiết ${listing.title}`}
       >
         <div className="listing-card-image">

@@ -91,6 +91,6 @@ public class GetVendorContractsQueryHandler : IRequestHandler<GetVendorContracts
             RejectReason: c.RejectReason,
             RevisionCount: c.RevisionCount,
             AppointmentDepositCredit: c.AppointmentDepositCredit
-        )).ToList();
+        ).WithCategorySnapshot(c)).ToList();
     }
 }

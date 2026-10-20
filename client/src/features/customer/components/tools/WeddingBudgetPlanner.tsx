@@ -15,6 +15,7 @@ import { useWeddingBudget } from "../../hooks/useWeddingTools";
 import type { SaveBudgetItemPayload } from "../../../../types/wedding-tools.types";
 import { usePlannerAction } from "../../../journey/planner/plannerApi";
 import { apiError } from "../../../journey/api";
+import { MoneyInput } from "../../../../components/MoneyInput";
 
 export function WeddingBudgetPlanner() {
   const action = usePlannerAction();
@@ -168,14 +169,10 @@ export function WeddingBudgetPlanner() {
               {Math.round(totalPlanned).toLocaleString("vi-VN")}đ
             </p>
             <div className="flex items-center gap-2 mt-2">
-              <input
-                type="text"
-                inputMode="numeric"
+              <MoneyInput
                 aria-label="Chỉnh tổng ngân sách dự kiến"
-                value={totalPlanned ? Math.round(totalPlanned).toLocaleString("vi-VN") : ""}
-                onChange={(e) =>
-                  setCustomTotalBudget(Math.max(0, Number(e.target.value.replace(/\D/g, "")) || 0))
-                }
+                value={totalPlanned}
+                onValueChange={value => setCustomTotalBudget(value ?? 0)}
                 className="min-w-0 flex-1 text-base font-bold text-rose-600 bg-white border border-rose-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
               <span className="text-sm font-bold text-slate-600">đ</span>
@@ -435,15 +432,14 @@ export function WeddingBudgetPlanner() {
                   <label className="block font-bold text-slate-700 mb-1">
                     Dự Toán Ban Đầu (đ):
                   </label>
-                  <input
-                    type="number"
-                    step="1000000"
+                  <MoneyInput
+                    aria-label="Dự toán ban đầu (VNĐ)"
                     required
                     value={newItemForm.plannedCost}
-                    onChange={(e) =>
+                    onValueChange={(value) =>
                       setNewItemForm((f) => ({
                         ...f,
-                        plannedCost: Number(e.target.value),
+                        plannedCost: value ?? 0,
                       }))
                     }
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
@@ -453,14 +449,13 @@ export function WeddingBudgetPlanner() {
                   <label className="block font-bold text-slate-700 mb-1">
                     Thực Tế Đã Chi (đ):
                   </label>
-                  <input
-                    type="number"
-                    step="1000000"
-                    value={newItemForm.actualCost}
-                    onChange={(e) =>
+                  <MoneyInput
+                    aria-label="Thực tế đã chi (VNĐ)"
+                    value={newItemForm.actualCost ?? 0}
+                    onValueChange={(value) =>
                       setNewItemForm((f) => ({
                         ...f,
-                        actualCost: Number(e.target.value),
+                        actualCost: value ?? 0,
                       }))
                     }
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"

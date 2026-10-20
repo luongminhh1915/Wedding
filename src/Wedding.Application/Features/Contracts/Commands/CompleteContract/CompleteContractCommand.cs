@@ -27,6 +27,13 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để thao tác.");
 
+        var user = await _context.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive, cancellationToken);
+        if (user == null || user.Role.ToString() != _currentUserService.Role)
+        {
+            throw new DomainException("Tài khoản không hoạt động hoặc quyền đăng nhập đã thay đổi. Vui lòng đăng nhập lại.");
+        }
+
         var contract = await _context.BookingContracts
             .Include(c => c.Vendor)
             .Include(c => c.Customer)
@@ -36,23 +43,27 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng không tồn tại.");
 
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
-            ?? throw new NotFoundException("Người dùng không tồn tại.");
-
-        var isVendor = contract.Vendor.UserId == userId;
+        var isVendor = user.Role == UserRole.VendorOwner && contract.Vendor.UserId == userId && contract.Vendor.IsActive;
+        var isCustomer = user.Role == UserRole.Customer && contract.CustomerId == userId;
         var isStaff = user.Role == UserRole.SuperAdmin || user.Role == UserRole.Finance || user.Role == UserRole.Moderator;
 
-        if (!isVendor && !isStaff && contract.CustomerId != userId)
+        if (!isVendor && !isStaff && !isCustomer)
         {
             throw new DomainException("Chỉ nhà cung cấp hoặc ban quản trị mới có quyền xác nhận hoàn tất dịch vụ cưới.");
         }
+
+        // Completion must not infer historical liability from today's shop/category policy.
+        // Older contracts without their original rate require an explicit financial review;
+        // do not change status or create a second-period debt while that evidence is missing.
+        var commissionRate = contract.CommissionRateSnapshot
+            ?? throw new DomainException("Hợp đồng cũ chưa có snapshot hoa hồng ban đầu. Cần Admin/Tài chính kiểm tra hồ sơ trước khi hoàn tất; hệ thống không tự dùng tỷ lệ hiện tại của shop.");
+        if (commissionRate is < .03m or > .12m)
+            throw new DomainException("Snapshot hoa hồng ban đầu không hợp lệ. Cần Admin/Tài chính kiểm tra, không tự tính lại theo chính sách hiện tại.");
 
         // Chuyển hợp đồng sang trạng thái Completed
         contract.CompleteContract();
 
         var existingCommissionsTotal = contract.Commissions.Sum(c => c.CommissionAmount);
-        var commissionRate = contract.CommissionRateSnapshot ?? (contract.Vendor.CommissionRate > 0 ? contract.Vendor.CommissionRate : 0.08m); // P4: dùng tỷ lệ đã chốt
         var totalCommission = Math.Round(contract.ContractValue * commissionRate, 0);
         var remainderCommission = totalCommission - existingCommissionsTotal;
 
@@ -114,7 +125,12 @@ public class CompleteContractCommandHandler : IRequestHandler<CompleteContractCo
                 CommissionAmount: cm.CommissionAmount,
                 DueDate: cm.DueDate,
                 Status: cm.Status.ToString()
-            )).ToList()
-        );
+            )).ToList(),
+            CancellationPolicySnapshot: contract.CancellationPolicySnapshot,
+            CommissionRateSnapshot: contract.CommissionRateSnapshot,
+            RejectReason: contract.RejectReason,
+            RevisionCount: contract.RevisionCount,
+            AppointmentDepositCredit: contract.AppointmentDepositCredit
+        ).WithCategorySnapshot(contract);
     }
 }

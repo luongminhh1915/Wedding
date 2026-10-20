@@ -91,6 +91,11 @@ public class ComboTemplateConfiguration : IEntityTypeConfiguration<ComboTemplate
         b.Property(x => x.Name).HasMaxLength(150).IsRequired();
         b.Property(x => x.Tier).HasMaxLength(20);
         b.Property(x => x.Style).HasMaxLength(50);
+        b.Property(x => x.ContentJson).HasMaxLength(20000);
+        b.Property(x => x.ReviewNote).HasMaxLength(2000);
+        b.Property(x => x.PricingMode).HasMaxLength(20).HasDefaultValue("Dynamic");
+        b.Property(x => x.ComboPrice).HasPrecision(18, 0);
+        b.Property(x => x.OriginalPrice).HasPrecision(18, 0);
         b.HasMany(x => x.Items).WithOne(i => i.ComboTemplate).HasForeignKey(i => i.ComboTemplateId).OnDelete(DeleteBehavior.Cascade);
     }
 }
@@ -100,6 +105,7 @@ public class ComboTemplateItemConfiguration : IEntityTypeConfiguration<ComboTemp
     public void Configure(EntityTypeBuilder<ComboTemplateItem> b)
     {
         b.ToTable("ComboTemplateItems");
+        b.Property(x => x.ComponentSnapshotJson).HasMaxLength(100000);
         b.HasOne(x => x.Category).WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Listing).WithMany().HasForeignKey(x => x.ListingId).OnDelete(DeleteBehavior.Restrict);
     }
@@ -127,6 +133,7 @@ public class ComboOrderItemConfiguration : IEntityTypeConfiguration<ComboOrderIt
     public void Configure(EntityTypeBuilder<ComboOrderItem> b)
     {
         b.ToTable("ComboOrderItems");
+        b.Property(x => x.ComponentSnapshotJson).HasMaxLength(100000);
         b.Property(x => x.Title).HasMaxLength(250);
         b.Property(x => x.Price).HasPrecision(18, 2);
         b.Property(x => x.DiscountShare).HasPrecision(18, 2);

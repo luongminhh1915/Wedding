@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,16 +22,20 @@ import {
 import { useAuthStore } from "../../../store/authStore";
 import { useComboCartStore } from "../../../store/comboCartStore";
 import { apiError, usePlannerOverview } from "../api";
-import { useCatalogBuilder } from "../comboApi";
+import { useCatalogBuilder, useComboTemplatePreview } from "../comboApi";
+import { canPreviewCombo, comboDate } from "./comboTemplateEditorModel";
 import { vnd } from "../format";
 import { ComboDialog } from "./ComboDialog";
 import { ComboPhoto } from "./ComboPhoto";
+import { comboCatalogReturn } from "./comboFilterModel";
+import { fixedComboSummary } from "./fixedComboModel";
 import { EMPTY_CART, quantityFor, unitName } from "./cartModel";
 import {
   chooseDetailTemplate,
   comboDetailModel,
   detailBasePrice,
   mediaUrls,
+  previewDetailCatalog,
   type ComboDetailModel,
   type DetailSlot,
 } from "./comboDetailModel";
@@ -45,8 +49,16 @@ const tiers: Record<string, string> = {
 };
 export default function ComboDetailPage() {
   const { templateId = "" } = useParams<{ templateId: string }>();
+  const [params] = useSearchParams();
+  const location = useLocation();
+  const role = useAuthStore(state => state.user?.role);
+  const isPreview = canPreviewCombo(role, params.get("preview"));
+  const revisionId = params.get("revision");
   const query = useCatalogBuilder();
-  if (query.isPending)
+  const preview = useComboTemplatePreview(templateId, revisionId, isPreview);
+  const current = isPreview ? preview : query;
+  const returnPath = isPreview ? role === "VendorOwner" ? "/vendor/dashboard?tab=combos" : "/admin/dashboard?tab=combos" : comboCatalogReturn((location.state as { comboCatalogReturn?: unknown } | null)?.comboCatalogReturn);
+  if (current.isPending)
     return (
       <main className="wd wd-page wm-combo-detail">
         <div className="container cd-empty" role="status">
@@ -56,24 +68,25 @@ export default function ComboDetailPage() {
         </div>
       </main>
     );
-  if (query.isError)
+  if (current.isError)
     return (
       <main className="wd wd-page wm-combo-detail">
         <div className="container cd-empty" role="alert">
           <PackageOpen size={36} />
           <h1>Chưa tải được combo</h1>
-          <p>{apiError(query.error)}</p>
+          <p>{apiError(current.error)}</p>
           <button
             className="combo-primary"
-            onClick={() => void query.refetch()}
+            onClick={() => void current.refetch()}
           >
             Thử lại
           </button>
-          <Link to="/combo">Quay lại các combo</Link>
+          <Link to={returnPath}>Quay lại các combo</Link>
         </div>
       </main>
     );
-  const model = query.data && comboDetailModel(query.data, templateId);
+  const data = isPreview ? (preview.data ? previewDetailCatalog(query.data, preview.data) : undefined) : query.data;
+  const model = data && comboDetailModel(data, templateId);
   if (!model)
     return (
       <main className="wd wd-page wm-combo-detail">
@@ -85,7 +98,7 @@ export default function ComboDetailPage() {
             Combo có thể đang chờ duyệt, tạm ẩn hoặc không còn phục vụ. Giỏ hiện
             tại của bạn vẫn được giữ nguyên.
           </p>
-          <Link className="combo-primary" to="/combo">
+          <Link className="combo-primary" to={returnPath}>
             <ArrowLeft size={15} />
             Xem các combo đang có
           </Link>
@@ -94,10 +107,12 @@ export default function ComboDetailPage() {
     );
   return (
     <ComboDetail
-      key={model.template.id}
+      key={`${model.template.id}:${isPreview ? revisionId ?? "preview" : "public"}`}
       model={model}
+      readOnly={isPreview}
+      returnPath={returnPath}
       previewGuests={
-        (query.data as { previewGuestCount?: number }).previewGuestCount || 200
+        data?.previewGuestCount || 200
       }
     />
   );
@@ -105,9 +120,13 @@ export default function ComboDetailPage() {
 function ComboDetail({
   model,
   previewGuests,
+  readOnly = false,
+  returnPath = "/combo",
 }: {
   model: ComboDetailModel;
   previewGuests: number;
+  readOnly?: boolean;
+  returnPath?: string;
 }) {
   const { template, vendor, required, optional, photos } = model;
   const user = useAuthStore((state) => state.user);
@@ -126,17 +145,20 @@ function ComboDetail({
   );
   const guests = cart.guestCount || profile?.guestCount || previewGuests;
   const basePrice = detailBasePrice(model, guests);
-  const editable = !user || user.role === "Customer";
+  const fixed = template.pricingMode === "FixedPrice";
+  const fixedSummary = fixedComboSummary(template);
+  const editable = !readOnly && (!user || user.role === "Customer");
   const hasVariablePricing = required.some(
     (slot) => slot.item && ["Guest", "Table"].includes(slot.item.unit),
   );
   const choose = () => {
+    if (readOnly) return;
     try {
       updateCart(scope, (previous) =>
         chooseDetailTemplate(previous, model, profile),
       );
       setReplaceOpen(false);
-      navigate("/combo", { state: { comboSelected: template.id } });
+      navigate(returnPath, { state: { comboSelected: template.id } });
     } catch (e) {
       setError((e as Error).message);
     }
@@ -151,8 +173,9 @@ function ComboDetail({
   return (
     <main className="wd wd-page wm-combo-detail">
       <div className="container cd-container">
+        {readOnly && <section role="note" className="mb-5 rounded-2xl border border-[#d4c894] bg-[#faf8f0] p-4"><h2 className="font-semibold">Xem trước combo · chỉ đọc</h2><p className="mt-2 text-sm">Bạn đang xem nội dung phiên bản được cấp quyền, không phải tự xuất bản. Chọn combo, gửi yêu cầu và thay đổi giỏ đều được tắt.</p><Link className="mt-2 inline-block text-sm underline" to={returnPath}>Về quản lý combo</Link></section>}
         <nav className="cd-breadcrumb" aria-label="Đường dẫn">
-          <Link to="/combo">
+          <Link to={returnPath}>
             <ArrowLeft size={14} />
             Combo cưới
           </Link>
@@ -245,7 +268,7 @@ function ComboDetail({
                 )}
                 <span>
                   <ShieldCheck size={16} />
-                  Giá chốt sau khi NCC báo giá
+                  {fixed ? "Giá cố định cho nguyên gói đã duyệt" : "Giá chốt sau khi NCC báo giá"}
                 </span>
               </div>
             </header>
@@ -259,17 +282,18 @@ function ComboDetail({
                 <p className="cd-eyebrow">BIẾT RÕ TRƯỚC KHI CHỌN</p>
                 <h2>Trong combo có những gì?</h2>
                 <p>
-                  Các hạng mục dưới đây được thêm sẵn. Bạn có thể đổi dịch vụ
-                  trong cùng NCC ở bước tùy chỉnh.
+                  {fixed ? "Đây là các dịch vụ của nguyên gói đã duyệt. Muốn thay đổi, hãy gửi yêu cầu rồi trao đổi với NCC trong chat; đề xuất riêng chỉ áp dụng khi bạn xác nhận." : "Các hạng mục dưới đây được thêm sẵn. Bạn có thể đổi dịch vụ trong cùng NCC ở bước tùy chỉnh."}
                 </p>
               </div>
               <div className="cd-service-list">
                 {required.map((slot) => (
                   <IncludedService
-                    key={slot.categoryId}
+                    key={slot.item?.serviceItemId ?? slot.categoryId}
                     slot={slot}
                     guests={guests}
                     optional={false}
+                    readOnly={readOnly}
+                    fixed={fixed}
                   />
                 ))}
               </div>
@@ -292,10 +316,11 @@ function ComboDetail({
                 <div className="cd-service-list">
                   {optional.map((slot) => (
                     <IncludedService
-                      key={slot.categoryId}
+                      key={slot.item?.serviceItemId ?? slot.categoryId}
                       slot={slot}
                       guests={guests}
                       optional
+                      readOnly={readOnly}
                     />
                   ))}
                 </div>
@@ -366,7 +391,7 @@ function ComboDetail({
               {required.find((slot) => slot.item)?.item && (
                 <Link
                   className="combo-secondary"
-                  to={`/listings/${required.find((slot) => slot.item)!.item!.listingId}`}
+                  to={`/listings/${required.find((slot) => slot.item)!.item!.listingId}${readOnly ? "?preview=vendor" : ""}`}
                 >
                   Xem hồ sơ & bài đăng của NCC <ArrowRight size={14} />
                 </Link>
@@ -378,6 +403,8 @@ function ComboDetail({
                 <h2>Trước khi gửi yêu cầu</h2>
               </div>
               <div className="cd-policy-list">
+                {template.content?.terms && <details open><summary>Điều khoản do NCC công bố</summary><p className="whitespace-pre-wrap break-words">{template.content.terms}</p></details>}
+                {(template.content?.validFromUtc || template.content?.validUntilUtc) && <details open><summary>Thời hạn áp dụng</summary><p>{template.content.validFromUtc ? `Từ ${comboDate(template.content.validFromUtc)}` : "Không giới hạn ngày bắt đầu"}{template.content.validUntilUtc ? ` · đến ${comboDate(template.content.validUntilUtc)}` : " · chưa giới hạn ngày kết thúc"} (giờ Việt Nam).</p></details>}
                 <details open>
                   <summary>
                     <CircleHelp size={16} />
@@ -421,18 +448,19 @@ function ComboDetail({
               <p className="cd-eyebrow">
                 COMBO CỦA {model.vendorName.toUpperCase()}
               </p>
-              <span className="cd-price-label">Tổng giá cơ bản tham khảo</span>
+              <span className="cd-price-label">{fixed ? "Giá bán nguyên gói" : "Tổng giá cơ bản tham khảo"}</span>
               <strong className="cd-price">
-                {model.canChoose ? vnd(basePrice) : "Chưa thể tính"}
+                {fixedSummary ? vnd(fixedSummary.price) : model.canChoose ? vnd(basePrice) : "Chưa thể tính"}
               </strong>
               <p className="cd-muted">
-                {hasVariablePricing
+                {fixed ? "Giá và thành phần giữ theo phiên bản NCC đã công bố. Lịch trống/phạm vi phục vụ cần NCC xác nhận." : hasVariablePricing
                   ? `Theo quy mô ${guests.toLocaleString("vi-VN")} khách, chưa cộng nâng cấp / dịch vụ đi kèm.`
                   : "Các gói mặc định, chưa cộng nâng cấp / dịch vụ đi kèm."}
               </p>
+              {fixedSummary && <div className="cd-note"><span>Tổng giá bán lẻ: {vnd(fixedSummary.original)}{fixedSummary.saving > 0 && <><br />Tiết kiệm {vnd(fixedSummary.saving)} · {fixedSummary.percentage.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%</>}</span></div>}
               <ul className="cd-summary-list">
                 {required.map((slot) => (
-                  <li key={slot.categoryId}>
+                  <li key={slot.item?.serviceItemId ?? slot.categoryId}>
                     <Check size={15} />
                     <span>{slot.categoryName}</span>
                   </li>
@@ -451,20 +479,20 @@ function ComboDetail({
                   lòng chọn combo khác.
                 </p>
               )}
-              {!editable && (
+              {!editable && !readOnly && (
                 <p className="cd-unavailable">
                   Chức năng đặt combo dành cho tài khoản cặp đôi.
                 </p>
               )}
-              <button
+              {!readOnly && <button
                 className="combo-primary"
                 disabled={!model.canChoose || !editable}
                 onClick={requestChoose}
               >
                 <ShoppingBag size={16} />
-                Chọn combo & tùy chỉnh
+                {fixed ? "Chọn nguyên gói & gửi yêu cầu" : "Chọn combo & tùy chỉnh"}
                 <ArrowRight size={15} />
-              </button>
+              </button>}
               <p className="cd-small-print">
                 Không phải thanh toán · Bạn sẽ duyệt báo giá trước khi ký hợp
                 đồng
@@ -474,14 +502,14 @@ function ComboDetail({
                   {error}
                 </p>
               )}
-              <Link to="/combo" className="cd-back-link">
+              <Link to={returnPath} className="cd-back-link">
                 <ArrowLeft size={13} />
                 Xem combo khác
               </Link>
             </section>
           </aside>
         </div>
-        <div className="cd-mobile-choose">
+        {!readOnly && <div className="cd-mobile-choose">
           <div>
             <small>Giá cơ bản tham khảo</small>
             <strong>
@@ -496,7 +524,7 @@ function ComboDetail({
             Chọn combo
             <ArrowRight size={15} />
           </button>
-        </div>
+        </div>}
         {galleryOpen && photos.length > 0 && (
           <ComboDialog
             title={`Ảnh ${template.name}`}
@@ -542,7 +570,7 @@ function ComboDetail({
             </p>
           </ComboDialog>
         )}
-        {replaceOpen && (
+        {!readOnly && replaceOpen && (
           <ComboDialog
             title="Thay các dịch vụ đang chỉnh?"
             onClose={() => setReplaceOpen(false)}
@@ -564,7 +592,7 @@ function ComboDetail({
                 Giữ giỏ hiện tại
               </button>
               <button className="combo-primary" onClick={choose}>
-                Thay giỏ & tùy chỉnh
+                {fixed ? "Chọn nguyên gói này" : "Thay giỏ & tùy chỉnh"}
                 <ArrowRight size={15} />
               </button>
             </div>
@@ -578,13 +606,17 @@ function IncludedService({
   slot,
   guests,
   optional,
+  readOnly = false,
+  fixed = false,
 }: {
   slot: DetailSlot;
   guests: number;
   optional: boolean;
+  readOnly?: boolean;
+  fixed?: boolean;
 }) {
   const item = slot.item;
-  const quantity = item ? quantityFor(item.unit, guests, 1) : 0;
+  const quantity = item ? fixed ? 1 : quantityFor(item.unit, guests, 1) : 0;
   return (
     <article className={`cd-service ${optional ? "is-optional" : ""}`}>
       <div className="cd-service-photo">
@@ -666,7 +698,7 @@ function IncludedService({
               </p>
             </details>
             <Link
-              to={`/listings/${item.listingId}`}
+              to={`/listings/${item.listingId}${readOnly ? "?preview=vendor" : ""}`}
               className="cd-listing-link"
             >
               Xem đầy đủ bài dịch vụ

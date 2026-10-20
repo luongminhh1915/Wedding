@@ -53,7 +53,8 @@ foreach ($qaFixture in $qaFixtures) {
     $qaBody = @{ fullName = $qaFixture.FullName; email = $qaFixture.Email; phoneNumber = $qaFixture.Phone; password = $qaFixturePassword }
     if ($qaFixture.Role -eq 'Customer') { $null = Invoke-QaAuthApi POST '/api/auth/register-customer' $qaBody }
     elseif ($qaFixture.Role -eq 'VendorOwner') {
-        $qaBody.brandName = '[QA AUTH] Doi tac hu cau 20261017'; $qaBody.city = 'TP. Hồ Chí Minh'; $qaBody.commissionRate = 0.08
+        $qaBody.brandName = '[QA AUTH] Doi tac hu cau 20261017'; $qaBody.city = 'TP. Hồ Chí Minh'
+        $qaBody.businessGroupIds = @('22222222-2222-2222-2222-222222222202'); $qaBody.partnershipPolicyAccepted = $true
         $null = Invoke-QaAuthApi POST '/api/auth/register-vendor' $qaBody
     }
     else { $qaBody.role = $qaFixture.Role; $null = Invoke-QaAuthApi POST '/api/users/staff' $qaBody -Token $qaAdmin.token }

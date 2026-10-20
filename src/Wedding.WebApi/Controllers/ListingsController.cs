@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Wedding.Application.Features.Listings;
 using Wedding.Application.Features.Listings.Commands.ApproveListing;
 using Wedding.Application.Features.Listings.Commands.CreateListing;
 using Wedding.Application.Features.Listings.Commands.RejectListing;
@@ -49,9 +50,23 @@ public class ListingsController : ControllerBase
     [Authorize(Roles = "VendorOwner")]
     public async Task<IActionResult> UpdateListing(Guid id, [FromBody] UpdateListingRequest request)
     {
-        var command = new UpdateListingCommand(id, request.Title, request.MinPrice, request.MaxPrice, request.Description, request.Location, request.ImageUrls);
+        var command = new UpdateListingCommand(id, request.Title, request.MinPrice, request.MaxPrice, request.Description, request.Location, request.ImageUrls, request.ServiceDetails, request.Pricing);
         await _mediator.Send(command);
         return Ok(new { message = "Cập nhật bài đăng thành công." });
+    }
+
+    [HttpGet("{id:guid}/edit")]
+    [Authorize(Roles = "VendorOwner,Moderator,SuperAdmin")]
+    public async Task<IActionResult> Editor(Guid id, [FromQuery] Guid? revisionId, CancellationToken ct)
+        => Ok(await _mediator.Send(new GetListingEditorQuery(id, revisionId), ct));
+
+    public record ListingActivityBody(bool IsActive);
+    [HttpPost("{id:guid}/activity")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> Activity(Guid id, [FromBody] ListingActivityBody body, CancellationToken ct)
+    {
+        await _mediator.Send(new SetListingActivityCommand(id, body.IsActive), ct);
+        return Ok(new { success = true });
     }
 
     /// <summary>
@@ -77,6 +92,23 @@ public class ListingsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// [VendorOwner] Tìm kiếm, lọc và phân trang dịch vụ của chính shop đang đăng nhập.
+    /// </summary>
+    [HttpGet("my-listings/page")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<IActionResult> GetMyListingsPage(
+        [FromQuery] string? keyword = null,
+        [FromQuery] ListingStatus? status = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? categoryId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetVendorListingsPageQuery(keyword, status, page, pageSize, categoryId), cancellationToken);
+        return Ok(result);
+    }
+
     // ─── MODERATOR ENDPOINTS ───────────────────────────────────────────────────
 
     /// <summary>
@@ -95,10 +127,10 @@ public class ListingsController : ControllerBase
     /// </summary>
     [HttpPost("{id:guid}/approve")]
     [Authorize(Roles = "Moderator,SuperAdmin")]
-    public async Task<IActionResult> ApproveListing(Guid id)
+    public async Task<IActionResult> ApproveListing(Guid id, [FromQuery] Guid? revisionId = null)
     {
-        await _mediator.Send(new ApproveListingCommand(id));
-        return Ok(new { message = "Bài đăng đã được duyệt và hiển thị công khai." });
+        await _mediator.Send(new ApproveListingCommand(id, revisionId));
+        return Ok(new { message = "Phiên bản đã được duyệt. Trạng thái kinh doanh và lệnh ẩn kiểm duyệt hiện có được giữ nguyên." });
     }
 
     /// <summary>
@@ -108,7 +140,7 @@ public class ListingsController : ControllerBase
     [Authorize(Roles = "Moderator,SuperAdmin")]
     public async Task<IActionResult> RejectListing(Guid id, [FromBody] RejectListingRequest request)
     {
-        await _mediator.Send(new RejectListingCommand(id, request.Reason));
+        await _mediator.Send(new RejectListingCommand(id, request.Reason, request.RevisionId));
         return Ok(new { message = "Bài đăng đã bị từ chối. Lý do đã được thông báo đến NCC." });
     }
 
@@ -149,10 +181,11 @@ public class ListingsController : ControllerBase
         [FromQuery] string? keyword,
         [FromQuery] string sortBy = "newest",
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 12)
+        [FromQuery] int pageSize = 12,
+        [FromQuery] decimal? minRating = null)
     {
         var result = await _mediator.Send(new GetPublicListingsQuery(
-            categoryId, location, minPrice, maxPrice, keyword, sortBy, page, pageSize));
+            categoryId, location, minPrice, maxPrice, keyword, sortBy, page, pageSize, minRating));
         return Ok(result);
     }
 
@@ -176,9 +209,11 @@ public record UpdateListingRequest(
     decimal MaxPrice,
     string Description,
     string Location,
-    List<string>? ImageUrls = null
+    List<string>? ImageUrls = null,
+    ServiceDetailsDto? ServiceDetails = null,
+    ServicePricingDto? Pricing = null
 );
 
-public record RejectListingRequest(string Reason);
+public record RejectListingRequest(string Reason, Guid? RevisionId = null);
 
 public record UpdateListingStatusRequest(ListingStatus Status);

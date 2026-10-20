@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CheckCircle2, X, Loader2, Sparkles, Image } from "lucide-react";
 import { useEligibleContracts, useSubmitReview } from "../../hooks/useReviews";
 import type { SubmitReviewRequest } from "../../../../types/review.types";
+import { matchingReviewContracts, selectedReviewContract } from "./reviewPolicyModel";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -18,10 +19,12 @@ export function ReviewModal({
   onClose,
   listingId,
   listingTitle,
+  vendorId,
   vendorBrandName,
   onSuccess,
 }: ReviewModalProps) {
-  const { data: eligibleContracts = [] } = useEligibleContracts();
+  const eligibleQuery = useEligibleContracts(isOpen);
+  const eligibleContracts = matchingReviewContracts(eligibleQuery.data ?? [], listingId, vendorId);
   const submitMutation = useSubmitReview();
 
   // 4 Tiêu chí chấm sao theo Prototype SCR-05-06
@@ -41,12 +44,14 @@ export function ReviewModal({
   const overallRating = Math.round((c1 + c2 + c3 + c4) / 4);
 
   // Kiểm tra HĐ đã chọn có thuộc dạng Verified không
-  const matchedContract = eligibleContracts.find(
-    (c) => c.contractId === selectedContractId,
-  );
+  const matchedContract = selectedReviewContract(eligibleContracts, selectedContractId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!eligibleQuery.isSuccess || eligibleQuery.isFetching || !matchedContract) {
+      setErrorMsg("Vui lòng chọn hợp đồng của dịch vụ này đã Hoàn tất. Hợp đồng mới xác nhận hoặc chỉ qua ngày cưới chưa đủ điều kiện.");
+      return;
+    }
     if (content.trim().length < 30 || content.trim().length > 3000) {
       setErrorMsg("Vui lòng viết nhận xét từ 30 đến 3000 ký tự.");
       return;
@@ -56,7 +61,7 @@ export function ReviewModal({
     try {
       const payload: SubmitReviewRequest = {
         listingId,
-        bookingContractId: selectedContractId ? selectedContractId : undefined,
+        bookingContractId: matchedContract.contractId,
         rating: overallRating,
         content: content.trim(),
         photosJson: photoUrl.trim()
@@ -115,20 +120,19 @@ export function ReviewModal({
           {/* Hợp đồng dịch vụ cưới (BR-009) */}
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Chọn Hợp Đồng Dịch Vụ Đã Thực Hiện (Để Nhận Huy Hiệu Verified
-              Buyer):
+              Chọn hợp đồng dịch vụ đã Hoàn tất:
             </label>
             <select
-              value={selectedContractId}
+              value={matchedContract?.contractId ?? ""}
               onChange={(e) => setSelectedContractId(e.target.value)}
+              disabled={eligibleQuery.isFetching || eligibleQuery.isError || !eligibleContracts.length}
+              required
               className="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-rose-500 font-semibold"
             >
               <option value="">
-                -- Đánh giá trải nghiệm tư vấn thông thường (Chưa có HĐ) --
+                -- Chọn hợp đồng đã Hoàn tất --
               </option>
-              {eligibleContracts
-                .filter((c) => c.listingId === listingId)
-                .map((c) => (
+              {eligibleContracts.map((c) => (
                   <option key={c.contractId} value={c.contractId}>
                     ✓ Hợp đồng {c.contractCode} - {c.vendorBrandName} (
                     {c.weddingDate
@@ -147,11 +151,13 @@ export function ReviewModal({
                 </span>
               </div>
             ) : (
-              <p className="text-[10px] text-slate-400 mt-1">
-                * Khách hàng đã hoàn tất hợp đồng trên sàn sẽ được gắn nhãn
-                Verified Buyer và tính trọng số cao (W=1.0) theo FM-005.
+              <p className="text-[11px] text-slate-500 mt-2">
+                Chỉ nhận đánh giá mới sau khi hợp đồng đã chuyển sang Hoàn tất. Đánh giá tư vấn cũ được giữ nguyên, nhưng không mở nhận đánh giá mới khi chưa sử dụng dịch vụ.
               </p>
             )}
+            {eligibleQuery.isFetching && <p role="status" className="text-slate-500 mt-2">Đang kiểm tra hợp đồng đủ điều kiện...</p>}
+            {eligibleQuery.isError && <p role="alert" className="text-red-700 mt-2">{eligibleQuery.error.message} <button type="button" className="underline" onClick={() => { void eligibleQuery.refetch(); }}>Thử lại</button></p>}
+            {eligibleQuery.isSuccess && !eligibleContracts.length && <p role="status" className="text-slate-600 mt-2">Chưa có hợp đồng đã Hoàn tất và chưa được đánh giá cho dịch vụ này. Bạn không thể gửi đánh giá khi chỉ mới tư vấn, đang thực hiện hoặc có tranh chấp.</p>}
           </div>
 
           {/* 4 Tiêu Chí Chấm Sao */}
@@ -248,7 +254,7 @@ export function ReviewModal({
             </button>
             <button
               type="submit"
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isPending || !matchedContract || !eligibleQuery.isSuccess || eligibleQuery.isFetching}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center gap-1.5 transition disabled:opacity-50"
             >
               {submitMutation.isPending ? (

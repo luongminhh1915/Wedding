@@ -10,10 +10,12 @@ namespace Wedding.Application.Features.Combos;
 public record ComboSelection(Guid ServiceItemId, List<Guid>? VariantIds, List<Guid>? AddOnIds, int Hours = 1);
 public record ComboPriceCommand(Guid? TemplateId, string Region, DateTime WeddingDate, int GuestCount, List<ComboSelection> Selections, Guid? RevisionOfId = null) : IRequest<ComboPriceDto>;
 public record ComboPriceLineDto(Guid ServiceItemId, Guid ListingId, Guid VendorId, Guid CategoryId, string VendorName, string Title,
-    string Unit, int Quantity, decimal Price, decimal DiscountShare, decimal Total, string CancellationPolicy, string Availability);
+    string Unit, int Quantity, decimal Price, decimal DiscountShare, decimal Total, string CancellationPolicy, string Availability,
+    ComboComponentSnapshotDto? Component = null);
 public record ComboPriceDto(decimal Subtotal, decimal DiscountPercent, decimal DiscountAmount, decimal Total,
     List<ComboPriceLineDto> Lines, List<string> Warnings, decimal? PlannerRemaining = null,
-    decimal? PlannerReservedBeforeCart = null, decimal? PlannerReplacedEstimate = null, decimal? PlannerBudgetTotal = null);
+    decimal? PlannerReservedBeforeCart = null, decimal? PlannerReplacedEstimate = null, decimal? PlannerBudgetTotal = null,
+    string PricingMode = "Dynamic");
 public class ComboPriceCommandHandler(IApplicationDbContext context, ICurrentUserService user) : IRequestHandler<ComboPriceCommand, ComboPriceDto>
 {
     public Task<ComboPriceDto> Handle(ComboPriceCommand r, CancellationToken ct) => ComboPricing.CalculateAsync(context, r, user.UserId, ct);
@@ -26,18 +28,19 @@ public static class ComboPricing
             throw new DomainException("Chọn từ 1 đến 12 dịch vụ khác nhau.");
         if (string.IsNullOrWhiteSpace(r.Region) || r.GuestCount is < 1 or > 10000 || r.WeddingDate.Date < DateTime.UtcNow.AddHours(7).Date)
             throw new DomainException("Vui lòng nhập khu vực, ngày cưới và số khách hợp lệ.");
+        var template = r.TemplateId.HasValue ? await context.ComboTemplates.Include(t => t.Items).PubliclyAvailable().FirstOrDefaultAsync(t => t.Id == r.TemplateId, ct) ?? throw new DomainException("Combo mẫu không còn khả dụng.") : null;
+        if (template != null && ComboFixedPackages.IsFixed(template)) return await FixedAsync(context, r, template, userId, ct);
         var ids = r.Selections.Select(s => s.ServiceItemId).ToList();
-        var items = await context.ServiceItems.Include(i => i.Vendor).Include(i => i.Listing).Include(i => i.Variants).Include(i => i.AddOns)
+        var items = await ComboPublicCatalog.Eligible(context).Include(i => i.Vendor).ThenInclude(v => v.User).Include(i => i.Listing).Include(i => i.Variants).Include(i => i.AddOns)
             .Where(i => ids.Contains(i.Id)).ToListAsync(ct);
-        if (items.Count != ids.Count || items.Any(i => !i.IsActive || i.ModerationStatus != "Approved" || !i.Vendor.IsVerified || !i.Vendor.IsActive || i.Listing.Status != ListingStatus.Active))
+        if (items.Count != ids.Count || items.Any(i => !i.IsActive || i.ModerationStatus != "Approved" || !i.Vendor.IsVerified || !i.Vendor.IsActive || !i.Vendor.User.IsActive || i.Listing.Status != ListingStatus.Active || !i.Listing.IsActive))
             throw new DomainException("Một dịch vụ chưa được duyệt/NCC chưa xác minh hoặc bài đăng không còn Active.");
         var ownerVendorId = ComboVendorPolicy.RequireOneVendor(items.Select(i => i.VendorId));
         if (items.Select(i => i.CategoryId).Distinct().Count() != items.Count) throw new DomainException("Mỗi ngành chỉ chọn một dịch vụ.");
         if (items.Any(i => !i.Serves(r.Region) || r.GuestCount < i.MinGuests || r.GuestCount > i.MaxGuests)) throw new DomainException("Dịch vụ không phục vụ khu vực hoặc không phù hợp số khách.");
-        var template = r.TemplateId.HasValue ? await context.ComboTemplates.Include(t => t.Items).FirstOrDefaultAsync(t => t.Id == r.TemplateId && t.IsActive && t.ModerationStatus == "Approved", ct) ?? throw new DomainException("Combo mẫu không còn khả dụng.") : null;
         if (template != null)
         {
-            if (!await ComboVendorPolicy.IsOwnedTemplateAsync(context, template, ct)) throw new DomainException("Combo cũ không thuộc riêng một NCC hoặc chứa lựa chọn bên ngoài. Vui lòng chọn combo NCC hợp lệ.");
+            if (!await ComboTemplateAvailability.ComponentsEligibleAsync(context, template, ct)) throw new DomainException("Combo cũ không thuộc riêng một NCC hoặc có dịch vụ không còn khả dụng. Vui lòng chọn combo NCC hợp lệ.");
             if (!string.IsNullOrWhiteSpace(template.Region) && !RegionRules.Serves(template.Region, r.Region)) throw new DomainException("Combo mẫu không phục vụ khu vực đã chọn.");
             // Customers may swap/add approved services, but only inside this vendor's catalog.
             if (template.OwnerVendorId != ownerVendorId) throw new DomainException(ComboVendorPolicy.SingleVendorMessage);
@@ -88,5 +91,55 @@ public static class ComboPricing
             projection?.Profile == null ? null : projection.ReservedBeforeCart,
             projection?.Profile == null ? null : projection.ReplacedSeedEstimate,
             projection?.Profile?.TotalBudget);
+    }
+
+    private static async Task<ComboPriceDto> FixedAsync(IApplicationDbContext context, ComboPriceCommand request,
+        ComboTemplate template, Guid? userId, CancellationToken ct)
+    {
+        if (!await ComboTemplateAvailability.ComponentsEligibleAsync(context, template, ct))
+            throw new DomainException("Combo đang tạm ngừng vì dịch vụ thành phần đã thay đổi hoặc không còn hợp lệ; cần NCC gửi duyệt lại combo.");
+        var components = ComboFixedPackages.Components(template);
+        if (components.Count != request.Selections.Count || request.Selections.Any(selection =>
+            components.All(component => component.ServiceItemId != selection.ServiceItemId) ||
+            (selection.VariantIds?.Count ?? 0) != 0 || (selection.AddOnIds?.Count ?? 0) != 0 || selection.Hours != 1))
+            throw new DomainException("Giá combo áp dụng đúng các dịch vụ trong gói. Thay đổi thành phần cần thỏa thuận và báo giá riêng với NCC.");
+        if (template.ComboPrice > template.OriginalPrice)
+            throw new DomainException("Giá combo vượt tổng giá bán lẻ. Vui lòng trao đổi NCC để có báo giá riêng; chưa có chính sách phân bổ phần chênh lệch được phê duyệt.");
+        if ((!string.IsNullOrWhiteSpace(template.Region) && !RegionRules.Serves(template.Region, request.Region)) ||
+            components.Any(component => !RegionRules.Serves(component.Regions, request.Region) || request.GuestCount < component.MinGuests || request.GuestCount > component.MaxGuests))
+            throw new DomainException("Combo không phục vụ khu vực hoặc không phù hợp số khách.");
+        var ids = components.Select(component => component.ServiceItemId).ToList();
+        var current = await context.ServiceItems.Include(item => item.Vendor).Where(item => ids.Contains(item.Id)).ToDictionaryAsync(item => item.Id, ct);
+        var date = request.WeddingDate.Date; var nextDay = date.AddDays(1);
+        var subtotal = template.OriginalPrice!.Value; var total = template.ComboPrice!.Value;
+        var discount = subtotal - total; var percent = subtotal == 0 ? 0 : discount / subtotal;
+        var shares = ComboMoney.AllocateDiscount(components.Select(component => component.BasePrice).ToList(), discount);
+        var lines = new List<ComboPriceLineDto>();
+        for (var index = 0; index < components.Count; index++)
+        {
+            var component = components[index]; var item = current[component.ServiceItemId];
+            var confirmed = await context.BookingContracts.CountAsync(contract => contract.VendorId == item.VendorId && contract.Lead.ListingId == item.ListingId &&
+                contract.WeddingDate >= date && contract.WeddingDate < nextDay &&
+                (contract.Status == ContractStatus.Confirmed || contract.Status == ContractStatus.Disputed || contract.Status == ContractStatus.Completed), ct);
+            if (confirmed >= item.MaxBookingsPerDay) throw new DomainException($"{component.Name} đã đủ lịch ngày cưới. Vui lòng trao đổi NCC.");
+            lines.Add(new(component.ServiceItemId, component.ListingId, component.VendorId, component.CategoryId, item.Vendor.BrandName,
+                component.Name, component.Unit, component.Quantity, component.BasePrice, shares[index], component.BasePrice - shares[index],
+                component.CancellationPolicy, "Gói cố định đã duyệt; chờ NCC xác nhận lịch bằng báo giá", component));
+        }
+        if (request.RevisionOfId.HasValue)
+        {
+            if (!userId.HasValue) throw new DomainException("Bạn cần đăng nhập để tính giá phiên bản chỉnh sửa.");
+            var source = await context.ComboOrders.Include(order => order.Items).FirstOrDefaultAsync(order => order.Id == request.RevisionOfId && order.CustomerId == userId, ct)
+                ?? throw new NotFoundException("Không tìm thấy combo gốc của bạn.");
+            await CustomerOrders.CustomerOrderJourney.EnsureCanReplaceComboAsync(context, source, ct);
+            if (source.Items.First().VendorId != template.OwnerVendorId) throw new DomainException("Phiên bản chỉnh sửa chỉ dùng dịch vụ cùng NCC của combo gốc.");
+        }
+        var warnings = new List<string> { "Giá áp dụng nguyên gói đã duyệt. Khách và NCC có thể thỏa thuận thay đổi riêng trong báo giá/hợp đồng; combo công khai giữ nguyên." };
+        var projection = userId.HasValue ? await ComboBudgetSynchronization.ProjectAsync(context, userId.Value, lines.Select(line => line.CategoryId).ToList(), ct, request.RevisionOfId) : null;
+        if (projection != null) warnings.AddRange(projection.Warnings);
+        return new(subtotal, percent, discount, total, lines, warnings,
+            projection?.Profile == null ? null : projection.Profile.TotalBudget - projection.ReservedBeforeCart - total,
+            projection?.Profile == null ? null : projection.ReservedBeforeCart,
+            projection?.Profile == null ? null : projection.ReplacedSeedEstimate, projection?.Profile?.TotalBudget, "FixedPrice");
     }
 }

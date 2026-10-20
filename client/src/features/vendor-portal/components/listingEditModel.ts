@@ -1,4 +1,5 @@
-import type { ListingDto, UpdateListingRequest } from "../../../types/listing.types";
+import type { ListingDto, ServiceDetailsDto, UpdateListingRequest, ListingRevisionDto, ListingPricingDto, ListingPricingOption } from "../../../types/listing.types";
+import { normalizeServiceDetails, serviceDetailsUpdate } from "../../listings/serviceDetailsModel.ts";
 
 export interface ListingFormValues {
   categoryId: string;
@@ -9,7 +10,7 @@ export interface ListingFormValues {
   location: string;
 }
 export interface ListingImageItem { id: string; preview: string; url: string }
-export interface ListingEditorState { form: ListingFormValues; images: ListingImageItem[] }
+export interface ListingEditorState { form: ListingFormValues; images: ListingImageItem[]; serviceDetails: ServiceDetailsDto; cancellationPolicy: string; categoryRequiresCommissionBasisApproval: boolean; revision?: ListingRevisionDto | null; revisionHistory?: ListingRevisionDto[] | null; pricing?: ListingPricingDto | null; pricingOptions?: ListingPricingOption[]; pricingSelectionRequired?: boolean; }
 
 export const EMPTY_LISTING_FORM: ListingFormValues = {
   categoryId: "", title: "", minPrice: "", maxPrice: "", description: "", location: "",
@@ -53,6 +54,11 @@ export function hydrateListingEditor(detail: ListingDto, expectedId: string, api
     // Preserve the complete stored album, including older references. Only newly supplied replacements
     // are validated; price-only edits omit media so they never silently delete historical images.
     images: media.map(image => ({ id: image.id, url: image.mediaUrl, preview: listingImagePreview(image.mediaUrl, apiBase) })),
+    serviceDetails: normalizeServiceDetails(detail.serviceDetails),
+    cancellationPolicy: detail.cancellationPolicy ?? "",
+    categoryRequiresCommissionBasisApproval: detail.categoryRequiresCommissionBasisApproval ?? false,
+    revision: detail.latestRevision, revisionHistory: detail.revisionHistory,
+    pricing: detail.pricing, pricingOptions: detail.pricingOptions, pricingSelectionRequired: detail.pricingSelectionRequired,
   };
 }
 
@@ -61,14 +67,16 @@ export function moveListingCover(images: ListingImageItem[], index: number): Lis
   return [images[index], ...images.slice(0, index), ...images.slice(index + 1)];
 }
 
-export function listingUpdatePayload(form: ListingFormValues, images: ListingImageItem[], originalImages: ListingImageItem[]): UpdateListingRequest {
+export function listingUpdatePayload(form: ListingFormValues, images: ListingImageItem[], originalImages: ListingImageItem[], details?: ServiceDetailsDto, originalDetails?: ServiceDetailsDto | null): UpdateListingRequest {
   const imageUrls = images.map(image => image.url.trim());
   const changed = imageUrls.length !== originalImages.length || imageUrls.some((url, index) => url !== originalImages[index]?.url);
   if (changed && (imageUrls.length < 1 || imageUrls.length > 10 || imageUrls.some(url => !isListingImageReference(url)) || new Set(imageUrls).size !== imageUrls.length))
     throw new Error("Cần từ 1 đến 10 ảnh hợp lệ và không trùng nhau khi thay album.");
+  const serviceDetails = details === undefined ? undefined : serviceDetailsUpdate(details, originalDetails);
   return {
     title: form.title, minPrice: Number(form.minPrice), maxPrice: Number(form.maxPrice), description: form.description, location: form.location,
     ...(changed ? { imageUrls } : {}),
+    ...(serviceDetails === undefined ? {} : { serviceDetails }),
   };
 }
 

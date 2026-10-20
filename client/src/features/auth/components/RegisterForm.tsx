@@ -4,9 +4,11 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { AlertCircle, ArrowRight, Building2, Eye, EyeOff, User } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { safeReturnPath, useIntentStore } from "../../../store/intentStore";
-import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration } from "./registrationValidation";
+import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration, vendorRegistrationRequest } from "./registrationValidation";
 import type { RegistrationErrors, RegistrationRole, RegistrationValues } from "./registrationValidation";
 import ProvinceSelect from "./ProvinceSelect";
+import { useBusinessGroups } from "../../vendor-portal/hooks/useBusinessGroups";
+import { commissionPercent } from "../../vendor-portal/businessGroupPolicy";
 import "./register-page.css";
 
 const inputClass = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a740] focus:bg-white transition";
@@ -45,6 +47,7 @@ export default function RegisterForm() {
   const [errors, setErrors] = useState<RegistrationErrors>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedPolicy, setAcceptedPolicy] = useState("");
   const inFlight = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const { registerCustomer, registerVendor, isRegisteringCustomer, isRegisteringVendor } = useAuth();
@@ -53,8 +56,14 @@ export default function RegisterForm() {
   const values = role === "customer" ? customer : vendor;
   const isLoading = submitting || isRegisteringCustomer || isRegisteringVendor;
   const prefix = `register-${role}`;
+  const businessGroups = useBusinessGroups(role === "vendor");
+  const groups = businessGroups.data ?? [];
+  const policyReady = businessGroups.isSuccess && !businessGroups.isFetching && groups.length > 0;
+  const policyIdentity = JSON.stringify(groups.map(group => [group.id, group.policyVersion, group.defaultCommissionRate, group.requiresCommissionBasisApproval]));
+  const policyAccepted = values.partnershipPolicyAccepted && acceptedPolicy === policyIdentity;
+  const selectedGroups = groups.filter(group => values.businessGroupIds.includes(group.id));
 
-  const update = (field: keyof RegistrationValues, value: string) => {
+  const update = <K extends keyof RegistrationValues,>(field: K, value: RegistrationValues[K]) => {
     const setValues = role === "customer" ? setCustomer : setVendor;
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
@@ -71,7 +80,8 @@ export default function RegisterForm() {
     event.preventDefault();
     if (inFlight.current || isLoading) return;
     setErrorMessage("");
-    const nextErrors = validateRegistration(values, role);
+    const submittedValues = role === "vendor" ? { ...values, partnershipPolicyAccepted: policyAccepted } : values;
+    const nextErrors = validateRegistration(submittedValues, role, policyReady ? groups.map(group => group.id) : []);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>("[aria-invalid='true']")?.focus());
@@ -83,7 +93,7 @@ export default function RegisterForm() {
     const credentials = { fullName: fields.fullName, email: fields.email, phoneNumber: fields.phoneNumber, password: fields.password };
     try {
       if (role === "customer") await registerCustomer(credentials);
-      else await registerVendor({ ...credentials, brandName: fields.brandName, city: fields.city, commissionRate: Number(fields.commissionRate) });
+      else await registerVendor(vendorRegistrationRequest(submittedValues));
       const returnTo = safeReturnPath((location.state as { from?: string } | null)?.from) ?? safeReturnPath(useIntentStore.getState().returnTo);
       navigate("/auth/continue", { replace: true, state: { from: returnTo } });
     } catch (error: unknown) {
@@ -130,17 +140,38 @@ export default function RegisterForm() {
           <RegistrationField id={`${prefix}-phone`} name="phoneNumber" label={role === "vendor" ? "Hotline nhà cung cấp" : "Số điện thoại"} type="tel" autoComplete="tel-national" inputMode="tel" required maxLength={20} value={values.phoneNumber} onChange={(event) => update("phoneNumber", event.target.value)} error={errors.phoneNumber} placeholder="0912345678" />
           {role === "vendor" && <>
             <ProvinceSelect key={`${role}-city`} id={`${prefix}-city`} value={values.city} onChange={(value) => update("city", value)} error={errors.city} disabled={isLoading} />
-            <div>
-              <label htmlFor={`${prefix}-commission`} className={labelClass}>Nhóm dịch vụ / hoa hồng</label>
-              <select id={`${prefix}-commission`} name="commissionRate" value={values.commissionRate} onChange={(event) => update("commissionRate", event.target.value)} className={inputClass} aria-invalid={errors.commissionRate ? true : undefined} aria-describedby={errors.commissionRate ? `${prefix}-commission-error` : undefined}>
-                <option value="0.03">Tiệc cưới: 3%</option><option value="0.08">Trang trí / Thiệp: 8%</option><option value="0.1">Quay chụp / Váy / Makeup: 10%</option><option value="0.12">Wedding Planner: 12%</option>
-              </select>
-              {errors.commissionRate && <p id={`${prefix}-commission-error`} className="mt-1.5 text-xs text-red-700">{errors.commissionRate}</p>}
-            </div>
+            <fieldset className="wm-business-groups min-w-0" aria-describedby={`${prefix}-groups-hint${errors.businessGroupIds ? ` ${prefix}-groups-error` : ""}`}>
+              <legend className={labelClass}>Nhóm dịch vụ kinh doanh</legend>
+              <p id={`${prefix}-groups-hint`} className="mb-3 text-xs leading-relaxed text-slate-500">Chọn một hoặc nhiều nhóm phù hợp. Hoa hồng mặc định lấy từ chính sách hiện hành; bạn không tự nhập tỷ lệ.</p>
+              {businessGroups.isFetching && <p role="status" className="text-sm text-slate-500">Đang tải nhóm dịch vụ và chính sách...</p>}
+              {!businessGroups.isFetching && (businessGroups.isError || groups.length === 0) && <div role="alert" className="wm-policy-unavailable">
+                <p>Chưa tải được chính sách nhóm dịch vụ. Chúng tôi chưa thể tiếp nhận đăng ký NCC khi thiếu thông tin này.</p>
+                <button type="button" onClick={() => void businessGroups.refetch()} className="mt-2 underline font-semibold">Tải lại chính sách</button>
+              </div>}
+              {policyReady && <div className="wm-business-group-options">{groups.map((group, index) => <label key={group.id} className="wm-business-group-option" data-selected={values.businessGroupIds.includes(group.id)}>
+                <input type="checkbox" name="businessGroupIds" value={group.id} checked={values.businessGroupIds.includes(group.id)} aria-invalid={index === 0 && errors.businessGroupIds ? true : undefined} aria-describedby={errors.businessGroupIds ? `${prefix}-groups-error` : undefined} onChange={event => {
+                  update("businessGroupIds", event.target.checked ? [...values.businessGroupIds, group.id] : values.businessGroupIds.filter(id => id !== group.id));
+                  update("partnershipPolicyAccepted", false);
+                }} />
+                <span><strong>{group.name}</strong><small>{group.description}</small></span><b>{commissionPercent(group.defaultCommissionRate)}</b>
+              </label>)}</div>}
+              {errors.businessGroupIds && <p id={`${prefix}-groups-error`} className="wm-registration-error">{errors.businessGroupIds}</p>}
+              {selectedGroups.length > 0 && policyReady && <div className="wm-business-group-summary">
+                <p className="font-semibold">Chính sách của {selectedGroups.length} nhóm đã chọn</p>
+                <dl>{selectedGroups.map(group => <div key={group.id}><dt>{group.name}</dt><dd>{commissionPercent(group.defaultCommissionRate)}</dd></div>)}</dl>
+                {selectedGroups.some(group => group.requiresCommissionBasisApproval) && <p className="mt-2">Dịch vụ A–Z: cần xác định và được phê duyệt cơ sở phí tổ chức/quản lý/điều phối; không mặc định tính trên toàn bộ ngân sách hoặc khoản chi hộ.</p>}
+                <p className="mt-2">Nhóm kinh doanh thể hiện phạm vi hoạt động của shop. Danh mục của từng dịch vụ xác định chính sách tương ứng; đăng ký không tự xuất bản dịch vụ.</p>
+              </div>}
+              <label className="wm-policy-acknowledgment">
+                <input type="checkbox" id={`${prefix}-policy`} checked={policyAccepted} disabled={!policyReady || selectedGroups.length === 0} aria-invalid={errors.partnershipPolicyAccepted ? true : undefined} aria-describedby={errors.partnershipPolicyAccepted ? `${prefix}-policy-error` : undefined} onChange={event => { update("partnershipPolicyAccepted", event.target.checked); setAcceptedPolicy(policyIdentity); }} />
+                <span>Tôi đã đọc chính sách hợp tác và mức hoa hồng mặc định theo các nhóm đã chọn. Việc đề xuất điều chỉnh sau này cần được nền tảng phê duyệt.</span>
+              </label>
+              {errors.partnershipPolicyAccepted && <p id={`${prefix}-policy-error`} className="wm-registration-error">{errors.partnershipPolicyAccepted}</p>}
+            </fieldset>
           </>}
           <PasswordField key={`${role}-password`} id={`${prefix}-password`} name="password" label="Mật khẩu" autoComplete="new-password" required minLength={8} maxLength={72} value={values.password} onChange={(event) => update("password", event.target.value)} error={errors.password} hint="Ít nhất 8 ký tự. Bạn có thể dùng một cụm từ dễ nhớ; tối đa 72 byte." />
           <PasswordField key={`${role}-confirmation`} id={`${prefix}-confirmation`} name="confirmPassword" label="Nhập lại mật khẩu" autoComplete="new-password" required minLength={8} maxLength={72} value={values.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} error={errors.confirmPassword} />
-          <button type="submit" disabled={isLoading} className="w-full mt-2 py-3 px-4 rounded-xl bg-[#25334c] text-white font-semibold text-sm hover:bg-[#354762] transition disabled:opacity-50 flex items-center justify-center gap-2">
+          <button type="submit" disabled={isLoading || role === "vendor" && !policyReady} className="w-full mt-2 py-3 px-4 rounded-xl bg-[#25334c] text-white font-semibold text-sm hover:bg-[#354762] transition disabled:opacity-50 flex items-center justify-center gap-2">
             <span>{isLoading ? "Đang tạo tài khoản..." : role === "vendor" ? "Tạo tài khoản nhà cung cấp" : "Tạo tài khoản khách hàng"}</span><ArrowRight className="w-4 h-4" aria-hidden="true" />
           </button>
         </fieldset>

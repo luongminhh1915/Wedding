@@ -11,7 +11,6 @@ import {
   LayoutGrid,
   MapPin,
   PackageOpen,
-  Search,
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
@@ -45,17 +44,14 @@ import { ServiceConfigurator } from "./ServiceConfigurator";
 import { ComboNextSteps } from "./ComboNextSteps";
 import { ComboPhoto } from "./ComboPhoto";
 import { editableComboCart } from "./comboEditing";
+import { fixedComboOptions } from "./fixedComboModel";
 import { catalogErrorMessage } from "./catalogError";
 import { useCustomerOrderJourney } from "../customerOrders/customerOrderApi";
 import { Pagination, scrollToList, useResponsivePageSize } from "../../../components/Pagination";
+import { ComboCatalogFilters } from "./ComboCatalogFilters";
+import { clearComboFilterSearch, comboFilterSearch, readComboFilters, type ComboFilters } from "./comboFilterModel";
 import "../../../styles/combo-builder.css";
-
-const normalize = (s: string) =>
-  s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .toLowerCase();
+import "../../../styles/combo-discovery.css";
 const tierLabel: Record<string, string> = {
   Saving: "Tiết kiệm",
   Popular: "Phổ biến",
@@ -68,14 +64,13 @@ const categoryLabels: Record<string, string> = {
   "vay-cuoi-vest": "Trang phục",
   "trang-diem-makeup": "Trang điểm",
   "thiep-cuoi-qua-tang": "Thiệp & quà",
-  "wedding-planner": "Wedding Planner",
+  "wedding-planner": "Tổ chức A–Z",
 };
 
 export default function ComboBuilderPage() {
-  const location = useLocation();
   const userId = useAuthStore((s) => s.user?.id ?? "guest");
-  // A route draft can initialize a new editing session without losing the durable cart on other pages.
-  return <ComboBuilder key={`${userId}:${location.key}`} />;
+  // URL filter changes must not remount the cart/editor or replay a consumed draft intent.
+  return <ComboBuilder key={userId} />;
 }
 function ComboBuilder() {
   const user = useAuthStore((s) => s.user);
@@ -93,24 +88,30 @@ function ComboBuilder() {
   const profile = planner.data?.profile;
   const location = useLocation();
   const navigate = useNavigate();
-  const params = new URLSearchParams(location.search);
+  const filters = readComboFilters(location.search);
+  const changeFilters = (changes: Partial<ComboFilters>) => navigate({ pathname: location.pathname,
+    search: comboFilterSearch({ ...filters, page: 1, ...changes }, location.search) }, { state: location.state });
+  const resetFilters = () => navigate({ pathname: location.pathname, search: clearComboFilterSearch(location.search) }, { state: location.state });
   const routeDraft = (location.state as { draft?: SavedCombo } | null)?.draft;
   const routeRevision = (location.state as { revision?: SavedCombo } | null)
     ?.revision;
   const routeOrder = routeRevision ?? routeDraft;
-  const [menu, setMenu] = useState(params.get("category") ?? "");
-  const [listingFilter, setListingFilter] = useState(params.get("listing") ?? "");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState("recommended");
+  const menu = filters.category ?? "";
+  const listingFilter = filters.listing ?? "";
+  const query = filters.search ?? "";
+  const setMenu = (category: string) => changeFilters({ category, listing: undefined,
+    ...(category !== "templates" ? { minServices: undefined, maxServices: undefined, minSavings: undefined, templateCategoryId: undefined } : {}) });
+  const setListingFilter = (listing: string) => changeFilters({ listing: listing || undefined });
   const pageSize = useResponsivePageSize();
-  const filterKey = JSON.stringify([menu, listingFilter, query, sort, cart.vendorId, cart.templateVendorId, pageSize]);
-  const [pagination, setPagination] = useState({ key: filterKey, page: 1 });
-  const page = pagination.key === filterKey ? pagination.page : 1;
+  const page = filters.page;
   const catalog = useCatalogPage({
     categoryId: menu && menu !== "templates" ? menu : undefined,
     vendorId: cart.vendorId ?? cart.templateVendorId ?? undefined,
     listingId: listingFilter || undefined,
-    search: query.trim(), sort, page, pageSize,
+    search: query, sort: filters.sort, page, pageSize,
+    minPrice: filters.minPrice, maxPrice: filters.maxPrice, city: filters.city, region: filters.region,
+    minServices: filters.minServices, maxServices: filters.maxServices, minSavings: filters.minSavings,
+    minRating: filters.minRating, templateCategoryId: filters.templateCategoryId, filterVendorId: filters.filterVendorId,
     selectedItemIds: [...new Set([...cart.selections.map(i => i.serviceItemId), ...(routeOrder?.items.flatMap(i => i.serviceItemId ? [i.serviceItemId] : []) ?? [])])].sort(),
     templateId: routeOrder?.comboTemplateId ?? cart.templateId,
     guests: cart.guestCount || 200,
@@ -119,7 +120,7 @@ function ComboBuilder() {
   const data = catalog.data?.builder;
   const listRef = useRef<HTMLElement>(null);
   const changePage = (next: number) => {
-    setPagination({ key: filterKey, page: next });
+    changeFilters({ page: next });
     scrollToList(listRef.current);
   };
   const intentMetadata = journey.data?.find(
@@ -128,18 +129,18 @@ function ComboBuilder() {
   const [replaceApproved, setReplaceApproved] = useState(
     !cart.selections.length,
   );
-  const loadedDraft = useRef(false);
+  const loadedDraft = useRef<string | null>(null);
   const prefilledProfile = useRef(false);
   useEffect(() => {
     if (
       !routeOrder ||
-      loadedDraft.current ||
+      loadedDraft.current === routeOrder.id ||
       !data ||
       !intentMetadata?.capabilities.canEdit
     )
       return;
     if (!replaceApproved) return;
-    loadedDraft.current = true;
+    loadedDraft.current = routeOrder.id;
     const template = [...data.templates, ...(catalog.data?.selectedTemplate ? [catalog.data.selectedTemplate] : [])].find(
       (t) => t.id === routeOrder.comboTemplateId,
     );
@@ -223,7 +224,7 @@ function ComboBuilder() {
   const [consent, setConsent] = useState(false);
   const [notice, setNotice] = useState(
     selectedFromDetail
-      ? "Đã chọn combo. Bạn có thể sửa dịch vụ rồi bấm “Bước tiếp theo” để kiểm tra và xin báo giá."
+      ? "Đã chọn combo. Bấm “Bước tiếp theo” để kiểm tra và gửi yêu cầu. Gói cố định giữ nguyên thành phần; thay đổi riêng sẽ trao đổi với NCC trong chat."
       : "",
   );
   const [done, setDone] = useState<ComboOrder | null>(null);
@@ -239,14 +240,17 @@ function ComboBuilder() {
   const revisionAllowed =
     !cart.revisionOfId || revisionMetadata?.capabilities.canEdit === true;
   const submit = useSubmitCatalogCombo();
+  const currentTemplate = [...(data?.templates ?? []), ...(catalog.data?.selectedTemplate ? [catalog.data.selectedTemplate] : [])].find(template => template.id === cart.templateId);
+  const fixedCart = cart.pricingMode === "FixedPrice" || currentTemplate?.pricingMode === "FixedPrice";
   const options = useMemo(
     () =>
       new Map(
         [...(data?.categories.flatMap((category) =>
           category.options.map((item) => [item.serviceItemId, item] as const),
-        ) ?? []), ...(catalog.data?.selectedOptions.map(item => [item.serviceItemId, item] as const) ?? [])],
+        ) ?? []), ...(catalog.data?.selectedOptions.map(item => [item.serviceItemId, item] as const) ?? []),
+        ...(currentTemplate ? fixedComboOptions(currentTemplate).map(item => [item.serviceItemId, item] as const) : [])],
       ),
-    [data, catalog.data?.selectedOptions],
+    [data, catalog.data?.selectedOptions, currentTemplate],
   );
   const categories = data?.categories ?? [];
   const vendorProfiles = new Map(
@@ -255,7 +259,7 @@ function ComboBuilder() {
   const fromListing = categories.find((c) =>
     c.options.some((i) => i.listingId === listingFilter),
   );
-  const activeId = menu || fromListing?.categoryId || "templates";
+  const activeId = menu || catalog.data?.categoryId || fromListing?.categoryId || "templates";
   const activeCategory = categories.find((c) => c.categoryId === activeId);
   const lines = cart.selections.map((selection) => ({
     selection,
@@ -318,13 +322,9 @@ function ComboBuilder() {
   );
   const matches = (item: CatalogOption) =>
     (!selectedVendorId || selectedVendorId === item.vendorId) &&
-    (!listingFilter || listingFilter === item.listingId) &&
-    (!query ||
-      normalize(`${item.title} ${item.vendorName}`).includes(normalize(query)));
+    (!listingFilter || listingFilter === item.listingId);
   const openCategory = (id: string) => {
     setMenu(id);
-    if (id === "templates") setSort("recommended");
-    setListingFilter("");
     setNotice("");
   };
   const categoryNavRef = useRef<HTMLElement>(null);
@@ -346,23 +346,22 @@ function ComboBuilder() {
   const changeVendor = (vendor: { id: string; name: string }) => {
     updateCart(scope, (previous) => startVendorCart(previous, vendor.id));
     setPendingVendor(null);
-    setListingFilter("");
-    setQuery("");
-    setMenu("templates");
+    changeFilters({ category: "templates", listing: undefined, search: undefined, filterVendorId: undefined });
     setNotice(
       `Đang chọn combo của ${vendor.name}. Bản nháp và yêu cầu đã lưu không bị thay đổi.`,
     );
   };
   const editLine = (categoryId: string) => {
-    setMenu(categoryId);
-    setListingFilter("");
-    setQuery("");
+    if (fixedCart) { setNotice("Gói cố định giữ nguyên thành phần. Gửi yêu cầu trước, rồi chat với NCC để nhận đề xuất thay đổi riêng cho đơn."); return; }
+    changeFilters({ category: categoryId, listing: undefined, search: undefined,
+      minServices: undefined, maxServices: undefined, minSavings: undefined, templateCategoryId: undefined });
     setCartOpen(false);
     const selection = cart.selections.find((s) => s.categoryId === categoryId);
     const item = selection && options.get(selection.serviceItemId);
     if (item) setConfigItem({ item, categoryId });
   };
   const addService = (selection: CartSelection) => {
+    if (fixedCart) { setConfigItem(null); setNotice("Không thể thêm/bớt riêng trong gói cố định. Bạn có thể trao đổi và xác nhận đề xuất riêng với NCC sau khi gửi yêu cầu."); return; }
     const item = options.get(selection.serviceItemId)!;
     if (mixedCart || (selectedVendorId && item.vendorId !== selectedVendorId)) {
       setConfigItem(null);
@@ -440,7 +439,7 @@ function ComboBuilder() {
   };
   const cartPanel = (
     <ComboCartPanel
-      cart={cart}
+      cart={fixedCart ? { ...cart, pricingMode: "FixedPrice" } : cart}
       lines={lines}
       price={mixedCart ? undefined : price.data}
       busy={price.isFetching}
@@ -454,7 +453,7 @@ function ComboBuilder() {
       }
       onEdit={editLine}
       onRemove={(id) =>
-        updateCart(scope, (previous) => removeService(previous, id))
+        fixedCart ? setNotice("Gói cố định giữ nguyên thành phần; hãy trao đổi thay đổi riêng với NCC.") : updateCart(scope, (previous) => removeService(previous, id))
       }
       onReview={review}
       onClear={() => {
@@ -898,18 +897,10 @@ function ComboBuilder() {
           >
             {catalog.isFetching && <p className="combo-catalog-status" role="status">Đang cập nhật danh sách...</p>}
             {catalog.isError && <p className="co-error" role="alert">Không tải được danh sách mới. Giỏ vẫn được giữ. <button className="combo-text-button" onClick={() => void refetch()}>Thử lại</button></p>}
-            <div className="combo-filters combo-catalog-controls">
-              <label className="combo-search">
-                <Search size={16} />
-                <input className="input" value={query} maxLength={150} onChange={e => setQuery(e.target.value)} placeholder="Tìm combo, dịch vụ hoặc NCC..." aria-label="Tìm trong danh mục combo" />
-              </label>
-              <label className="combo-sort">Sắp xếp
-                <select className="input" value={sort} onChange={e => setSort(e.target.value)}>
-                  <option value="recommended">Đề xuất</option><option value="newest">Mới nhất</option>
-                  {activeId !== "templates" && <><option value="price-asc">Giá tăng dần</option><option value="price-desc">Giá giảm dần</option></>}
-                </select>
-              </label>
-            </div>
+            <ComboCatalogFilters key={location.search} filters={filters} categories={categories} vendors={data?.vendors ?? []}
+              guests={data.previewGuestCount ?? 200} templateMode={activeId === "templates"}
+              lockedVendorName={selectedVendor?.name} onChange={changeFilters} onReset={resetFilters} />
+            <p className="combo-discovery-price-note" role="status">{catalog.data?.totalCount ?? 0} {activeId === "templates" ? "combo" : "dịch vụ"} phù hợp</p>
             {activeId === "templates" ? (
               <>
                 <div className="combo-section-heading">
@@ -934,6 +925,7 @@ function ComboBuilder() {
                 </div>
                 <div className="combo-preset-grid">
                   {templates.map((template) => {
+                    const estimate = catalog.data?.estimates?.find(item => item.templateId === template.id);
                     const vendor = template.ownerVendorId
                       ? vendorProfiles.get(template.ownerVendorId)
                       : undefined;
@@ -949,12 +941,14 @@ function ComboBuilder() {
                       >
                         <Link
                           to={`/combo/${template.id}`}
+                          state={{ comboCatalogReturn: `/combo${comboFilterSearch(filters)}` }}
                           className="combo-preset-cover"
                           aria-label={`Xem hình ảnh và chi tiết ${template.name}`}
                         >
                           <ComboPhoto
                             sources={[
                               template.imageUrl,
+                              ...(template.content?.galleryUrls ?? []),
                               vendor?.coverImageUrl,
                               ...templateOptions.flatMap((item) => [
                                 item.imageUrl,
@@ -1001,9 +995,15 @@ function ComboBuilder() {
                             hạng mục có sẵn
                           </span>
                         </div>
+                        {estimate && <div className="combo-preset-estimate">
+                          <small>{template.pricingMode === "FixedPrice" ? "Giá nguyên gói đã duyệt" : `Dự kiến cho ${estimate.guests.toLocaleString("vi-VN")} khách`}</small>
+                          <strong>{vnd(estimate.total)}</strong>
+                          {estimate.savings > 0 && <p>Tiết kiệm {vnd(estimate.savings)} so với dịch vụ có sẵn</p>}
+                          {estimate.shopRating != null && <span>Đánh giá shop: {estimate.shopRating.toLocaleString("vi-VN")} / 5</span>}
+                        </div>}
                         <ul>
                           {template.items.slice(0, 4).map((item) => (
-                            <li key={item.categoryId}>
+                            <li key={item.serviceItemId ?? item.categoryId}>
                               <ComboPhoto
                                 sources={[
                                   item.serviceItemId
@@ -1026,6 +1026,7 @@ function ComboBuilder() {
                         <Link
                           className="combo-secondary"
                           to={`/combo/${template.id}`}
+                          state={{ comboCatalogReturn: `/combo${comboFilterSearch(filters)}` }}
                         >
                           Xem chi tiết combo <ChevronRight size={15} />
                         </Link>
@@ -1036,10 +1037,9 @@ function ComboBuilder() {
                 {templates.length === 0 && (
                   <div className="combo-empty">
                     <PackageOpen size={36} />
-                    <h3>NCC chưa có combo được duyệt</h3>
+                    <h3>Chưa có combo phù hợp</h3>
                     <p>
-                      Bạn vẫn có thể chọn các dịch vụ của một NCC từ thanh danh
-                      mục để xin báo giá.
+                      Thử mở rộng bộ lọc hoặc tự chọn các dịch vụ của một NCC để xin báo giá. Giỏ hiện tại vẫn được giữ nguyên.
                     </p>
                     <button
                       className="combo-secondary"
@@ -1049,6 +1049,7 @@ function ComboBuilder() {
                     >
                       Tự chọn dịch vụ
                     </button>
+                    <button className="combo-text-button" onClick={resetFilters}>Xóa bộ lọc combo</button>
                   </div>
                 )}
               </>
@@ -1158,13 +1159,12 @@ function ComboBuilder() {
                       Chỉ hiển thị dịch vụ đã được duyệt của NCC đã xác minh và
                       đồng ý tham gia combo.
                     </p>
-                    {(query || listingFilter) && (
+                    {(location.search) && (
                       <button
                         className="combo-secondary"
-                        onClick={() => {
-                          setQuery("");
-                          setListingFilter("");
-                        }}
+                        onClick={() => changeFilters({ category: activeId, listing: undefined, search: undefined,
+                          minPrice: undefined, maxPrice: undefined, city: undefined, region: undefined, minServices: undefined,
+                          maxServices: undefined, minSavings: undefined, minRating: undefined, templateCategoryId: undefined, filterVendorId: undefined })}
                       >
                         Bỏ bộ lọc
                       </button>
@@ -1249,9 +1249,8 @@ function ComboBuilder() {
           onSave={addService}
           onClose={() => setConfigItem(null)}
           onBrowseAlternatives={() => {
-            setMenu(configItem.categoryId);
-            setListingFilter("");
-            setQuery("");
+            changeFilters({ category: configItem.categoryId, listing: undefined, search: undefined,
+              minServices: undefined, maxServices: undefined, minSavings: undefined, templateCategoryId: undefined });
             setConfigItem(null);
             setCartOpen(false);
             setNotice(

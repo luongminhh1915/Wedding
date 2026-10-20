@@ -25,9 +25,10 @@ public class ServiceItem : BaseEntity
     public ICollection<ItemAddOn> AddOns { get; private set; } = new List<ItemAddOn>();
     private ServiceItem() { }
     public static ServiceItem Create(Guid vendorId, Guid listingId, Guid categoryId, string name, decimal price, string unit,
-        int minGuests, int maxGuests, string regions, string cancellationPolicy)
+        int minGuests, int maxGuests, string regions, string cancellationPolicy, Guid? id = null)
     {
         var item = new ServiceItem { VendorId = vendorId, ListingId = listingId, CategoryId = categoryId };
+        if (id.HasValue) { if (id == Guid.Empty) throw new DomainException("Mã dịch vụ không hợp lệ."); item.Id = id.Value; }
         item.Update(name, price, unit, minGuests, maxGuests, regions, cancellationPolicy, true); return item;
     }
     public void Update(string name, decimal price, string unit, int minGuests, int maxGuests, string regions, string cancellationPolicy, bool active)
@@ -40,6 +41,12 @@ public class ServiceItem : BaseEntity
         CancellationPolicy = cancellationPolicy.Trim(); IsActive = active; ModerationStatus = "Draft"; SetUpdated();
     }
     public void Submit() { ModerationStatus = "Pending"; ReviewNote = null; SetUpdated(); }
+    public void SynchronizeListingModeration(string status, string? note = null)
+    {
+        if (status is not ("Draft" or "Pending" or "Approved" or "Rejected")) throw new DomainException("Trạng thái dịch vụ không hợp lệ.");
+        if (ModerationStatus == status && ReviewNote == note) return;
+        ModerationStatus = status; ReviewNote = note; SetUpdated();
+    }
     public void SetDailyCapacity(int capacity)
     {
         if (capacity is < 1 or > 100) throw new DomainException("Số đơn phục vụ mỗi ngày phải từ 1 đến 100.");
@@ -65,6 +72,12 @@ public class ItemVariant : BaseEntity
     public string Name { get; private set; } = string.Empty;
     public decimal PriceDelta { get; private set; }
     private ItemVariant() { }
+    public void Update(string name, decimal delta)
+    {
+        var validated = Create(ServiceItemId, name, delta);
+        if (Name == validated.Name && PriceDelta == delta) return;
+        Name = validated.Name; PriceDelta = delta; SetUpdated();
+    }
     public static ItemVariant Create(Guid itemId, string name, decimal delta)
     {
         if (string.IsNullOrWhiteSpace(name) || delta < -100000000000m || delta > 100000000000m || delta != decimal.Truncate(delta)) throw new DomainException("Tên biến thể và giá chênh theo đồng nguyên là bắt buộc.");
@@ -78,6 +91,12 @@ public class ItemAddOn : BaseEntity
     public decimal Price { get; private set; }
     public bool PerUnit { get; private set; }
     private ItemAddOn() { }
+    public void Update(string name, decimal price, bool perUnit)
+    {
+        var validated = Create(ServiceItemId, name, price, perUnit);
+        if (Name == validated.Name && Price == price && PerUnit == perUnit) return;
+        Name = validated.Name; Price = price; PerUnit = perUnit; SetUpdated();
+    }
     public static ItemAddOn Create(Guid itemId, string name, decimal price, bool perUnit)
     {
         if (string.IsNullOrWhiteSpace(name) || price < 0 || price > 100000000000m || price != decimal.Truncate(price)) throw new DomainException("Tên/giá món kèm không hợp lệ (giá theo đồng nguyên).");

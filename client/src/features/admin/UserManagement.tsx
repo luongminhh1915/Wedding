@@ -11,6 +11,7 @@ import axiosClient from '../../services/axiosClient';
 import { useAuthStore } from '../../store/authStore';
 import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration } from '../auth/components/registrationValidation';
 import type { RegistrationErrors, RegistrationValues } from '../auth/components/registrationValidation';
+import { VendorBusinessGroupsEditor } from './VendorBusinessGroupsEditor';
 
 type StaffRole = 'Moderator' | 'Finance' | 'CustomerCare';
 const staffRoleNames: Record<StaffRole, string> = { Moderator: 'Kiểm duyệt', Finance: 'Tài chính', CustomerCare: 'Chăm sóc khách hàng' };
@@ -459,7 +460,7 @@ export default function UserManagement() {
       {/* User Detail Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+          <div className="max-h-[90dvh] overflow-y-auto bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between mb-5 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-rose-500 text-white font-bold flex items-center justify-center text-lg shadow-sm">
@@ -511,6 +512,7 @@ export default function UserManagement() {
                 </div>
               )}
 
+              {selectedUser.role === 'VendorOwner' && selectedUser.vendorId && <VendorBusinessGroupsEditor key={selectedUser.vendorId} vendorId={selectedUser.vendorId} />}
               <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 space-y-1">
                 <p><strong>User ID:</strong> <span className="font-mono">{selectedUser.id}</span></p>
                 {selectedUser.lastLoginAt && (

@@ -26,8 +26,9 @@ public class UploadController : ControllerBase
     private ListingImageStorage ListingStorage => new(_env.ContentRootPath, _configuration["Uploads:ListingRoot"], _env.WebRootPath);
 
     [HttpPost("invitation-images"), Authorize(Roles = "Customer")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(9 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 9 * 1024 * 1024)]
-    public async Task<IActionResult> UploadInvitationImage([FromForm] IFormFile file, CancellationToken ct)
+    public async Task<IActionResult> UploadInvitationImage(IFormFile file, CancellationToken ct)
     {
         if (file == null) return BadRequest(new { message = "Vui lòng chọn một ảnh JPG, PNG hoặc WebP." });
         var scope = await WeddingAccess.ResolveAsync(_db, _user, ct, write: true);
@@ -51,8 +52,9 @@ public class UploadController : ControllerBase
     /// Tải lên một hoặc nhiều hình ảnh (Tối đa 10 ảnh, 8 MB mỗi ảnh, hỗ trợ jpg, jpeg, png, webp)
     /// </summary>
     [HttpPost("images"), Authorize(Roles = "VendorOwner")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(81 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 81 * 1024 * 1024)]
-    public async Task<IActionResult> UploadImages([FromForm] List<IFormFile> files, CancellationToken ct)
+    public async Task<IActionResult> UploadImages(List<IFormFile> files, CancellationToken ct)
     {
         // Check DB ownership/status before reading or writing any uploaded data.
         await ListingAccess.RequireImageUploadAccessAsync(_db, _user, ct);

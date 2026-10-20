@@ -17,6 +17,10 @@ public class BookingContractConfiguration : IEntityTypeConfiguration<BookingCont
         builder.Property(c => c.ContractValue).HasPrecision(18, 2);
         builder.Property(c => c.DepositAmount).HasPrecision(18, 2);
         builder.Property(c => c.CommissionRateSnapshot).HasPrecision(5, 4);
+        builder.Property(c => c.CommissionCategoryNameSnapshot).HasMaxLength(150);
+        builder.Property(c => c.CommissionBusinessGroupNameSnapshot).HasMaxLength(150);
+        builder.Property(c => c.CommissionRateSourceSnapshot).HasMaxLength(30);
+        builder.Property(c => c.CommissionPolicyVersionSnapshot).HasMaxLength(50);
         builder.Property(c => c.ContractImageUrl).HasMaxLength(500);
         builder.Property(c => c.CancellationReason).HasMaxLength(500);
 

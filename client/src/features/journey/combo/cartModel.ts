@@ -18,6 +18,7 @@ export interface ComboCart {
   revisionOfId?: string;
   revisionReason?: string;
   note?: string;
+  pricingMode?: string;
 }
 export const EMPTY_CART: ComboCart = {
   selections: [],
@@ -70,6 +71,7 @@ export function selectService(
   selection: CartSelection,
   vendorId: string,
 ): ComboCart {
+  if (cart.pricingMode === "FixedPrice") throw new Error("Gói giá cố định giữ nguyên thành phần. Hãy trao đổi với NCC trong chat để nhận đề xuất riêng cho đơn của bạn.");
   const boundVendor = cart.vendorId ?? cart.templateVendorId;
   if (boundVendor && boundVendor !== vendorId)
     throw new Error("Mỗi combo chỉ gồm dịch vụ của một nhà cung cấp.");
@@ -97,6 +99,7 @@ export function startVendorCart(
   };
 }
 export function removeService(cart: ComboCart, categoryId: string): ComboCart {
+  if (cart.pricingMode === "FixedPrice") throw new Error("Không thể bỏ riêng dịch vụ khỏi gói giá cố định. Hãy trao đổi thay đổi với NCC.");
   return {
     ...cart,
     selections: cart.selections.filter((s) => s.categoryId !== categoryId),

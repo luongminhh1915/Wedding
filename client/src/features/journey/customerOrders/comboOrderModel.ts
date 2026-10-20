@@ -51,6 +51,7 @@ export function comboCardModel(order: SavedCombo, metadata?: OrderJourneyItem) {
   const photos = [
     ...new Set(
       [
+        ...order.items.flatMap(item => item.component ? [item.component.imageUrl, ...item.component.galleryUrls] : []),
         media?.imageUrl,
         media?.vendorCoverImageUrl,
         ...(media?.galleryUrls ?? []),
@@ -84,7 +85,7 @@ export function comboCardModel(order: SavedCombo, metadata?: OrderJourneyItem) {
         ...item,
         photos: [
           ...new Set(
-            [image?.imageUrl, ...(image?.galleryUrls ?? [])].filter(
+            [item.component?.imageUrl, ...(item.component?.galleryUrls ?? []), image?.imageUrl, ...(image?.galleryUrls ?? [])].filter(
               (url): url is string => !!url,
             ),
           ),

@@ -45,18 +45,29 @@ public class ReviewTests
     public async Task VerifiedContractMustMatchExactListingAndVendor()
     {
         await using var f = await Fixture.Create(); var contract = await f.AddContract();
-        var other = Listing.Create(f.Vendor.Id, f.Category.Id, "Other", "other", 1, 2, "Other", "HCM"); f.Db.Listings.Add(other); await f.Db.SaveChangesAsync();
+        contract.CompleteContract(); await f.Db.SaveChangesAsync();
+        var other = Listing.Create(f.Vendor.Id, f.Category.Id, "Other", "other", 1, 2, "Other", "HCM"); other.Approve(); f.Db.Listings.Add(other); await f.Db.SaveChangesAsync();
         var handler = new SubmitReviewCommandHandler(f.Db, new Current(f.Customer.Id));
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new(contract.Id, other.Id, 5, Content), default));
     }
     [Fact]
-    public async Task ConfirmedAfterThreeDaysIsVerifiedAndDuplicateIsRejected()
+    public async Task CompletedContractIsVerifiedAndDuplicateIsRejected()
     {
         await using var f = await Fixture.Create(); var contract = await f.AddContract();
+        contract.CompleteContract(); await f.Db.SaveChangesAsync();
         var handler = new SubmitReviewCommandHandler(f.Db, new Current(f.Customer.Id));
         var result = await handler.Handle(new(contract.Id, f.Listing.Id, 4, Content, null, 5, 4, 4, 4), default);
         Assert.True(result.IsVerifiedBuyer); Assert.Equal(4.25m, result.AverageRating);
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new(null, f.Listing.Id, 5, Content), default));
+    }
+    [Fact]
+    public async Task ConfirmedAfterThreeDaysCannotBeReviewedBeforeActualCompletion()
+    {
+        await using var f = await Fixture.Create(); var contract = await f.AddContract();
+        var handler = new SubmitReviewCommandHandler(f.Db, new Current(f.Customer.Id));
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new(contract.Id, f.Listing.Id, 5, Content), default));
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new(null, f.Listing.Id, 5, Content), default));
+        Assert.Empty(await f.Db.Reviews.ToListAsync());
     }
     [Fact]
     public async Task RejectingApprovedReviewRefreshesVendorScoreAndCount()
@@ -79,7 +90,7 @@ public class ReviewTests
             var owner = User.Create("Owner", "vendor@test.vn", "0900000001", "hash", UserRole.VendorOwner); f.Db.Users.AddRange(f.Customer, owner);
             f.Vendor = Vendor.Create(owner.Id, "Vendor", "vendor", "Owner", "0900000001", "HCM", .08m); f.Db.Vendors.Add(f.Vendor);
             f.Category = Category.Create("Photo", "photo", null, null, .08m); f.Db.Categories.Add(f.Category);
-            f.Listing = Listing.Create(f.Vendor.Id, f.Category.Id, "Photo", "photo", 1000, 10000, "Photo", "HCM"); f.Db.Listings.Add(f.Listing); await f.Db.SaveChangesAsync(); return f;
+            f.Listing = Listing.Create(f.Vendor.Id, f.Category.Id, "Photo", "photo", 1000, 10000, "Photo", "HCM"); f.Listing.Approve(); f.Db.Listings.Add(f.Listing); await f.Db.SaveChangesAsync(); return f;
         }
         public async Task<BookingContract> AddContract()
         {

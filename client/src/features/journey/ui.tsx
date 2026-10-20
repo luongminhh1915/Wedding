@@ -11,9 +11,9 @@ const STATUS: Record<string, [string, string]> = {
   Open: ["Đang mở", "warn"], Closed: ["Đã chốt", "warn"], Paid: ["Đã thanh toán", "ok"], Overdue: ["Quá hạn", "bad"],
   Approved: ["Đã duyệt", "ok"], InReview: ["Đang xử lý", "warn"], ResolvedCustomer: ["Xử lý – có lợi cho khách", "ok"], ResolvedVendor: ["Xử lý – có lợi cho NCC", "ok"],
 };
-export function StatusPill({ status }: { status: string }) {
-  const [label, tone] = STATUS[status] ?? [status, "info"];
-  return <span className={`pill ${tone}`}>{label}</span>;
+export function StatusPill({ status, label }: { status: string; label?: string }) {
+  const [defaultLabel, tone] = STATUS[status] ?? [status, "info"];
+  return <span className={`pill ${tone}`}>{label ?? defaultLabel}</span>;
 }
 
 export function Panel({ title, eyebrow, action, children }: { title: string; eyebrow?: string; action?: ReactNode; children: ReactNode }) {

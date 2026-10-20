@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Entities;
+using Wedding.Domain.Enums;
+using Wedding.Domain.Exceptions;
 
 namespace Wedding.Infrastructure.Services;
 
@@ -12,11 +14,13 @@ public class AdvancePaymentService : IAdvancePaymentService
 {
     private readonly IApplicationDbContext _context;
     private readonly IAuditLogger _audit;
+    private readonly ICurrentUserService _currentUser;
 
-    public AdvancePaymentService(IApplicationDbContext context, IAuditLogger audit)
+    public AdvancePaymentService(IApplicationDbContext context, IAuditLogger audit, ICurrentUserService currentUser)
     {
         _context = context;
         _audit = audit;
+        _currentUser = currentUser;
     }
 
     private static AdvancePaymentNoticeDto Map(AdvancePayment p) => new(
@@ -35,7 +39,36 @@ public class AdvancePaymentService : IAdvancePaymentService
     }
 
     public async Task<List<AdvancePaymentNoticeDto>> GetAllAsync()
-        => (await _context.AdvancePayments.AsNoTracking().ToListAsync()).OrderByDescending(p => p.CreatedAt).Select(Map).ToList();
+    {
+        // Enforce access here as well as at the HTTP boundary: settlement queries also
+        // use this service, and must never load another shop's banking data first.
+        var userId = _currentUser.UserId;
+        if (!userId.HasValue || userId == Guid.Empty)
+            throw new DomainException("Bạn cần đăng nhập để xem thông báo chuyển tiền.");
+
+        var actor = await _context.Users.AsNoTracking()
+            .Where(user => user.Id == userId.Value && user.IsActive)
+            .Select(user => new { user.Id, user.Role })
+            .SingleOrDefaultAsync();
+        if (actor == null || actor.Role.ToString() != _currentUser.Role ||
+            actor.Role is not (UserRole.VendorOwner or UserRole.Finance or UserRole.SuperAdmin))
+            throw new DomainException("Bạn không có quyền xem thông báo chuyển tiền.");
+
+        var notices = _context.AdvancePayments.AsNoTracking();
+        if (actor.Role == UserRole.VendorOwner)
+        {
+            var vendorId = await _context.Vendors.AsNoTracking()
+                .Where(vendor => vendor.UserId == actor.Id && vendor.IsActive)
+                .Select(vendor => (Guid?)vendor.Id)
+                .SingleOrDefaultAsync();
+            if (!vendorId.HasValue)
+                throw new DomainException("Hồ sơ nhà cung cấp đang hoạt động không tồn tại.");
+            notices = notices.Where(notice => notice.VendorId == vendorId.Value);
+        }
+
+        return (await notices.OrderByDescending(notice => notice.CreatedAt).ThenByDescending(notice => notice.Id)
+            .ToListAsync()).Select(Map).ToList();
+    }
 
     public async Task<List<AdvancePaymentNoticeDto>> GetByContractIdAsync(Guid contractId)
         => (await _context.AdvancePayments.AsNoTracking().Where(p => p.ContractId == contractId).ToListAsync())

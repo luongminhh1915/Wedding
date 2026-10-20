@@ -20,13 +20,19 @@ public record ComboPublicVendorDto(Guid Id, string Name, string Slug, string? Lo
 public record ComboCategoryDto(Guid CategoryId, string Name, string Slug, string? Icon, List<ComboOptionDto> Options);
 public record ComboTemplateItemDto(Guid CategoryId, Guid ListingId, bool IsOptional, Guid? ServiceItemId = null, List<Guid>? AllowedItemIds = null);
 public record ComboTemplateDto(Guid Id, string Name, string Tier, string Style, string? Description, string? ImageUrl,
-    bool IsActive, decimal EstimatedTotal, List<ComboTemplateItemDto> Items, Guid? OwnerVendorId = null, string? Region = null, string ModerationStatus = "Approved", decimal? SingleVendorDiscount = null, string? OwnerVendorName = null);
+    bool IsActive, decimal EstimatedTotal, List<ComboTemplateItemDto> Items, Guid? OwnerVendorId = null, string? Region = null, string ModerationStatus = "Approved", decimal? SingleVendorDiscount = null, string? OwnerVendorName = null,
+    ComboTemplateContentDto? Content = null, ComboTemplateRevisionDto? LatestRevision = null,
+    List<ComboTemplateRevisionDto>? RevisionHistory = null, List<ComboOptionDto>? PreviewOptions = null, int SortOrder = 0,
+    string PricingMode = "Dynamic", decimal? ComboPrice = null, decimal? OriginalPrice = null,
+    decimal? SavingsAmount = null, decimal? SavingsPercentage = null, List<ComboComponentSnapshotDto>? Components = null,
+    bool RequiresComponentReview = false);
 public record ComboBuilderDto(List<ComboCategoryDto> Categories, List<ComboTemplateDto> Templates, List<DiscountTierDto> DiscountTiers,
     int PreviewGuestCount = 200, List<ComboPublicVendorDto>? Vendors = null);
 public record DiscountTierDto(int MinItems, decimal Percent);
 
 public record ComboOrderItemDto(Guid Id, Guid ListingId, Guid VendorId, string VendorName, string Title, decimal Price,
-    decimal DiscountShare, Guid? LeadId, string Status, string? VoucherCode, Guid? ServiceItemId = null, int Quantity = 1, string Unit = "Package", string? CancellationPolicy = null, string? SelectionJson = null, Guid? CategoryId = null);
+    decimal DiscountShare, Guid? LeadId, string Status, string? VoucherCode, Guid? ServiceItemId = null, int Quantity = 1, string Unit = "Package", string? CancellationPolicy = null, string? SelectionJson = null, Guid? CategoryId = null,
+    ComboComponentSnapshotDto? Component = null);
 public record ComboOrderDto(Guid Id, string Code, string Status, DateTime CreatedAt, DateTime? WeddingDate, int? GuestCount,
     decimal Subtotal, decimal DiscountPercent, decimal DiscountAmount, decimal Total, List<ComboOrderItemDto> Items, DateTime? PriceLockUntil = null, string Region = "", Guid? ComboTemplateId = null,
     string? Note = null, Guid? RevisionOfId = null, string? RevisionReason = null);
@@ -34,8 +40,13 @@ public record ComboOrderDto(Guid Id, string Code, string Status, DateTime Create
 internal static class ComboMap
 {
     public static ComboTemplateDto ToDto(ComboTemplate t) => new(t.Id, t.Name, t.Tier, t.Style, t.Description, t.ImageUrl, t.IsActive,
-        t.Items.Where(i => !i.IsOptional).Sum(i => i.Listing?.MinPrice ?? 0),
-        t.Items.Select(i => new ComboTemplateItemDto(i.CategoryId, i.ListingId, i.IsOptional, i.ServiceItemId, JsonSerializer.Deserialize<List<Guid>>(i.AllowedItemIdsJson))).ToList(), t.OwnerVendorId, t.Region, t.ModerationStatus, t.SingleVendorDiscount);
+        ComboFixedPackages.IsFixed(t) ? t.OriginalPrice ?? 0 : t.Items.Where(i => !i.IsOptional).Sum(i => i.Listing?.MinPrice ?? 0),
+        t.Items.Select(i => new ComboTemplateItemDto(i.CategoryId, i.ListingId, i.IsOptional, i.ServiceItemId,
+            ComboVendorPolicy.TryAllowedIds(i, out var ids) ? ids : [])).ToList(), t.OwnerVendorId, t.Region, t.ModerationStatus, t.SingleVendorDiscount,
+        Content: ComboTemplateContent.Read(t), SortOrder: t.SortOrder, PricingMode: t.PricingMode, ComboPrice: t.ComboPrice,
+        OriginalPrice: t.OriginalPrice, SavingsAmount: t.OriginalPrice > t.ComboPrice ? t.OriginalPrice - t.ComboPrice : null,
+        SavingsPercentage: t.OriginalPrice > 0 && t.OriginalPrice > t.ComboPrice ? (t.OriginalPrice - t.ComboPrice) / t.OriginalPrice * 100 : null,
+        Components: ComboFixedPackages.IsFixed(t) ? ComboFixedPackages.Components(t) : null);
 
     /// <summary>Đồng bộ trạng thái từng dòng combo theo Lead/Hợp đồng thật.</summary>
     public static async Task SyncAsync(IApplicationDbContext ctx, List<ComboOrder> orders, CancellationToken ct)
@@ -71,9 +82,9 @@ public class GetComboBuilderQueryHandler : IRequestHandler<GetComboBuilderQuery,
 
     public async Task<ComboBuilderDto> Handle(GetComboBuilderQuery r, CancellationToken ct)
     {
-        var items = await _context.ServiceItems.AsNoTracking().Include(i => i.Vendor).Include(i => i.Listing).ThenInclude(l => l.Category)
+        var items = await ComboPublicCatalog.Eligible(_context).Include(i => i.Vendor).Include(i => i.Listing).ThenInclude(l => l.Category)
             .Include(i => i.Listing).ThenInclude(l => l.Media).Include(i => i.Variants).Include(i => i.AddOns)
-            .Where(i => i.IsActive && i.ModerationStatus == "Approved" && i.Listing.Status == ListingStatus.Active && i.Vendor.IsActive && i.Vendor.User.IsActive && i.Vendor.IsVerified && i.Vendor.AllowInCombos).ToListAsync(ct);
+            .ToListAsync(ct);
         if (!string.IsNullOrWhiteSpace(r.City))
             items = items.Where(i => i.Serves(r.City)).ToList();
         var categories = await _context.Categories.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToListAsync(ct);
@@ -86,7 +97,7 @@ public class GetComboBuilderQueryHandler : IRequestHandler<GetComboBuilderQuery,
                         .Select(m => m.MediaUrl).Where(url => !string.IsNullOrWhiteSpace(url)).Distinct().Take(12).ToList(), i.Listing.Description)).ToList()))
             .ToList();
         var templates = await _context.ComboTemplates.AsNoTracking().Include(t => t.Items).ThenInclude(i => i.Listing)
-            .Where(t => t.IsActive && t.ModerationStatus == "Approved" && t.OwnerVendorId != null).OrderBy(t => t.SortOrder).ToListAsync(ct);
+            .PubliclyAvailable().OrderBy(t => t.SortOrder).ToListAsync(ct);
         // Legacy listing-only presets cannot initialize a real service cart. Leave them available
         // to admins for repair, but never present a nonfunctional or artificially priced preset.
         var catalog = items.ToDictionary(i => i.Id);
@@ -94,7 +105,7 @@ public class GetComboBuilderQueryHandler : IRequestHandler<GetComboBuilderQuery,
             .Where(t => string.IsNullOrWhiteSpace(r.Style) || t.Style.Equals(r.Style, StringComparison.OrdinalIgnoreCase)).ToList();
         var ownedTemplates = new List<ComboTemplate>();
         foreach (var template in templates)
-            if (await ComboVendorPolicy.IsOwnedTemplateAsync(_context, template, ct)) ownedTemplates.Add(template);
+            if (await ComboTemplateAvailability.ComponentsEligibleAsync(_context, template, ct)) ownedTemplates.Add(template);
         templates = ownedTemplates;
         var guests = Math.Clamp(r.GuestCount, 1, 10000);
         var ownerIds = templates.Where(t => t.OwnerVendorId.HasValue).Select(t => t.OwnerVendorId!.Value).ToList();
@@ -106,7 +117,7 @@ public class GetComboBuilderQueryHandler : IRequestHandler<GetComboBuilderQuery,
         return new ComboBuilderDto(cats, templates.Select(t => ComboMap.ToDto(t) with
         {
             OwnerVendorName = t.OwnerVendorId.HasValue && owners.TryGetValue(t.OwnerVendorId.Value, out var name) ? name : null,
-            EstimatedTotal = t.Items.Where(slot => !slot.IsOptional).Sum(slot => catalog[slot.ServiceItemId!.Value].BasePrice * ServiceItem.QuantityFor(catalog[slot.ServiceItemId.Value].Unit, guests))
+            EstimatedTotal = ComboFixedPackages.IsFixed(t) ? t.OriginalPrice ?? 0 : t.Items.Where(slot => !slot.IsOptional).Sum(slot => catalog[slot.ServiceItemId!.Value].BasePrice * ServiceItem.QuantityFor(catalog[slot.ServiceItemId.Value].Unit, guests))
         }).ToList(),
             await new GetBundleRulesQueryHandler(_context).Handle(new(), ct), guests, vendors);
     }
@@ -164,8 +175,9 @@ public class SubmitComboOrderCommandHandler : IRequestHandler<SubmitComboOrderCo
             var phone = string.IsNullOrWhiteSpace(r.PhoneNumber) ? customer.PhoneNumber : r.PhoneNumber.Trim();
             if (!r.SaveAsDraft && (phone.Length < 9 || phone.Any(c => !char.IsDigit(c) && c != '+'))) throw new DomainException("Vui lòng nhập SĐT hợp lệ.");
             var order = ComboOrder.Create(uid, r.TemplateId, r.WeddingDate, r.GuestCount, r.Note,
-                price.Lines.Select(l => (l.ListingId, l.VendorId, l.CategoryId, l.Title, l.Price)).ToList());
-            order.SetPricing(price.DiscountPercent, r.Region, r.SaveAsDraft);
+                price.Lines.Select(l => (l.ListingId, l.VendorId, l.CategoryId, l.Title, l.Price)).ToList(), price.PricingMode == "FixedPrice");
+            if (price.PricingMode == "FixedPrice") order.SetFixedPricing(price.Total, r.Region, r.SaveAsDraft);
+            else order.SetPricing(price.DiscountPercent, r.Region, r.SaveAsDraft);
             if (source != null && !r.SaveAsDraft)
             {
                 await CustomerOrderJourney.WithdrawLeadsAsync(_context, source.Items.Where(i => i.LeadId.HasValue).Select(i => i.LeadId!.Value).ToList(), $"Combo được chỉnh sửa: {revisionReason}", token);
@@ -188,10 +200,11 @@ public class SubmitComboOrderCommandHandler : IRequestHandler<SubmitComboOrderCo
             if (source != null) (await CustomerOrderJourney.StateAsync(_context, uid, "combo", order.Id, token)).RevisionOf(source.Id, revisionReason!);
             foreach (var item in order.Items)
             {
-                var line = price.Lines.Single(l => l.CategoryId == item.CategoryId);
+                var line = price.Lines.Single(l => l.ListingId == item.ListingId);
                 var selection = selections.Single(s => s.ServiceItemId == line.ServiceItemId);
                 item.SetSelection(line.ServiceItemId, line.Quantity, line.Unit, ComboBudgetSynchronization.Serialize(selection), line.CancellationPolicy);
                 item.SetDiscount(line.DiscountShare);
+                if (line.Component != null) item.FreezeComponent(ComboFixedPackages.Serialize(line.Component));
                 if (r.SaveAsDraft) continue;
                 var lead = Lead.Create(uid, item.VendorId, item.ListingId, phone, r.WeddingDate, r.GuestCount, line.Total,
                     $"[Combo {order.Code}] {line.Quantity} {line.Unit}; giá tham khảo {line.Total:N0}đ. {r.Note}");
@@ -236,7 +249,7 @@ public class GetMyComboOrdersQueryHandler : IRequestHandler<GetMyComboOrdersQuer
             o.WeddingDate, o.GuestCount, o.Subtotal, o.DiscountPercent, o.DiscountAmount, o.Total,
             o.Items.Select(i => new ComboOrderItemDto(i.Id, i.ListingId, i.VendorId, i.Vendor?.BrandName ?? "", i.Title, i.Price, i.DiscountShare,
                 i.LeadId, i.Status.ToString(), i.LeadId.HasValue && vouchers.TryGetValue(i.LeadId.Value, out var c) ? c : null,
-                i.ServiceItemId, i.Quantity, i.Unit, i.CancellationPolicySnapshot, i.SelectionJson, i.CategoryId)).ToList(), o.PriceLockUntil, o.Region, o.ComboTemplateId,
+                i.ServiceItemId, i.Quantity, i.Unit, i.CancellationPolicySnapshot, i.SelectionJson, i.CategoryId, ComboFixedPackages.Read(i.ComponentSnapshotJson))).ToList(), o.PriceLockUntil, o.Region, o.ComboTemplateId,
                 o.Note, states.GetValueOrDefault(o.Id)?.RevisionOfId, states.GetValueOrDefault(o.Id)?.RevisionReason)).ToList();
     }
 }
@@ -259,110 +272,123 @@ public class CancelComboOrderCommandHandler : IRequestHandler<CancelComboOrderCo
 // ---------- Admin: combo mẫu ----------
 
 public record GetAllComboTemplatesQuery(bool Mine = false) : IRequest<List<ComboTemplateDto>>;
-
-public class GetAllComboTemplatesQueryHandler : IRequestHandler<GetAllComboTemplatesQuery, List<ComboTemplateDto>>
+public class GetAllComboTemplatesQueryHandler(IApplicationDbContext context, ICurrentUserService user)
+    : IRequestHandler<GetAllComboTemplatesQuery, List<ComboTemplateDto>>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUserService _user;
-    public GetAllComboTemplatesQueryHandler(IApplicationDbContext context, ICurrentUserService user) { _context = context; _user = user; }
-
-    public async Task<List<ComboTemplateDto>> Handle(GetAllComboTemplatesQuery r, CancellationToken ct)
+    public async Task<List<ComboTemplateDto>> Handle(GetAllComboTemplatesQuery request, CancellationToken ct)
     {
-        var q = _context.ComboTemplates.AsNoTracking().Include(t => t.Items).ThenInclude(i => i.Listing).AsQueryable();
-        if (r.Mine)
-        {
-            var vendor = await _context.Vendors.FirstOrDefaultAsync(v => v.UserId == _user.UserId, ct) ?? throw new DomainException("Không có hồ sơ NCC.");
-            q = q.Where(t => t.OwnerVendorId == vendor.Id);
-        }
-        var templates = await q.OrderBy(t => t.SortOrder).ToListAsync(ct);
-        var ownerIds = templates.Where(t => t.OwnerVendorId.HasValue).Select(t => t.OwnerVendorId!.Value).ToList();
-        var owners = await _context.Vendors.Where(v => ownerIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, v => v.BrandName, ct);
-        return templates.Select(t => ComboMap.ToDto(t) with { OwnerVendorName = t.OwnerVendorId.HasValue && owners.TryGetValue(t.OwnerVendorId.Value, out var name) ? name : null }).ToList();
+        var actor = await ComboTemplateLifecycle.ActorAsync(context, user, !request.Mine, ct);
+        if (request.Mine && !actor.VendorId.HasValue) throw new DomainException("Chỉ NCC được xem danh sách combo của shop mình.");
+        var query = context.ComboTemplates.AsNoTracking().Include(template => template.Items).ThenInclude(item => item.Listing).AsQueryable();
+        if (request.Mine) query = query.Where(template => template.OwnerVendorId == actor.VendorId);
+        var templates = await query.OrderBy(template => template.SortOrder).ThenBy(template => template.Id).ToListAsync(ct);
+        var results = new List<ComboTemplateDto>();
+        foreach (var template in templates) results.Add(await ComboTemplateLifecycle.PrivateDtoAsync(context, template, ct));
+        return results;
     }
 }
 
 public record SaveComboTemplateCommand(Guid? Id, string Name, string Tier, string Style, string? Description, string? ImageUrl,
-    bool IsActive, int SortOrder, List<ComboTemplateItemDto> Items, string? Region = null, decimal? SingleVendorDiscount = null) : IRequest<ComboTemplateDto>;
+    bool IsActive, int SortOrder, List<ComboTemplateItemDto> Items, string? Region = null, decimal? SingleVendorDiscount = null,
+    bool SubmitForApproval = true, ComboTemplateContentDto? Content = null, string PricingMode = "Dynamic", decimal? ComboPrice = null) : IRequest<ComboTemplateDto>;
 
-public class SaveComboTemplateCommandHandler : IRequestHandler<SaveComboTemplateCommand, ComboTemplateDto>
+public class SaveComboTemplateCommandHandler(IApplicationDbContext context, IAuditLogger audit, ICurrentUserService user)
+    : IRequestHandler<SaveComboTemplateCommand, ComboTemplateDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IAuditLogger _audit;
-    private readonly ICurrentUserService _user;
-    public SaveComboTemplateCommandHandler(IApplicationDbContext context, IAuditLogger audit, ICurrentUserService user) { _context = context; _audit = audit; _user = user; }
-
-    public async Task<ComboTemplateDto> Handle(SaveComboTemplateCommand r, CancellationToken ct)
+    public Task<ComboTemplateDto> Handle(SaveComboTemplateCommand request, CancellationToken ct) => context.ExecuteSerializableAsync(async token =>
     {
-        if (string.IsNullOrWhiteSpace(r.Name)) throw new DomainException("Tên combo không được để trống.");
-        if (r.Items == null || r.Items.Count == 0 || r.Items.Select(i => i.CategoryId).Distinct().Count() != r.Items.Count || r.Items.Any(i => !i.ServiceItemId.HasValue))
-            throw new DomainException("Combo cần mỗi ngành một ServiceItem mặc định đã duyệt.");
-        var requestedIds = r.Items.SelectMany(i => (i.AllowedItemIds ?? new()).Append(i.ServiceItemId!.Value)).Distinct().ToList();
-        var allowedItems = await _context.ServiceItems.Include(i => i.Vendor).Include(i => i.Listing).Where(i => requestedIds.Contains(i.Id) && i.ModerationStatus == "Approved" && i.IsActive && i.Listing.Status == ListingStatus.Active).ToListAsync(ct);
-        if (allowedItems.Count != requestedIds.Count) throw new DomainException("Có dịch vụ chưa được duyệt/không khả dụng.");
-        var owner = ComboVendorPolicy.RequireOneVendor(allowedItems.Select(i => i.VendorId));
-        if (_user.Role == "VendorOwner")
+        var actor = await ComboTemplateLifecycle.ActorAsync(context, user, false, token);
+        var name = (request.Name ?? "").Trim(); var style = (request.Style ?? "").Trim();
+        if (name.Length is < 1 or > 150 || style.Length is < 1 or > 50 || request.Tier is not ("Saving" or "Popular" or "Luxury") ||
+            request.Description?.Length > 4000 || request.Region?.Length > 1000 || request.ImageUrl?.Length > 1000)
+            throw new DomainException("Tên, phong cách, phân khúc hoặc nội dung combo không hợp lệ.");
+        var template = request.Id.HasValue ? await context.ComboTemplates.Include(template => template.Items).ThenInclude(item => item.Listing)
+            .FirstOrDefaultAsync(template => template.Id == request.Id, token) ?? throw new NotFoundException("Combo không tồn tại.") : null;
+        if (template != null) ComboTemplateLifecycle.Own(template, actor);
+        ComboFixedPackages.ValidatePrice(request.PricingMode, request.ComboPrice);
+        if (template == null && actor.VendorId.HasValue && request.PricingMode != "FixedPrice")
+            throw new DomainException("Combo mới của shop cần chọn ít nhất hai dịch vụ và nhập giá combo cố định.");
+        if (template != null && template.PricingMode == "FixedPrice" && request.PricingMode != "FixedPrice")
+            throw new DomainException("Không được đổi combo cố định về combo linh hoạt cũ.");
+        if (request.Items is not { Count: >= 1 and <= 12 } || request.Items.Any(slot => slot == null || !slot.ServiceItemId.HasValue))
+            throw new DomainException("Combo cần từ 1 đến 12 dịch vụ mặc định đã duyệt.");
+        var requestedIds = request.Items.Select(slot => slot.ServiceItemId!.Value).Distinct().ToList();
+        var owner = actor.VendorId ?? ComboVendorPolicy.RequireOneVendor(await context.ServiceItems
+            .Where(item => requestedIds.Contains(item.Id)).Select(item => item.VendorId).ToListAsync(token));
+        if (template?.OwnerVendorId.HasValue == true && template.OwnerVendorId != owner)
+            throw new DomainException("Không được đổi combo sang nhà cung cấp khác.");
+        var latest = template == null ? null : await context.ComboTemplateRevisions.AsNoTracking()
+            .Where(revision => revision.ComboTemplateId == template.Id).OrderByDescending(revision => revision.Sequence).FirstOrDefaultAsync(token);
+        var inheritedContent = latest == null ? template == null ? null : ComboTemplateContent.Read(template) : ComboTemplateLifecycle.ReadProposal(latest).Content;
+        var content = ComboTemplateContent.Normalize(request.Content ?? inheritedContent);
+        if (!string.IsNullOrWhiteSpace(request.ImageUrl)) ComboTemplateContent.Normalize(new([request.ImageUrl]));
+        var proposal = new ComboTemplateProposalDto(name, request.Tier, style, request.Description?.Trim(), request.ImageUrl?.Trim(), request.IsActive,
+            request.SortOrder, request.Items, owner, request.Region?.Trim(), request.SingleVendorDiscount, content, request.PricingMode, request.ComboPrice);
+        var items = await ComboTemplateLifecycle.ValidateAsync(context, proposal, token);
+        proposal = proposal with { Items = request.Items.Select(slot => slot with {
+            ListingId = items.Single(item => item.Id == slot.ServiceItemId).ListingId,
+            AllowedItemIds = (slot.AllowedItemIds ?? []).Distinct().ToList() }).ToList(),
+            SingleVendorDiscount = request.PricingMode == "FixedPrice" ? null : request.SingleVendorDiscount,
+            Components = request.PricingMode == "FixedPrice" ? items.OrderBy(item => item.Id).Select(ComboFixedPackages.Capture).ToList() : null };
+        if (template == null)
         {
-            var currentVendor = (await _context.Vendors.FirstOrDefaultAsync(v => v.UserId == _user.UserId, ct) ?? throw new DomainException("Không có NCC.")).Id;
-            if (owner != currentVendor) throw new DomainException("NCC chỉ được tạo combo gồm dịch vụ của mình.");
+            template = ComboTemplate.Create(name, request.Tier, style, request.Description?.Trim(), request.ImageUrl?.Trim(), request.SortOrder);
+            template.StageUnpublished(owner, request.SubmitForApproval ? "Pending" : "Draft");
+            context.ComboTemplates.Add(template);
         }
-        else if (_user.Role is not ("SuperAdmin" or "Moderator")) throw new DomainException("Không có quyền quản lý combo.");
-        if (allowedItems.Any(i => !i.Vendor.IsActive || !i.Vendor.AllowInCombos || !i.Vendor.IsVerified)) throw new DomainException("NCC phải đang hoạt động, đã xác minh và đồng ý tham gia combo.");
-        if (r.SingleVendorDiscount.HasValue && r.SingleVendorDiscount > allowedItems[0].Vendor.MaxComboDiscount) throw new DomainException("Ưu đãi combo vượt mức giảm tối đa NCC đã đồng ý.");
-        foreach (var slot in r.Items)
-            if (allowedItems.Where(i => (slot.AllowedItemIds ?? new()).Append(slot.ServiceItemId!.Value).Contains(i.Id)).Any(i => i.CategoryId != slot.CategoryId))
-                throw new DomainException("Lựa chọn thay thế phải cùng ngành với slot.");
-        ComboTemplate t;
-        if (r.Id.HasValue)
+        var revision = await ComboTemplateLifecycle.AddRevisionAsync(context, template, proposal, actor, request.SubmitForApproval, token);
+        await audit.LogAsync("ComboTemplate.ProposalSaved", nameof(ComboTemplate), template.Id.ToString(),
+            new { revisionId = revision.Id, revision.Sequence, request.SubmitForApproval });
+        await context.SaveChangesAsync(token);
+        return await ComboTemplateLifecycle.PrivateDtoAsync(context, template, token);
+    }, ct);
+}
+
+public record ReviewComboTemplateCommand(Guid Id, bool Approve, string? Note = null, Guid? RevisionId = null) : IRequest<bool>;
+public class ReviewComboTemplateCommandHandler(IApplicationDbContext context, IAuditLogger audit, ICurrentUserService user)
+    : IRequestHandler<ReviewComboTemplateCommand, bool>
+{
+    public Task<bool> Handle(ReviewComboTemplateCommand request, CancellationToken ct) => context.ExecuteSerializableAsync(async token =>
+    {
+        var actor = await ComboTemplateLifecycle.ActorAsync(context, user, true, token);
+        var note = request.Note?.Trim();
+        if ((!request.Approve && string.IsNullOrWhiteSpace(note)) || note?.Length > 2000)
+            throw new DomainException("Lý do từ chối cần từ 1 đến 2.000 ký tự; ghi chú tối đa 2.000 ký tự.");
+        var template = await context.ComboTemplates.Include(template => template.Items).FirstOrDefaultAsync(template => template.Id == request.Id, token)
+            ?? throw new NotFoundException("Combo không tồn tại.");
+        var latest = await context.ComboTemplateRevisions.Where(revision => revision.ComboTemplateId == template.Id)
+            .OrderByDescending(revision => revision.Sequence).FirstOrDefaultAsync(token);
+        if (latest == null)
         {
-            t = await _context.ComboTemplates.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == r.Id, ct) ?? throw new NotFoundException("Combo không tồn tại.");
-            if ((_user.Role == "VendorOwner" || t.OwnerVendorId.HasValue) && t.OwnerVendorId != owner) throw new DomainException("Không có quyền đổi combo sang nhà cung cấp khác.");
-            t.Update(r.Name, r.Tier, r.Style, r.Description, r.ImageUrl, r.IsActive);
-            foreach (var i in t.Items.ToList()) _context.ComboTemplateItems.Remove(i);
+            if (request.RevisionId.HasValue || template.ModerationStatus != "Pending")
+                throw new DomainException("Combo không có phiên bản chờ duyệt tương ứng.");
+            if (request.Approve && !await ComboTemplateAvailability.ComponentsEligibleAsync(context, template, token))
+                throw new DomainException("Combo cũ có dịch vụ không còn đủ điều kiện. Cần lưu bản đề xuất hợp lệ trước khi duyệt.");
+            template.RecordLegacyReview(request.Approve, note);
         }
         else
         {
-            t = ComboTemplate.Create(r.Name, r.Tier, r.Style, r.Description, r.ImageUrl, r.SortOrder);
-            _context.ComboTemplates.Add(t);
+            if (latest.Status != "Pending" || request.RevisionId.HasValue && latest.Id != request.RevisionId)
+                throw new DomainException("Phiên bản chờ duyệt đã thay đổi hoặc đã được xử lý. Hãy tải lại trước khi duyệt.");
+            if (latest.CreatedById == actor.Id) throw new DomainException("Người tạo phiên bản không được tự kiểm duyệt combo của mình.");
+            if (request.Approve) await ComboTemplateLifecycle.ApplyAsync(context, template, ComboTemplateLifecycle.ReadProposal(latest), note, token);
+            latest.Review(request.Approve, actor.Id, actor.Role, note);
+            if (!request.Approve && template.ModerationStatus != "Approved")
+                template.StageUnpublished(template.OwnerVendorId!.Value, "Rejected", note);
         }
-        t.Update(r.Name, r.Tier, r.Style, r.Description, r.ImageUrl, r.IsActive, r.SortOrder);
-        t.SetScope(owner, r.Region, r.SingleVendorDiscount, _user.Role != "VendorOwner");
-        foreach (var i in r.Items)
-        {
-            var serviceItem = allowedItems.Single(x => x.Id == i.ServiceItemId);
-            var slot = ComboTemplateItem.Create(t.Id, i.CategoryId, serviceItem.ListingId, i.IsOptional);
-            slot.ConfigureItems(serviceItem.Id, JsonSerializer.Serialize(i.AllowedItemIds ?? new()));
-            _context.ComboTemplateItems.Add(slot);
-        }
-        await _audit.LogAsync("ComboTemplate.Save", nameof(ComboTemplate), t.Id.ToString(), new { r.Name, items = r.Items?.Count });
-        await _context.SaveChangesAsync(ct);
-        return (await new GetAllComboTemplatesQueryHandler(_context, _user).Handle(new(_user.Role == "VendorOwner"), ct)).First(x => x.Id == t.Id);
-    }
-}
-
-public record ReviewComboTemplateCommand(Guid Id, bool Approve) : IRequest<bool>;
-public class ReviewComboTemplateCommandHandler(IApplicationDbContext context, IAuditLogger audit) : IRequestHandler<ReviewComboTemplateCommand, bool>
-{
-    public async Task<bool> Handle(ReviewComboTemplateCommand r, CancellationToken ct)
-    {
-        var template = await context.ComboTemplates.Include(t => t.Items).FirstOrDefaultAsync(t => t.Id == r.Id, ct) ?? throw new NotFoundException("Combo không tồn tại.");
-        if (r.Approve && !await ComboVendorPolicy.IsOwnedTemplateAsync(context, template, ct)) throw new DomainException("Chỉ duyệt combo thuộc một NCC, gồm dịch vụ và lựa chọn của chính NCC đó.");
-        template.Review(r.Approve); await audit.LogAsync("ComboTemplate.Review", nameof(ComboTemplate), template.Id.ToString(), r); await context.SaveChangesAsync(ct); return true;
-    }
+        var ownerUserId = await context.Vendors.Where(vendor => vendor.Id == template.OwnerVendorId).Select(vendor => (Guid?)vendor.UserId).FirstOrDefaultAsync(token);
+        if (ownerUserId.HasValue) context.Notifications.Add(Notification.Create(ownerUserId.Value, "InApp", "",
+            $"Combo {template.Name}: {(request.Approve ? "đã được duyệt" : "bị từ chối")}.{(string.IsNullOrWhiteSpace(note) ? "" : " " + note)}"));
+        await audit.LogAsync("ComboTemplate.Review", nameof(ComboTemplate), template.Id.ToString(),
+            new { request.Approve, note, revisionId = latest?.Id });
+        await context.SaveChangesAsync(token); return true;
+    }, ct);
 }
 
 public record ArchiveComboTemplateCommand(Guid Id) : IRequest<bool>;
-public class ArchiveComboTemplateCommandHandler(IApplicationDbContext context, ICurrentUserService user, IAuditLogger audit) : IRequestHandler<ArchiveComboTemplateCommand, bool>
+public class ArchiveComboTemplateCommandHandler(IApplicationDbContext context, ICurrentUserService user, IAuditLogger audit)
+    : IRequestHandler<ArchiveComboTemplateCommand, bool>
 {
-    public async Task<bool> Handle(ArchiveComboTemplateCommand r, CancellationToken ct)
-    {
-        var template = await context.ComboTemplates.FirstOrDefaultAsync(t => t.Id == r.Id, ct) ?? throw new NotFoundException("Combo không tồn tại.");
-        if (user.Role == "VendorOwner")
-        {
-            var own = await context.Vendors.FirstOrDefaultAsync(v => v.UserId == user.UserId, ct) ?? throw new DomainException("Không có hồ sơ NCC.");
-            if (template.OwnerVendorId != own.Id) throw new DomainException("Chỉ được ẩn combo của NCC mình.");
-        }
-        else if (user.Role is not ("SuperAdmin" or "Moderator")) throw new DomainException("Không có quyền quản lý combo.");
-        template.Archive();
-        await audit.LogAsync("ComboTemplate.Archive", nameof(ComboTemplate), template.Id.ToString()); await context.SaveChangesAsync(ct); return true;
-    }
+    public Task<bool> Handle(ArchiveComboTemplateCommand request, CancellationToken ct)
+        => new SetComboTemplateActivityCommandHandler(context, user, audit).Handle(new(request.Id, false), ct);
 }

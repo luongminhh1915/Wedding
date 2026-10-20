@@ -8,7 +8,10 @@ public interface IApplicationDbContext
     DbSet<User> Users { get; }
     DbSet<Vendor> Vendors { get; }
     DbSet<Category> Categories { get; }
+    DbSet<BusinessGroup> BusinessGroups { get; }
+    DbSet<VendorBusinessGroup> VendorBusinessGroups { get; }
     DbSet<Listing> Listings { get; }
+    DbSet<ListingRevision> ListingRevisions { get; }
     DbSet<ListingMedia> ListingMedias { get; }
     DbSet<Lead> Leads { get; }
     DbSet<Voucher> Vouchers { get; }
@@ -29,6 +32,7 @@ public interface IApplicationDbContext
     DbSet<AppointmentType> AppointmentTypes { get; }
     DbSet<Appointment> Appointments { get; }
     DbSet<ComboTemplate> ComboTemplates { get; }
+    DbSet<ComboTemplateRevision> ComboTemplateRevisions { get; }
     DbSet<ComboTemplateItem> ComboTemplateItems { get; }
     DbSet<ComboOrder> ComboOrders { get; }
     DbSet<ComboOrderItem> ComboOrderItems { get; }

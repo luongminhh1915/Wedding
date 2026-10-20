@@ -129,8 +129,10 @@ function Assert-ComboCatalog {
 try {
     $null = Invoke-LocalSql "CREATE DATABASE [$database];"; $databaseCreated = $true
     Apply-ReleaseSchema; Apply-ReleaseSchema
-    Assert-Sql '7|16|0|0' 'SELECT (SELECT COUNT(*) FROM Categories),(SELECT COUNT(*) FROM InvitationTemplates),(SELECT COUNT(*) FROM Users),(SELECT COUNT(*) FROM Vendors);'
+    Assert-Sql '8|5|16|0|0' 'SELECT (SELECT COUNT(*) FROM Categories),(SELECT COUNT(*) FROM BusinessGroups),(SELECT COUNT(*) FROM InvitationTemplates),(SELECT COUNT(*) FROM Users),(SELECT COUNT(*) FROM Vendors);'
     Assert-Sql '1' "SELECT COUNT(*) FROM Categories WHERE Slug='vay-cuoi-vest' AND Name=N'Váy cưới & Vest cưới (Bridal & Suits)';"
+    Assert-Sql '1' "SELECT COUNT(*) FROM Categories WHERE Slug='wedding-planner' AND DefaultCommissionRate=.12 AND RequiresCommissionBasisApproval=1 AND BusinessGroupId='22222222-2222-2222-2222-222222222204';"
+    Assert-Sql '1' "SELECT COUNT(*) FROM BusinessGroups WHERE Code='other-events' AND DefaultCommissionRate=.03;"
     $null = Invoke-LocalSql "INSERT INTO Users(Id,FullName,Email,PhoneNumber,PasswordHash,Role,IsActive,CreatedAt) VALUES('$userId',N'QA persistence sentinel','qa-sentinel@example.invalid','0900000000','qa-only-not-a-password-hash','Customer',0,SYSUTCDATETIME());" $database
 
     # Ephemeral loopback-only TLS certificate: no development certificate installation/trust-store changes.
@@ -167,9 +169,14 @@ try {
     Assert-Http ("/uploads/listings/" + $imageName) 200 'image/png'
     $login = Invoke-WebRequest 'https://127.0.0.1:5011/api/auth/login' -Method Post -ContentType 'application/json' -Body '{}' -SkipCertificateCheck -SkipHttpErrorCheck
     if ($login.StatusCode -ne 400 -or ($login.Headers['Content-Type'] -join '') -notmatch '^application/') { throw 'Invalid login did not return an API 400 response.' }
+    $retiredSeed = Invoke-WebRequest 'https://127.0.0.1:5011/api/devseed/seed' -Method Post -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 10
+    if ($retiredSeed.StatusCode -ne 410 -or ($retiredSeed.Headers['Content-Type'] -join '') -notmatch '^application/json' -or
+        $retiredSeed.Content -match '123456|@wedding\.com|password|testAccounts') { throw 'Legacy seed endpoint must be retired without exposing demo credentials.' }
+    Assert-Sql '1|0' 'SELECT (SELECT COUNT(*) FROM Users),(SELECT COUNT(*) FROM Vendors);'
     $redirect = Invoke-WebRequest 'http://127.0.0.1:5012/combo' -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction SilentlyContinue
     if ($redirect.StatusCode -notin @(307,308) -or ($redirect.Headers['Location'] -join '') -ne 'https://127.0.0.1:5011/combo') { throw 'HTTP did not redirect to loopback HTTPS.' }
     Assert-Http '/api/combos/builder' 200 'application/json'
+    Assert-Http '/api/business-groups' 200 'application/json'
     Assert-ComboCatalog
     Start-Sleep -Seconds 12 # Let startup/background queries settle before measuring the warmed process.
     $script:apiProcess.Refresh()
@@ -177,7 +184,7 @@ try {
     if ($script:apiProcess.WorkingSet64 -gt 200MB) { Write-Warning 'Observed working set exceeds 200 MB. Fit on a 256 MB shared host is uncertain; this is not a load test.' }
     Stop-QAApi; Apply-ReleaseSchema; Start-QAApi
     Assert-ComboCatalog
-    Assert-Sql '7|16|1|0' 'SELECT (SELECT COUNT(*) FROM Categories),(SELECT COUNT(*) FROM InvitationTemplates),(SELECT COUNT(*) FROM Users),(SELECT COUNT(*) FROM Vendors);'
+    Assert-Sql '8|5|16|1|0' 'SELECT (SELECT COUNT(*) FROM Categories),(SELECT COUNT(*) FROM BusinessGroups),(SELECT COUNT(*) FROM InvitationTemplates),(SELECT COUNT(*) FROM Users),(SELECT COUNT(*) FROM Vendors);'
     Assert-Sql 'QA persistence sentinel|qa-only-not-a-password-hash' "SELECT FullName,PasswordHash FROM Users WHERE Id='$userId';"
     Assert-Http ("/uploads/listings/" + $imageName) 200 'image/png'
     $download = Join-Path $qaRoot 'restarted-image.png'
@@ -190,7 +197,7 @@ try {
         Write-Host ("After account/WebSocket smoke: working set {0:N1} MB; private bytes {1:N1} MB (small functional workload, not a load test)." -f ($script:apiProcess.WorkingSet64 / 1MB), ($script:apiProcess.PrivateMemorySize64 / 1MB))
         if ($script:apiProcess.WorkingSet64 -gt 200MB) { Write-Warning 'Post-security-smoke working set exceeds 200 MB. A 256 MB shared host may need a larger plan; verify real-host resource usage before inviting users.' }
     }
-    Write-Host 'PASS: actual SQL migration idempotency; 7 categories / 16 templates / no demo users/vendors; Production SPA, modern paged combo catalog contract before/after restart, API 404 isolation, readiness, invalid-login JSON, HTTPS redirect; SQL user/hash and private image survive API restart.'
+    Write-Host 'PASS: actual SQL migration idempotency; 8 categories / 5 business groups / 16 templates / no demo users/vendors; Production SPA, modern paged combo catalog contract before/after restart, business-group policy API, API 404 isolation, readiness, invalid-login JSON, HTTPS redirect; SQL user/hash and private image survive API restart.'
 } finally {
     Stop-QAApi
     if ($databaseCreated) {

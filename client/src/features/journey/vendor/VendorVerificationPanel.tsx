@@ -16,7 +16,7 @@ export function VendorVerificationPanel() {
     <div className="wd">
       <VendorTaxProfileForm />
       <Panel eyebrow="Xác minh đối tác" title="Huy hiệu “Đã xác minh”">
-        <p className="text-sm muted mb-4">NCC đã xác minh được ưu tiên trong combo và kết quả tìm kiếm. Hồ sơ được Moderator duyệt trong 24 giờ.</p>
+        <p className="text-sm muted mb-4">Gửi giấy tờ để bộ phận phụ trách kiểm tra hồ sơ và cấp huy hiệu. Theo dõi trạng thái, đọc ghi chú và bổ sung khi được yêu cầu; không có thời gian duyệt được bảo đảm.</p>
         {latest && (
           <div className="rounded-2xl border border-[var(--line)] p-4 mb-4 flex items-center gap-3 bg-[var(--paper)]">
             {latest.status === "Approved" ? <BadgeCheck className="text-[var(--gold)]" /> : <ShieldQuestion className="text-[var(--brand-2)]" />}

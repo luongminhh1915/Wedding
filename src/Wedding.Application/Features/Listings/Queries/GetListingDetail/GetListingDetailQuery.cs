@@ -33,7 +33,7 @@ public class GetListingDetailQueryHandler : IRequestHandler<GetListingDetailQuer
             .FirstOrDefaultAsync(l => l.Id == request.ListingId, cancellationToken)
             ?? throw new NotFoundException("Bài đăng không tồn tại hoặc chưa được công khai.");
 
-        return new ListingDto(
+        var dto = new ListingDto(
             listing.Id,
             listing.Title,
             listing.Slug,
@@ -50,7 +50,22 @@ public class GetListingDetailQueryHandler : IRequestHandler<GetListingDetailQuer
             listing.ViewCount,
             listing.CreatedAt,
             listing.ModeratedAt,
-            listing.Media.Select(m => new ListingMediaDto(m.Id, m.MediaUrl, m.ThumbnailUrl, m.IsFeatured, m.DisplayOrder)).ToList()
+            listing.Media.Select(m => new ListingMediaDto(m.Id, m.MediaUrl, m.ThumbnailUrl, m.IsFeatured, m.DisplayOrder)).ToList(),
+            ListingServiceDetails.Read(listing.ServiceDetailsJson), listing.CancellationPolicy,
+            listing.Category.RequiresCommissionBasisApproval, listing.IsActive
         );
+        if (ListingAccess.CanReadModerationDetails(listing, _user))
+        {
+            await ListingPublication.RequirePrivateRead(_context, _user, listing, cancellationToken);
+            dto = await ListingServicePricing.Enrich(_context, listing, dto, cancellationToken);
+        }
+        else if (listing.PricingServiceItemId.HasValue)
+        {
+            var pricing = await _context.ServiceItems.AsNoTracking().Include(item => item.Variants).Include(item => item.AddOns)
+                .SingleOrDefaultAsync(item => item.Id == listing.PricingServiceItemId && item.ListingId == listing.Id &&
+                    item.VendorId == listing.VendorId && item.CategoryId == listing.CategoryId && item.ModerationStatus == "Approved", cancellationToken);
+            if (pricing != null) dto = dto with { Pricing = ListingServicePricing.Capture(pricing) with { SourceVersion = null }, PricingServiceItemId = pricing.Id };
+        }
+        return dto;
     }
 }

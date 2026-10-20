@@ -24,7 +24,7 @@ import ModerationQueue from "./ModerationQueue";
 import UserManagement from "./UserManagement";
 import AllListingsManager from "./AllListingsManager";
 import FinancialDashboard from "./FinancialDashboard";
-import { usePendingListings } from "../vendor-portal/hooks/useListings";
+import { useModerationQueue } from "./useModerationQueue";
 import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
 
 const tabs = [
@@ -39,7 +39,7 @@ const tabs = [
     id: "moderation",
     label: "Kiểm duyệt",
     icon: FileCheck,
-    description: "Xem xét bài đăng và đánh giá từ cộng đồng.",
+    description: "Hàng chờ chung cho bài giới thiệu, dịch vụ thành phần và combo của nhà cung cấp.",
     roles: ["SuperAdmin", "Moderator"],
   },
   {
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   );
   const activeTab = visibleTabs.find(tab => tab.id === params.get("tab"))?.id ?? "overview";
   const setActiveTab = (tab: (typeof tabs)[number]["id"]) => setParams(tab === "overview" ? {} : { tab });
-  const { data: pendingListings = [] } = usePendingListings(user?.role === "SuperAdmin" || user?.role === "Moderator");
+  const { data: moderation } = useModerationQueue({ type: "all", status: "Pending", search: "", page: 1, pageSize: 1 });
   const current = tabs.find((tab) => tab.id === activeTab)!;
   return (
     <main className="portal-shell">
@@ -122,9 +122,9 @@ export default function AdminDashboard() {
           >
             <Icon size={17} />
             {label}
-            {id === "moderation" && pendingListings.length > 0 && (
+            {id === "moderation" && (moderation?.pendingCount ?? 0) > 0 && (
               <span className="bg-amber-100 text-amber-700 text-[9px] rounded-full px-2 py-0.5">
-                {pendingListings.length}
+                {moderation?.pendingCount}
               </span>
             )}
           </button>

@@ -9,6 +9,7 @@ import { AdvancePaymentModal, type AdvancePaymentRecord } from './AdvancePayment
 import { ContractRevisionActions } from './ContractRevisionActions';
 import { useSearchParams } from 'react-router-dom';
 import { requestedNotificationFocus, useNotificationFocus } from '../../notifications/useNotificationFocus';
+import { ContractCategorySummary } from '../../contracts/ContractCategorySummary';
 
 const ADVANCE_STORAGE_KEY = 'wedding_vendor_advance_requests';
 
@@ -282,6 +283,8 @@ export function ContractList() {
                     </span>
                   </div>
                 </div>
+
+                <ContractCategorySummary contract={contract} showCommissionPolicy />
 
                 {/* Banner Thông Báo Yêu Cầu Xin Thanh Toán Trước Đã Gửi */}
                 {advanceRecord && (

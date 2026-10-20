@@ -1,36 +1,61 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { apiError } from "../api";
 import { useCatalog, useComboMutation, useComboTemplates, useRules, type CatalogItem, type CatalogTemplate } from "../comboApi";
 import { useAuthStore } from "../../../store/authStore";
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { vnd } from "../format";
+import { ComboLifecycleCard } from "../combo/ComboLifecycleCard";
+import { ComboTemplateEditor } from "../combo/ComboTemplateEditor";
+import { serviceItemReviewPayload } from "./serviceItemReview";
 
-function ReviewItem({ item }: { item: CatalogItem }) {
+function ReviewItem({ item, onRefresh }: { item: CatalogItem; onRefresh: () => void }) {
   const review = useComboMutation(`/api/combos/items/${item.id}/review`);
-  return <div className="border border-[var(--line)] rounded-xl p-3"><b>{item.name}</b> <StatusPill status={item.moderationStatus} /><p className="text-sm">{item.vendorName} · {vnd(item.basePrice)}/{item.unit} · {item.regions} · {item.minGuests}–{item.maxGuests} khách</p><p className="text-xs muted">{item.cancellationPolicy}</p>{item.moderationStatus === "Pending" && <div className="flex gap-2 mt-2"><button className="btn btn-primary" disabled={review.isPending} onClick={() => review.mutate({ approve: true })}>Duyệt dịch vụ</button><button className="btn btn-outline" onClick={() => { const note = prompt("Lý do từ chối:"); if (note) review.mutate({ approve: false, note }); }}>Từ chối</button></div>}<ErrorText>{review.isError ? apiError(review.error) : ""}</ErrorText></div>;
+  const [note, setNote] = useState("");
+  const [validationError, setValidationError] = useState("");
+  const decide = (approve: boolean) => {
+    setValidationError("");
+    try { review.mutate(serviceItemReviewPayload(item, approve, note)); }
+    catch (error) { setValidationError(error instanceof Error ? error.message : "Chưa gửi được kết quả kiểm duyệt."); }
+  };
+  return <article className="min-w-0 rounded-xl border border-[var(--line)] p-4 [overflow-wrap:anywhere]">
+    <div className="flex flex-wrap items-start justify-between gap-2"><h3 className="font-semibold">{item.name}</h3><StatusPill status={item.moderationStatus} label={item.moderationStatus === "Pending" ? "Chờ kiểm duyệt" : undefined} /></div>
+    <p className="mt-2 text-sm">{item.vendorName} · {vnd(item.basePrice)}/{item.unit} · {item.regions} · {item.minGuests}–{item.maxGuests} khách</p>
+    <p className="mt-2 whitespace-pre-wrap text-xs muted">{item.cancellationPolicy}</p>
+    <Link className="mt-2 inline-block text-xs underline" to={`/listings/${item.listingId}?preview=vendor`} target="_blank" rel="noopener noreferrer">Xem bài giới thiệu dịch vụ</Link>
+    {(item.variants.length > 0 || item.addOns.length > 0) && <details className="mt-3 text-xs"><summary className="cursor-pointer font-semibold">Biến thể & món kèm ({item.variants.length + item.addOns.length})</summary><ul className="mt-2 space-y-2">{item.variants.map(variant => <li key={variant.id ?? variant.name}>Biến thể: {variant.name} · {vnd(variant.priceDelta)}</li>)}{item.addOns.map(addOn => <li key={addOn.id ?? addOn.name}>Món kèm: {addOn.name} · {vnd(addOn.price)}{addOn.perUnit ? "/đơn vị" : "/gói"}</li>)}</ul></details>}
+    {item.reviewNote && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-[#faf8f0] p-3 text-xs"><b>Phản hồi kiểm duyệt:</b> {item.reviewNote}</p>}
+    {item.moderationStatus === "Pending" && <fieldset disabled={review.isPending} className="mt-4 min-w-0 space-y-3"><legend className="sr-only">Kết quả kiểm duyệt {item.name}</legend>
+      <p className="text-xs muted">Kết quả chỉ áp dụng cho đúng nội dung bạn đang xem. Nếu NCC đã chỉnh sửa và gửi lại, hãy tải lại trước khi quyết định.</p>
+      <label className="block"><span className="label">Ghi chú / lý do từ chối dịch vụ (bắt buộc khi từ chối)</span><textarea className="input" rows={3} maxLength={2000} value={note} onChange={event => setNote(event.target.value)} /></label>
+      <div className="flex flex-wrap gap-2"><button type="button" className="btn btn-primary" disabled={!item.reviewVersion} onClick={() => decide(true)}>{review.isPending ? "Đang gửi..." : "Duyệt dịch vụ"}</button><button type="button" className="btn btn-outline" disabled={!item.reviewVersion || !note.trim()} onClick={() => decide(false)}>Từ chối dịch vụ</button></div>
+      {!item.reviewVersion && <p role="alert" className="text-xs text-amber-800">Chưa có phiên bản kiểm duyệt hợp lệ. Tải lại dịch vụ để tiếp tục.</p>}
+    </fieldset>}
+    {(validationError || review.isError) && <div role="alert" className="mt-3"><ErrorText>{validationError || apiError(review.error)}</ErrorText><button type="button" className="btn btn-outline mt-2" disabled={review.isPending} onClick={onRefresh}>Tải lại dịch vụ</button></div>}
+  </article>;
 }
-function ReviewTemplate({ template, edit }: { template: CatalogTemplate; edit: () => void }) {
-  const review = useComboMutation(`/api/combos/templates/${template.id}/review`);
-  const archive = useComboMutation(`/api/combos/templates/${template.id}/archive`);
-  return <div className="border border-[var(--line)] rounded-xl p-3"><b>{template.name}</b> <StatusPill status={template.moderationStatus} /><p className="text-sm">{template.ownerVendorName || "Dữ liệu cũ chưa gắn một NCC"} · {template.tier} · {template.style} · {template.region || "Mọi khu vực"} · {template.items.length} hạng mục</p>{!template.ownerVendorId && <p className="text-xs text-amber-800">Combo cũ không được hiển thị/đặt mới. Cần cấu hình lại riêng một NCC; đơn lịch sử vẫn được giữ nguyên.</p>}<div className="flex flex-wrap gap-2 mt-2"><button className="btn btn-outline" onClick={edit}>Sửa cấu hình</button>{template.isActive && <button className="btn btn-outline" disabled={archive.isPending} onClick={() => confirm("Ẩn combo khỏi trang chọn? Đơn và hợp đồng cũ không bị xóa.") && archive.mutate({})}>Ẩn combo</button>}{template.moderationStatus === "Pending" && <><button className="btn btn-primary" disabled={review.isPending || !template.ownerVendorId} onClick={() => review.mutate({ approve: true })}>Duyệt combo NCC</button><button className="btn btn-outline" onClick={() => review.mutate({ approve: false })}>Từ chối</button></>}</div><ErrorText>{review.isError ? apiError(review.error) : archive.isError ? apiError(archive.error) : ""}</ErrorText></div>;
-}
-const blank = { id: null as string | null, ownerVendorId: "", name: "", tier: "Popular", style: "Hiện đại", description: "", imageUrl: "", isActive: true, sortOrder: 0, region: "*", singleVendorDiscount: null as number | null, selected: {} as Record<string, string> };
+const filters = [["all", "Tất cả"], ["Draft", "Nháp"], ["Pending", "Chờ duyệt"], ["Approved", "Đã duyệt"], ["Rejected", "Bị từ chối"]];
 export function ComboAdministration() {
-  const { data: items = [], error } = useCatalog(true); const { data: templates = [] } = useComboTemplates(); const { data: rules = [] } = useRules();
-  const save = useComboMutation("/api/combos/templates"); const saveRules = useComboMutation("/api/combos/bundle-rules");
-  const user = useAuthStore(s => s.user); const [form, setForm] = useState<typeof blank | null>(null);
+  const catalog = useCatalog(true);
+  const query = useComboTemplates();
+  const items = catalog.data ?? [];
+  const templates = query.data ?? [];
+  const { data: rules = [] } = useRules();
+  const saveRules = useComboMutation("/api/combos/bundle-rules");
+  const user = useAuthStore(state => state.user);
+  const [editing, setEditing] = useState<CatalogTemplate | null | undefined>(undefined);
+  const [filter, setFilter] = useState("all");
   const [ruleText, setRuleText] = useState<string | null>(null);
-  const approved = items.filter(i => i.moderationStatus === "Approved" && i.isActive);
-  const vendors = [...new Map(approved.map(i => [i.vendorId, i.vendorName])).entries()];
-  const scopedItems = approved.filter(i => i.vendorId === form?.ownerVendorId);
-  const edit = (t: CatalogTemplate) => setForm({ ...blank, ...t, ownerVendorId: t.ownerVendorId || "", description: t.description || "", imageUrl: t.imageUrl || "", region: t.region || "*", singleVendorDiscount: t.singleVendorDiscount ?? null, selected: Object.fromEntries(t.items.filter(i => i.serviceItemId && approved.some(item => item.id === i.serviceItemId && item.vendorId === t.ownerVendorId)).map(i => [i.categoryId, i.serviceItemId!])) });
-  return <div className="wd"><Panel title="Duyệt dịch vụ combo"><ErrorText>{error ? apiError(error) : ""}</ErrorText><div className="grid gap-3">{items.length ? items.map(i => <ReviewItem key={i.id} item={i} />) : <Empty>Chưa có dịch vụ do NCC gửi.</Empty>}</div></Panel>
-    <Panel title="Combo riêng của từng nhà cung cấp" action={<button className="btn btn-outline" onClick={() => setForm({ ...blank })}>Tạo combo cho một NCC</button>}><p className="text-sm muted mb-4">Một combo chỉ thuộc một NCC. Khách được thêm/bớt/đổi dịch vụ trong danh mục của NCC đó; không ghép dịch vụ bên ngoài.</p><div className="grid gap-3">{templates.map(t => <ReviewTemplate key={t.id} template={t} edit={() => edit(t)} />)}</div>
-      {form && <div className="border border-[var(--line)] rounded-xl p-4 mt-4 grid sm:grid-cols-3 gap-3"><label><span className="label">Tên combo</span><input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label><label><span className="label">Phân khúc</span><select className="input" value={form.tier} onChange={e => setForm({ ...form, tier: e.target.value })}><option value="Saving">Tiết kiệm</option><option value="Popular">Phổ biến</option><option value="Luxury">Sang trọng</option></select></label><label><span className="label">Phong cách</span><input className="input" value={form.style} onChange={e => setForm({ ...form, style: e.target.value })} /></label><label><span className="label">Khu vực (* = tất cả)</span><input className="input" value={form.region} onChange={e => setForm({ ...form, region: e.target.value })} /></label><label><span className="label">Ảnh URL</span><input className="input" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} /></label><label><span className="label">Thứ tự</span><input className="input" type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: +e.target.value })} /></label><label className="sm:col-span-3"><span className="label">Mô tả</span><textarea className="input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
-        <label className="sm:col-span-3"><span className="label">NCC sở hữu combo (bắt buộc)</span><select className="input" value={form.ownerVendorId} disabled={!!form.id && !!templates.find(t => t.id === form.id)?.ownerVendorId} onChange={e => setForm({ ...form, ownerVendorId: e.target.value, selected: {} })}><option value="">Chọn một nhà cung cấp</option>{vendors.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-        <label><span className="label">Ưu đãi riêng (%)</span><input className="input" type="number" min={0} max={30} value={form.singleVendorDiscount == null ? "" : form.singleVendorDiscount * 100} onChange={e => setForm({ ...form, singleVendorDiscount: e.target.value === "" ? null : +e.target.value / 100 })} placeholder="Theo quy tắc chung" /></label>
-        <div className="sm:col-span-3"><p className="text-sm">Chọn một dịch vụ mặc định/ngành của NCC đã chọn. Lựa chọn thay thế cũng chỉ thuộc NCC đó.</p>{[...new Set(scopedItems.map(i => i.categoryId))].map(category => <select key={category} className="input mt-2" value={form.selected[category] || ""} onChange={e => setForm({ ...form, selected: { ...form.selected, [category]: e.target.value } })}><option value="">Không chọn ngành này</option>{scopedItems.filter(i => i.categoryId === category).map(i => <option key={i.id} value={i.id}>{i.name}</option>)}</select>)}</div><label className="text-sm"><input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} /> Hiển thị công khai</label><div className="sm:col-span-3"><ErrorText>{save.isError ? apiError(save.error) : ""}</ErrorText><div className="flex gap-2 justify-end"><button className="btn btn-outline" onClick={() => setForm(null)}>Đóng</button><button className="btn btn-primary" disabled={save.isPending || !form.ownerVendorId || Object.values(form.selected).filter(Boolean).length === 0} onClick={() => save.mutate({ ...form, items: Object.entries(form.selected).filter(([, id]) => !!id && scopedItems.some(item => item.id === id)).map(([categoryId, serviceItemId]) => ({ categoryId, serviceItemId, listingId: scopedItems.find(i => i.id === serviceItemId)!.listingId, isOptional: false, allowedItemIds: scopedItems.filter(i => i.categoryId === categoryId).map(i => i.id) })) }, { onSuccess: () => setForm(null) })}>Lưu combo của NCC</button></div></div>
-      </div>}
+  const visible = templates.filter(template => filter === "all" || (template.latestRevision?.status ?? template.moderationStatus) === filter);
+  return <div className="wd min-w-0">
+    <Panel title="Duyệt dịch vụ combo">
+      {catalog.isPending ? <p role="status" className="text-sm muted">Đang tải dịch vụ do NCC gửi...</p> : catalog.isError ? <div role="alert"><ErrorText>{apiError(catalog.error)}</ErrorText><button type="button" className="btn btn-outline" onClick={() => void catalog.refetch()}>Thử lại</button></div> : <div className="grid min-w-0 gap-3">{items.length ? items.map(item => <ReviewItem key={`${item.id}:${item.reviewVersion ?? "legacy"}`} item={item} onRefresh={() => void catalog.refetch()} />) : <Empty>Chưa có dịch vụ do NCC gửi.</Empty>}</div>}
+    </Panel>
+    <Panel title="Combo riêng của từng nhà cung cấp" action={<button type="button" className="btn btn-outline" disabled={catalog.isPending || catalog.isError} onClick={() => setEditing(null)}>Tạo combo cho một NCC</button>}>
+      <p className="mb-4 text-sm leading-relaxed muted">Một combo chỉ thuộc một NCC. Đề xuất mới không tự thay thế bản đang công bố. Cả quản trị viên cũng cần gửi và duyệt đúng phiên bản trước khi công bố.</p>
+      <label className="mb-4 block max-w-sm"><span className="label">Trạng thái đề xuất mới nhất</span><select className="input" value={filter} onChange={event => setFilter(event.target.value)}>{filters.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      {query.isPending ? <p role="status" className="text-sm muted">Đang tải combo và lịch sử kiểm duyệt...</p> : query.isError ? <div role="alert"><ErrorText>{apiError(query.error)}</ErrorText><button type="button" className="btn btn-outline" onClick={() => void query.refetch()}>Thử lại</button></div> : <><p className="mb-3 text-xs muted">{visible.length} / {templates.length} combo</p><div className="grid min-w-0 gap-4">{visible.map(template => <ComboLifecycleCard key={template.id} template={template} staff onEdit={() => setEditing(template)} />)}{!visible.length && <Empty>{templates.length ? "Chưa có combo ở trạng thái này." : "Chưa có combo do NCC tạo."}</Empty>}</div></>}
+      {editing !== undefined && <ComboTemplateEditor key={editing?.id ?? "new-staff-combo"} template={editing ?? undefined} items={items} staff onClose={() => setEditing(undefined)} />}
     </Panel>
     {user?.role === "SuperAdmin" && <Panel title="Quy tắc giảm combo"><p className="text-sm muted">Một dòng: số hạng mục tối thiểu = phần trăm giảm. Áp dụng bên trong combo một NCC và không vượt trần NCC đó đồng ý.</p><textarea aria-label="Các mức giảm combo" className="input mt-3" rows={4} value={ruleText ?? rules.map(r => `${r.minItems}=${r.percent * 100}`).join("\n")} onChange={e => setRuleText(e.target.value)} /><ErrorText>{saveRules.isError ? apiError(saveRules.error) : ""}</ErrorText><button className="btn btn-primary mt-3" disabled={saveRules.isPending} onClick={() => { const text = ruleText ?? rules.map(r => `${r.minItems}=${r.percent * 100}`).join("\n"); const parsed = text.split("\n").filter(Boolean).map(line => { const [min, percent] = line.split("=").map(Number); return { minItems: min, percent: percent / 100 }; }); if (parsed.some(r => !Number.isFinite(r.minItems) || !Number.isFinite(r.percent))) { alert("Nhập mỗi dòng theo dạng 3=3 (3 hạng mục giảm 3%)."); return; } saveRules.mutate({ rules: parsed }); }}>Lưu quy tắc</button></Panel>}
   </div>;

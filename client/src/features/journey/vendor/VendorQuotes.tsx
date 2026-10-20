@@ -109,16 +109,14 @@ export function VendorQuotes() {
                       }
                       aria-label="Số lượng"
                     />
-                    <input
+                    <MoneyInput
                       className="input"
-                      type="number"
                       min={0}
-                      step={100000}
                       value={it.unitPrice}
-                      onChange={(e) =>
+                      onValueChange={(value) =>
                         setItems(
                           items.map((x, j) =>
-                            j === k ? { ...x, unitPrice: +e.target.value } : x,
+                            j === k ? { ...x, unitPrice: value ?? 0 } : x,
                           ),
                         )
                       }
@@ -160,12 +158,11 @@ export function VendorQuotes() {
                   </label>
                   <label>
                     <span className="label">Tiền cọc</span>
-                    <input
+                    <MoneyInput
                       className="input"
-                      type="number"
-                      step={100000}
                       value={deposit}
-                      onChange={(e) => setDeposit(+e.target.value)}
+                      onValueChange={(value) => setDeposit(value ?? 0)}
+                      aria-label="Tiền cọc (VNĐ)"
                     />
                   </label>
                   <label>
@@ -245,3 +242,4 @@ export function VendorQuotes() {
     </div>
   );
 }
+import { MoneyInput } from "../../../components/MoneyInput";

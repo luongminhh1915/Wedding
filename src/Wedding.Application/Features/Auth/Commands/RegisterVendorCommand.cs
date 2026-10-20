@@ -19,7 +19,9 @@ public record RegisterVendorCommand(
     string Password,
     string BrandName,
     string City,
-    decimal CommissionRate = 0.08m
+    decimal? CommissionRate = null,
+    List<Guid>? BusinessGroupIds = null,
+    bool PartnershipPolicyAccepted = false
 ) : IRequest<AuthResponseDto>;
 
 public class RegisterVendorCommandValidator : AbstractValidator<RegisterVendorCommand>
@@ -33,8 +35,13 @@ public class RegisterVendorCommandValidator : AbstractValidator<RegisterVendorCo
         RuleFor(x => x.BrandName).Must(value => AuthInputRules.RequiredText(value, 200)).WithMessage("Tên thương hiệu cần từ 1 đến 200 ký tự.");
         RuleFor(x => x.City).Must(value => AuthInputRules.RequiredText(value, 100) && VietnamProvinces.TryNormalize(value, out _))
             .WithMessage("Chọn tỉnh / thành phố thuộc danh sách 34 địa phương hiện hành.");
-        RuleFor(x => x.CommissionRate).Must(rate => rate is 0.03m or 0.08m or 0.10m or 0.12m)
-            .WithMessage("Tỷ lệ hoa hồng phải thuộc các mức 3%, 8%, 10% hoặc 12% của hệ thống.");
+        RuleFor(x => x.CommissionRate).Null()
+            .WithMessage("Không được tự chọn tỷ lệ hoa hồng khi đăng ký. Hãy tải lại trang và chọn nhóm dịch vụ theo chính sách hiện hành.");
+        RuleFor(x => x.BusinessGroupIds).Must(ids => ids is { Count: > 0 and <= 20 } &&
+            ids.All(id => id != Guid.Empty) && ids.Distinct().Count() == ids.Count)
+            .WithMessage("Chọn ít nhất một nhóm dịch vụ hợp lệ, không chọn trùng nhóm.");
+        RuleFor(x => x.PartnershipPolicyAccepted).Equal(true)
+            .WithMessage("Vui lòng xác nhận đã đọc chính sách hợp tác và hoa hồng theo nhóm dịch vụ.");
     }
 }
 
@@ -65,6 +72,16 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
             if (await _context.Users.AnyAsync(u => u.Email == emailLower, ct))
                 throw new DomainException("Email đối tác này đã được sử dụng trên hệ thống.");
 
+            // The client chooses business scope, never rates or publication/approval state.
+            var selectedIds = request.BusinessGroupIds!;
+            var groups = await _context.BusinessGroups.AsNoTracking()
+                .Where(group => selectedIds.Contains(group.Id) && group.IsActive).ToListAsync(ct);
+            if (groups.Count != selectedIds.Count)
+                throw new DomainException("Có nhóm dịch vụ không tồn tại hoặc đã ngừng tiếp nhận. Hãy tải lại chính sách và chọn lại.");
+            var policyVersions = groups.Select(group => group.PolicyVersion).Distinct().ToList();
+            if (policyVersions.Count != 1 || string.IsNullOrWhiteSpace(policyVersions[0]))
+                throw new DomainException("Chính sách nhóm dịch vụ chưa đồng bộ. Vui lòng liên hệ nền tảng trước khi đăng ký.");
+
             // Tạo User chủ với vai trò VendorOwner (BR-001)
             var user = User.Create(request.FullName, emailLower, request.PhoneNumber, passwordHash, UserRole.VendorOwner);
 
@@ -79,10 +96,13 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
 
             // Tạo hồ sơ Vendor gắn liền 1-1
             VietnamProvinces.TryNormalize(request.City, out var city);
-            var vendor = Vendor.Create(user.Id, request.BrandName, slug, request.FullName, request.PhoneNumber, city, request.CommissionRate);
+            var vendor = Vendor.CreateWithCategoryDefaults(user.Id, request.BrandName, slug, request.FullName,
+                request.PhoneNumber, city, policyVersions[0]);
 
             _context.Users.Add(user);
             _context.Vendors.Add(vendor);
+            foreach (var group in groups)
+                _context.VendorBusinessGroups.Add(VendorBusinessGroup.Create(vendor.Id, group.Id));
             await _context.SaveChangesAsync(ct);
 
             var token = _jwtProvider.GenerateToken(user);

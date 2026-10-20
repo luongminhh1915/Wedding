@@ -10,6 +10,7 @@ namespace Wedding.Tests;
 
 public class VietnamProvincesTests
 {
+    private static readonly Guid DecorGroupId = Guid.Parse("22222222-2222-2222-2222-222222222202");
     [Fact]
     public void DirectoryContainsExactly34UniqueCurrentNames()
     {
@@ -43,7 +44,7 @@ public class VietnamProvincesTests
     public void UnknownOrRetiredProvinceCannotBeUsedForNewRegistration(string? city)
     {
         Assert.False(VietnamProvinces.TryNormalize(city, out _));
-        Assert.False(new RegisterVendorCommandValidator().Validate(new RegisterVendorCommand("Vendor", "vendor@example.invalid", "0901234567", "Long test password", "Brand", city!)).IsValid);
+        Assert.False(new RegisterVendorCommandValidator().Validate(new RegisterVendorCommand("Vendor", "vendor@example.invalid", "0901234567", "Long test password", "Brand", city!, BusinessGroupIds: [DecorGroupId], PartnershipPolicyAccepted: true)).IsValid);
     }
 
     [Fact]
@@ -57,9 +58,9 @@ public class VietnamProvincesTests
         var legacy = Vendor.Create(legacyOwner.Id, "Existing", "existing", "Existing owner", "0901234568", "Bình Dương", .08m);
         db.Users.Add(legacyOwner); db.Vendors.Add(legacy); await db.SaveChangesAsync();
         var handler = new RegisterVendorCommandHandler(db, new Hasher(), new Jwt());
-        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new("New", "invalid@example.invalid", "0901234567", "Long test password", "New", "Unknown"), default));
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new("New", "invalid@example.invalid", "0901234567", "Long test password", "New", "Unknown", BusinessGroupIds: [DecorGroupId], PartnershipPolicyAccepted: true), default));
         Assert.Equal(1, await db.Users.CountAsync());
-        var result = await handler.Handle(new("New", "new@example.invalid", "0901234567", "Long test password", "New", " TP. HCM "), default);
+        var result = await handler.Handle(new("New", "new@example.invalid", "0901234567", "Long test password", "New", " TP. HCM ", BusinessGroupIds: [DecorGroupId], PartnershipPolicyAccepted: true), default);
         Assert.Equal("Hồ Chí Minh", (await db.Vendors.SingleAsync(vendor => vendor.Id == result.User.VendorId)).City);
         Assert.Equal("Bình Dương", (await db.Vendors.SingleAsync(vendor => vendor.Id == legacy.Id)).City);
     }

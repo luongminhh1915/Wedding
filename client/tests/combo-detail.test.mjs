@@ -4,6 +4,7 @@ import {
   comboDetailModel,
   chooseDetailTemplate,
   detailBasePrice,
+  previewDetailCatalog,
 } from "../src/features/journey/combo/comboDetailModel.ts";
 import { EMPTY_CART } from "../src/features/journey/combo/cartModel.ts";
 
@@ -124,4 +125,58 @@ test("detail gallery uses supplied catalog pictures only and deduplicates shared
     "https://shop.example/photo-1.jpg",
   ]);
   assert.equal(model.vendor.ratingAvg, null);
+});
+
+test("private detail uses only authorized revision options, preserves published cache and never permits cart selection", () => {
+  const published = catalog(), before = structuredClone(published);
+  const proposal = {
+    ...published.templates[0], name: "Draft revised combo", moderationStatus: "Draft",
+    content: { galleryUrls: ["https://shop.example/proposal-gallery.jpg"], terms: "Proposal terms" },
+    previewOptions: [option("venue-1", { title: "Actual private component", price: 1700000, unit: "Table", description: "Authorized unpublished component" }), option("photo-1")],
+  };
+  const privateData = previewDetailCatalog(published, proposal);
+  const model = comboDetailModel(privateData, "combo");
+  assert.equal(model.template.name, "Draft revised combo");
+  assert.equal(model.required[0].item.title, "Actual private component");
+  assert.equal(model.required[0].item.description, "Authorized unpublished component");
+  assert.equal(model.required[0].item.price, 1700000);
+  assert.equal(model.readOnly, true);
+  assert.throws(() => chooseDetailTemplate(EMPTY_CART, model));
+  assert.ok(model.photos.includes("https://shop.example/proposal-gallery.jpg"));
+  assert.equal(model.template.content.terms, "Proposal terms");
+  assert.deepEqual(published, before);
+  assert.equal(comboDetailModel(published, "combo").template.name, "Combo shop");
+});
+
+test("missing private options cannot fall back to publicly cached services with the same IDs", () => {
+  const published = catalog();
+  for (const previewOptions of [null, undefined, []]) {
+    const privateData = previewDetailCatalog(published, { ...published.templates[0], previewOptions });
+    const model = comboDetailModel(privateData, "combo");
+    assert.equal(model.required[0].item, undefined);
+    assert.equal(model.canChoose, false);
+    assert.throws(() => chooseDetailTemplate(EMPTY_CART, model));
+  }
+});
+
+test("private preview works without public builder and does not fabricate removed component records", () => {
+  const proposal = { ...catalog().templates[0], previewOptions: [option("venue-1", { description: "Actual retained record" })] };
+  const model = comboDetailModel(previewDetailCatalog(undefined, proposal), "combo");
+  assert.equal(model.required[0].categoryName, "Hạng mục dịch vụ");
+  assert.equal(model.required[0].item.description, "Actual retained record");
+  assert.equal(model.optional[0].item, undefined);
+  assert.equal(model.vendor, undefined);
+  assert.equal(model.readOnly, true);
+  assert.equal(model.canChoose, false);
+});
+
+test("private preview ignores options unrelated to revision slots and never replaces category vendor ownership checks", () => {
+  const published = catalog();
+  const proposal = { ...published.templates[0], previewOptions: [option("venue-1", { vendorId: "foreign" }), option("photo-1"), option("unrelated")] };
+  const data = previewDetailCatalog(published, proposal);
+  assert.equal(data.categories.flatMap(category => category.options).some(item => item.serviceItemId === "unrelated"), false);
+  const model = comboDetailModel(data, "combo");
+  assert.equal(model.required[0].valid, false);
+  assert.equal(model.canChoose, false);
+  assert.throws(() => chooseDetailTemplate(EMPTY_CART, model));
 });

@@ -77,7 +77,7 @@ public class SingleVendorComboTests
     public async Task ApprovedOwnedPresetAllowsSameVendorReplacementButNeverCrossVendorEvenAfterDetachingPreset()
     {
         await using var f = await Fixture.Create(); var template = await f.SaveAsVendor();
-        await new ReviewComboTemplateCommandHandler(f.Db, new Audit()).Handle(new(template.Id, true), default);
+        await new ReviewComboTemplateCommandHandler(f.Db, new Audit(), f.AdminUser).Handle(new(template.Id, true), default);
         var request = new ComboPriceCommand(template.Id, "HCM", f.Date, 100, new() { new(f.Venue.Id, null, null), new(f.OwnPhotoAlternative.Id, null, null) });
         var price = await ComboPricing.CalculateAsync(f.Db, request, null, default);
         Assert.All(price.Lines, line => Assert.Equal(f.Vendor.Id, line.VendorId));
@@ -92,19 +92,21 @@ public class SingleVendorComboTests
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(f.TemplateCommand with { Items = new() { f.Slot(f.ForeignPhoto) } }, default));
         var foreignAllowed = f.Slot(f.OwnPhoto) with { AllowedItemIds = new() { f.ForeignPhoto.Id } };
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(f.TemplateCommand with { Items = new() { f.Slot(f.Venue), foreignAllowed } }, default));
+        var foreignLegacy = ComboTemplate.Create("Other vendor legacy combo", "Popular", "Modern", null, null, 0);
+        foreignLegacy.StageUnpublished(f.OtherVendor.Id, "Draft"); f.Db.ComboTemplates.Add(foreignLegacy); await f.Db.SaveChangesAsync();
         var other = await new SaveComboTemplateCommandHandler(f.Db, new Audit(), new Current(f.OtherOwner.Id, "VendorOwner"))
-            .Handle(f.TemplateCommand with { Name = "Other vendor combo", Items = new() { f.Slot(f.ForeignPhoto) } }, default);
-        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(f.TemplateCommand with { Id = other.Id }, default));
-        await Assert.ThrowsAsync<DomainException>(() => new ArchiveComboTemplateCommandHandler(f.Db, f.VendorUser, new Audit()).Handle(new(other.Id), default));
+            .Handle(f.TemplateCommand with { Id = foreignLegacy.Id, Name = "Other vendor combo", Items = new() { f.Slot(f.ForeignPhoto) } }, default);
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(f.TemplateCommand with { Id = other.Id }, default));
+        await Assert.ThrowsAsync<NotFoundException>(() => new ArchiveComboTemplateCommandHandler(f.Db, f.VendorUser, new Audit()).Handle(new(other.Id), default));
         Assert.True(await f.Db.ComboTemplates.AnyAsync(t => t.Id == other.Id));
     }
     [Fact]
     public async Task AdminResolvesExactlyOneOwnerAndRejectsMixedCreationAndForeignSwapOptions()
     {
-        await using var f = await Fixture.Create(); var admin = new Current(Guid.NewGuid(), "SuperAdmin");
+        await using var f = await Fixture.Create(); var admin = f.AdminUser;
         var handler = new SaveComboTemplateCommandHandler(f.Db, new Audit(), admin);
         var saved = await handler.Handle(f.TemplateCommand, default);
-        Assert.Equal(f.Vendor.Id, saved.OwnerVendorId); Assert.Equal("Approved", saved.ModerationStatus);
+        Assert.Equal(f.Vendor.Id, saved.OwnerVendorId); Assert.Equal("Pending", saved.ModerationStatus);
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(f.TemplateCommand with { Name = "Mixed", Items = new() { f.Slot(f.Venue), f.Slot(f.ForeignPhoto) } }, default));
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(f.TemplateCommand with { Items = new() { f.Slot(f.OwnPhoto) with { AllowedItemIds = new() { f.ForeignPhoto.Id } } } }, default));
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(f.TemplateCommand with { Id = saved.Id, Items = new() { f.Slot(f.ForeignPhoto) } }, default));
@@ -113,11 +115,11 @@ public class SingleVendorComboTests
     public async Task BuilderAndModeratorRejectLegacyUnownedOrCrossVendorTemplatesWithoutDeletingThem()
     {
         await using var f = await Fixture.Create(); var owned = await f.SaveAsVendor();
-        await new ReviewComboTemplateCommandHandler(f.Db, new Audit()).Handle(new(owned.Id, true), default);
+        await new ReviewComboTemplateCommandHandler(f.Db, new Audit(), f.AdminUser).Handle(new(owned.Id, true), default);
         var legacy = ComboTemplate.Create("Legacy mixed preset", "Popular", "Modern", null, null, 1);
         foreach (var item in new[] { f.Venue, f.ForeignPhoto }) { var slot = ComboTemplateItem.Create(legacy.Id, item.CategoryId, item.ListingId, false); slot.ConfigureItems(item.Id, "[]"); legacy.Items.Add(slot); }
         legacy.SetScope(null, "HCM", null, false); f.Db.ComboTemplates.Add(legacy); await f.Db.SaveChangesAsync();
-        await Assert.ThrowsAsync<DomainException>(() => new ReviewComboTemplateCommandHandler(f.Db, new Audit()).Handle(new(legacy.Id, true), default));
+        await Assert.ThrowsAsync<DomainException>(() => new ReviewComboTemplateCommandHandler(f.Db, new Audit(), f.AdminUser).Handle(new(legacy.Id, true), default));
         legacy.SetScope(f.Vendor.Id, "HCM", null, true); await f.Db.SaveChangesAsync(); // Simulates an old incorrectly owned preset.
         var builder = await new GetComboBuilderQueryHandler(f.Db).Handle(new(null), default);
         Assert.Contains(builder.Templates, t => t.Id == owned.Id); Assert.DoesNotContain(builder.Templates, t => t.Id == legacy.Id);
@@ -145,18 +147,19 @@ public class SingleVendorComboTests
         Assert.Equal(1, await f.Db.ComboOrders.CountAsync()); Assert.Equal(2, await f.Db.ComboOrderItems.CountAsync()); Assert.Equal(0, await f.Db.Leads.CountAsync());
     }
     [Fact]
-    public async Task VendorCanCreateEditArchiveAndResubmitWithoutDeletingExistingOrderHistory()
+    public async Task VendorCanReviseLegacyEditArchiveAndResubmitWithoutDeletingExistingOrderHistory()
     {
         await using var f = await Fixture.Create(); var created = await f.SaveAsVendor();
         Assert.Equal("Pending", created.ModerationStatus); Assert.Equal(f.Vendor.Id, created.OwnerVendorId);
-        await new ReviewComboTemplateCommandHandler(f.Db, new Audit()).Handle(new(created.Id, true), default);
+        await new ReviewComboTemplateCommandHandler(f.Db, new Audit(), f.AdminUser).Handle(new(created.Id, true), default);
         var submitted = await new SubmitComboOrderCommandHandler(f.Db, f.CustomerUser, new Notify()).Handle(new(created.Id, new(), f.Date, 100, f.Customer.PhoneNumber, null, "HCM", new() { new(f.Venue.Id, null, null), new(f.OwnPhoto.Id, null, null) }), default);
         Assert.Equal(0, await f.Db.BookingContracts.CountAsync()); Assert.Equal(0, await f.Db.Commissions.CountAsync()); Assert.Equal(0, await f.Db.PaymentTransactions.CountAsync()); // RFQ only: no automatic charge/contract.
         await new ArchiveComboTemplateCommandHandler(f.Db, f.VendorUser, new Audit()).Handle(new(created.Id), default);
         var builder = await new GetComboBuilderQueryHandler(f.Db).Handle(new(null), default); Assert.DoesNotContain(builder.Templates, t => t.Id == created.Id);
         Assert.True(await f.Db.ComboOrders.AnyAsync(o => o.Id == submitted.Id));
         var edited = await new SaveComboTemplateCommandHandler(f.Db, new Audit(), f.VendorUser).Handle(f.TemplateCommand with { Id = created.Id, Name = "Updated owned combo" }, default);
-        Assert.Equal("Pending", edited.ModerationStatus); Assert.Equal(f.Vendor.Id, edited.OwnerVendorId);
+        Assert.Equal("Approved", edited.ModerationStatus); Assert.Equal("Pending", edited.LatestRevision?.Status);
+        Assert.Equal(f.Vendor.Id, edited.OwnerVendorId);
         Assert.True(await f.Db.ComboOrders.AnyAsync(o => o.Id == submitted.Id));
     }
     private sealed record Current(Guid Id, string CurrentRole) : ICurrentUserService { public Guid? UserId => Id; public string? Email => null; public string? Role => CurrentRole; }
@@ -164,17 +167,25 @@ public class SingleVendorComboTests
     private sealed class Notify : INotificationSender { public Task SendAsync(string channel, string recipient, string message, CancellationToken cancellationToken = default) => Task.CompletedTask; }
     private sealed class Fixture : IAsyncDisposable
     {
-        public SqliteConnection Connection = null!; public ApplicationDbContext Db = null!; public User Customer = null!; public User Owner = null!; public User OtherOwner = null!;
+        public SqliteConnection Connection = null!; public ApplicationDbContext Db = null!; public User Customer = null!; public User Owner = null!; public User OtherOwner = null!; public User Admin = null!;
         public Vendor Vendor = null!; public Vendor OtherVendor = null!; public ServiceItem Venue = null!; public ServiceItem OwnPhoto = null!; public ServiceItem OwnPhotoAlternative = null!; public ServiceItem ForeignPhoto = null!;
         public DateTime Date => DateTime.UtcNow.AddDays(20);
         public Current CustomerUser => new(Customer.Id, "Customer"); public Current VendorUser => new(Owner.Id, "VendorOwner");
+        public Current AdminUser => new(Admin.Id, "SuperAdmin");
         public ComboTemplateItemDto Slot(ServiceItem item) => new(item.CategoryId, item.ListingId, false, item.Id, new());
         public SaveComboTemplateCommand TemplateCommand => new(null, "Owned combo", "Popular", "Modern", null, null, true, 0, new() { Slot(Venue), Slot(OwnPhoto) }, "HCM", .03m);
-        public Task<ComboTemplateDto> SaveAsVendor() => new SaveComboTemplateCommandHandler(Db, new Audit(), VendorUser).Handle(TemplateCommand, default);
+        public async Task<ComboTemplateDto> SaveAsVendor()
+        {
+            var legacy = ComboTemplate.Create("Legacy owned combo", "Popular", "Modern", null, null, 0);
+            legacy.StageUnpublished(Vendor.Id, "Draft"); Db.ComboTemplates.Add(legacy); await Db.SaveChangesAsync();
+            return await new SaveComboTemplateCommandHandler(Db, new Audit(), VendorUser).Handle(TemplateCommand with { Id = legacy.Id }, default);
+        }
         public static async Task<Fixture> Create()
         {
             var f = new Fixture(); f.Connection = new SqliteConnection("Data Source=:memory:"); await f.Connection.OpenAsync(); f.Db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(f.Connection).Options); await f.Db.Database.EnsureCreatedAsync();
-            f.Customer = User.Create("Customer", "c@single.test", "0900000000", "hash", UserRole.Customer); f.Owner = User.Create("Owner", "v@single.test", "0900000001", "hash", UserRole.VendorOwner); f.OtherOwner = User.Create("Other", "o@single.test", "0900000002", "hash", UserRole.VendorOwner); f.Db.Users.AddRange(f.Customer, f.Owner, f.OtherOwner);
+            f.Customer = User.Create("Customer", "c@single.test", "0900000000", "hash", UserRole.Customer); f.Owner = User.Create("Owner", "v@single.test", "0900000001", "hash", UserRole.VendorOwner); f.OtherOwner = User.Create("Other", "o@single.test", "0900000002", "hash", UserRole.VendorOwner);
+            f.Admin = User.Create("Synthetic admin", "admin@single.test", "0900000003", "hash", UserRole.SuperAdmin);
+            f.Db.Users.AddRange(f.Customer, f.Owner, f.OtherOwner, f.Admin);
             f.Vendor = Vendor.Create(f.Owner.Id, "One Vendor", "one-vendor", "Owner", "0900000001", "HCM", .08m); f.OtherVendor = Vendor.Create(f.OtherOwner.Id, "Other Vendor", "other-vendor", "Other", "0900000002", "HCM", .08m);
             foreach (var vendor in new[] { f.Vendor, f.OtherVendor }) { vendor.SetVerified(true); vendor.ConfigureComboParticipation(true, .08m); f.Db.Vendors.Add(vendor); }
             var venueCategory = await f.Db.Categories.SingleAsync(c => c.Slug == "tiem-cuoi-venues"); var photoCategory = await f.Db.Categories.SingleAsync(c => c.Slug == "quay-chup-photo-video");

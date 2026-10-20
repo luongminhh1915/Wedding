@@ -44,6 +44,7 @@ import {
 import { Pagination } from "../../../components/Pagination";
 import { useOrderPage } from "../../journey/customerOrders/useOrderPage";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
+import { ContractCategorySummary } from "../../contracts/ContractCategorySummary";
 
 export function MyContracts() {
   const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("contract");
@@ -257,6 +258,7 @@ export function MyContracts() {
                         </>
                       }
                     >
+                      <ContractCategorySummary contract={contract} />
                       {pending && (
                         <p className="co-summary-note">
                           {expired
