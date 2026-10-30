@@ -3,6 +3,16 @@
 Snapshot: **30/10/2026, Asia/Ho_Chi_Minh (UTC+7)**. Đối tượng nhận: GitHub Copilot Agent trong VS Code, hoặc coding agent khác mở **toàn bộ worktree local**. Đây là tài liệu Technical Lead bàn giao source thực tế, không phải danh sách tính năng quảng cáo.
 
 ## Living Checkpoint — đọc đầu tiên, cập nhật sau mỗi module quan trọng
+- **30/10 10:22VN — Branch `weddy-journey` MERGED into `main`; CLEAN WORKING TREE; VERIFIED:** owner requested "xong r giúp t merge từ weddy journey vào main nhé".
+  - **Git Merge:** Successfully merged `weddy-journey` (commit `f50861c`) into branch `main`.
+  - **Conflict Resolution:** Handled `modify/delete` conflicts on tracked historical compiled outputs (`bin/` and `obj/`) by untracking all `bin/` and `obj/` directories from git, adhering to `.gitignore`.
+  - **Merge Commit:** Created merge commit `6065a4b` ("Merge branch 'weddy-journey' into main").
+  - **Verification on `main`:**
+    - Full Frontend: 521/521 unit tests PASS (`npm.cmd test --prefix client -- --run`).
+    - Frontend build: `npm.cmd run build --prefix client` built cleanly in 1.04s, 0 errors.
+    - Backend targeted tests: 59 passed, 1 skipped (SQL server opt-in), 0 failures (`CommissionRateResolverTests` & `ContractCategorySnapshotTests`).
+    - Repository size & cleanliness: Cleaned all temporary build artifacts; working tree is 100% clean (`nothing to commit, working tree clean`).
+    - Git status: `main` is ahead of `origin/main` by 8 commits, preserving all Phase 5 Commission changes, Studio changes, and historical migrations without binary bloat.
 - **30/10 09:10VN — Phase 5 Commission System (5-Tier Scoped Resolver + Contract Confirmation Integration + Admin UI) IMPLEMENTED & VERIFIED:** owner instructed "bước 2 luôn đi".
   - **Backend Scoped Resolver:** Implemented `CommissionRateResolver.cs` adhering to 5-tier scoped hierarchy:
     1. Scope = Service: Service-level rate and basis.
