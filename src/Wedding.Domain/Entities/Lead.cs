@@ -13,6 +13,8 @@ public class Lead : BaseEntity
     public int? EstimatedGuests { get; private set; }
     public decimal? EstimatedBudget { get; private set; }
     public string? Notes { get; private set; }
+    public string Source { get; private set; } = "Listing";
+    public Guid? ComboOrderId { get; private set; }
 
     // BR-002: Smart Privacy - SĐT ban đầu bị mã hóa che đi
     public string RawPhoneNumber { get; private set; } = string.Empty;
@@ -77,6 +79,13 @@ public class Lead : BaseEntity
     public void UnlockPhone()
     {
         IsPhoneUnlocked = true;
+        SetUpdated();
+    }
+
+    public void AttachSource(string source, Guid? comboOrderId = null)
+    {
+        Source = source;
+        ComboOrderId = comboOrderId;
         SetUpdated();
     }
 

@@ -15,6 +15,7 @@ export interface User {
   avatarUrl?: string;
   vendorId?: string;
   vendorBrandName?: string;
+  loginName?: string | null;
 }
 
 export interface UserManagementDto {
@@ -29,6 +30,9 @@ export interface UserManagementDto {
   lastLoginAt?: string;
   vendorId?: string;
   vendorBrandName?: string;
+  loginName?: string | null;
+  vendorOperatingRegions?: string[] | null;
+  vendorNationwide?: boolean;
 }
 
 export interface AuthResponse {
@@ -55,5 +59,7 @@ export interface RegisterVendorRequest {
   password: string;
   brandName: string;
   city: string;
-  commissionRate: number;
+  operatingRegions?: string[];
+  nationwide?: boolean;
+  partnershipPolicyAccepted: true;
 }

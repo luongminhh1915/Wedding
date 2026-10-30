@@ -15,11 +15,44 @@ public static class DbInitializer
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var logger = scope.ServiceProvider.GetService<ILogger<ApplicationDbContext>>();
+        var policy = scope.ServiceProvider.GetRequiredService<DatabaseStartupPolicy>();
 
         try
         {
-            // Đảm bảo Database đã được tạo hoặc migrate
-            await context.Database.MigrateAsync();
+            // NEVER delete/recreate a database at startup. Local SQLite is an explicit opt-in;
+            // EnsureCreated only initializes an empty database and leaves an existing schema alone.
+            if (context.Database.IsSqlite())
+            {
+                if (policy.ApplyMigrations) await context.Database.EnsureCreatedAsync();
+                // A stale development schema is an error to fix deliberately, not a reason to
+                // destroy user records. Querying a known table also rejects an empty schema.
+                await context.Users.AsNoTracking().Take(1).ToListAsync();
+            }
+            else if (policy.ApplyMigrations)
+            {
+                await context.Database.MigrateAsync();
+            }
+            else
+            {
+                if (!await context.Database.CanConnectAsync())
+                    throw new InvalidOperationException("Cannot connect to the configured SQL Server database. Provision it and apply the reviewed deployment migrations first.");
+                if ((await context.Database.GetPendingMigrationsAsync()).Any())
+                    throw new InvalidOperationException("Database schema has pending migrations. Apply the reviewed deployment migration step before starting this API; existing data has not been changed.");
+            }
+
+            // Demo accounts and sample transactions must never be injected into a deployment.
+            // Even in development, only seed an entirely new database and leave user data intact.
+            if (!policy.SeedDemoData)
+            {
+                logger?.LogInformation("Database initialized. Demo seed is disabled.");
+                return;
+            }
+
+            if (await context.Users.AnyAsync())
+            {
+                logger?.LogInformation("Database already contains users. Demo seed was skipped.");
+                return;
+            }
 
             var defaultPasswordHash = hasher.Hash("123456");
 
@@ -495,11 +528,13 @@ public static class DbInitializer
             }
 
             await context.SaveChangesAsync();
+            await WeddyJourneySeeder.SeedAsync(context, hasher);
             logger?.LogInformation("===> [DB Seeder] Đã nạp thành công bộ dữ liệu mẫu với mật khẩu mặc định 123456 cho toàn bộ users!");
         }
         catch (Exception ex)
         {
-            logger?.LogError(ex, "Lỗi xảy ra trong quá trình Seed Database: {Message}", ex.Message);
+            logger?.LogCritical(ex, "Không thể khởi tạo cơ sở dữ liệu: {Message}", ex.Message);
+            throw;
         }
     }
 }

@@ -1,43 +1,67 @@
-import { useState } from 'react';
-import {
-  Plus, Trash2, CheckCircle2,
-  RotateCw, Loader2, X
-} from 'lucide-react';
-import { useWeddingChecklist } from '../../hooks/useWeddingTools';
-import type { SaveChecklistTaskPayload } from '../../../../types/wedding-tools.types';
+import { useState } from "react";
+import { Plus, Trash2, CheckCircle2, RotateCw, Loader2, X, Pencil } from "lucide-react";
+import { useWeddingChecklist } from "../../hooks/useWeddingTools";
+import type { SaveChecklistTaskPayload } from "../../../../types/wedding-tools.types";
+import { useNotificationFocus } from "../../../notifications/useNotificationFocus";
 
 const MILESTONES = [
-  '9 - 12 Tháng',
-  '6 - 9 Tháng',
-  '3 - 6 Tháng',
-  '1 - 2 Tháng',
-  '1 Tuần & Ngày Cưới'
+  "9 - 12 Tháng",
+  "6 - 9 Tháng",
+  "3 - 6 Tháng",
+  "1 - 2 Tháng",
+  "1 Tuần & Ngày Cưới",
 ];
 
-export function WeddingChecklist() {
-  const { tasks, isLoading, refetch, toggleTask, saveTask, isSaving, deleteTask } = useWeddingChecklist();
+const MILESTONE_LABELS: Record<string, string> = {
+  "12_MONTHS": "9 - 12 Tháng",
+  "9_MONTHS": "9 - 12 Tháng",
+  "6_MONTHS": "6 - 9 Tháng",
+  "3_MONTHS": "3 - 6 Tháng",
+  "1_MONTH": "1 - 2 Tháng",
+  "1_WEEK": "1 Tuần & Ngày Cưới",
+  WEDDING_DAY: "1 Tuần & Ngày Cưới",
+  "12 tháng trước": "9 - 12 Tháng", "9 tháng trước": "9 - 12 Tháng", "6 tháng trước": "6 - 9 Tháng",
+  "4 tháng trước": "3 - 6 Tháng", "3 tháng trước": "3 - 6 Tháng", "2 tháng trước": "1 - 2 Tháng",
+  "1 tháng trước": "1 - 2 Tháng", "1 tuần trước": "1 Tuần & Ngày Cưới",
+};
+const milestoneLabel = (value: string) => MILESTONE_LABELS[value] || value;
 
-  const [selectedMilestone, setSelectedMilestone] = useState<string>('all');
+export function WeddingChecklist() {
+  const {
+    tasks,
+    isLoading,
+    isError,
+    refetch,
+    toggleTask,
+    saveTask,
+    isSaving,
+    deleteTask,
+  } = useWeddingChecklist();
+  const { focusId, missing } = useNotificationFocus("task", tasks.map(t => t.id), !isLoading && !isError);
+
+  const [selectedMilestone, setSelectedMilestone] = useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTaskForm, setNewTaskForm] = useState<SaveChecklistTaskPayload>({
-    title: '',
-    milestone: '3 - 6 Tháng',
-    notes: 'Cả hai'
+    title: "",
+    milestone: "3 - 6 Tháng",
+    notes: "Cả hai",
   });
 
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.isCompleted).length;
-  const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  const completedTasks = tasks.filter((t) => t.isCompleted).length;
+  const progressPercent =
+    totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  const filteredTasks = selectedMilestone === 'all'
-    ? tasks
-    : tasks.filter(t => t.milestone.includes(selectedMilestone) || selectedMilestone.includes(t.milestone));
+  const filteredTasks =
+    selectedMilestone === "all"
+      ? tasks
+      : tasks.filter((t) => t.id === focusId || milestoneLabel(t.milestone) === selectedMilestone);
 
   const handleToggle = async (id: string) => {
     try {
       await toggleTask(id);
     } catch {
-      alert('Không thể cập nhật trạng thái.');
+      alert("Không thể cập nhật trạng thái.");
     }
   };
 
@@ -48,18 +72,18 @@ export function WeddingChecklist() {
     try {
       await saveTask(newTaskForm);
       setIsAddModalOpen(false);
-      setNewTaskForm({ title: '', milestone: '3 - 6 Tháng', notes: 'Cả hai' });
+      setNewTaskForm({ title: "", milestone: "3 - 6 Tháng", notes: "Cả hai" });
     } catch {
-      alert('Không thể thêm công việc.');
+      alert("Không thể thêm công việc.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa việc này không?')) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa việc này không?")) return;
     try {
       await deleteTask(id);
     } catch {
-      alert('Không thể xóa công việc.');
+      alert("Không thể xóa công việc.");
     }
   };
 
@@ -67,10 +91,22 @@ export function WeddingChecklist() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-500">
         <Loader2 className="w-8 h-8 animate-spin text-rose-500 mb-3" />
-        <p className="text-sm font-semibold">Đang tải kế hoạch chuẩn bị cưới 12 tháng...</p>
+        <p className="text-sm font-semibold">
+          Đang tải kế hoạch chuẩn bị cưới 12 tháng...
+        </p>
       </div>
     );
   }
+
+  if (isError)
+    return (
+      <div role="alert" className="overview-panel text-center py-12">
+        <p>Chưa thể tải công việc chuẩn bị cưới.</p>
+        <button className="wm-button small mt-4" onClick={() => refetch()}>
+          Thử lại
+        </button>
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -86,9 +122,12 @@ export function WeddingChecklist() {
               Lộ trình từng bước tới ngày cưới
             </span>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mt-1">Danh Sách Việc Cần Làm Chuẩn Bị Cưới</h2>
+          <h2 className="text-2xl font-black text-slate-900 mt-1">
+            Danh Sách Việc Cần Làm Chuẩn Bị Cưới
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tích chọn các công việc đã hoàn thành và phân công rõ ràng cho Chú rể hoặc Cô dâu.
+            Tích chọn các công việc đã hoàn thành và phân công rõ ràng cho Chú
+            rể hoặc Cô dâu.
           </p>
         </div>
 
@@ -101,7 +140,7 @@ export function WeddingChecklist() {
             <RotateCw className="w-4 h-4" />
           </button>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setNewTaskForm({ title: "", milestone: "3 - 6 Tháng", owner: "Shared", notes: "" }); setIsAddModalOpen(true); }}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition"
           >
             <Plus className="w-4 h-4" />
@@ -115,7 +154,9 @@ export function WeddingChecklist() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-extrabold text-slate-800">Tiến Độ Chuẩn Bị Cưới Của Bạn</span>
+              <span className="text-sm font-extrabold text-slate-800">
+                Tiến Độ Chuẩn Bị Cưới Của Bạn
+              </span>
               {progressPercent === 100 && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn Tất 100%!
@@ -123,7 +164,8 @@ export function WeddingChecklist() {
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Đã hoàn thành <strong>{completedTasks}</strong> trên tổng số <strong>{totalTasks}</strong> công việc
+              Đã hoàn thành <strong>{completedTasks}</strong> trên tổng số{" "}
+              <strong>{totalTasks}</strong> công việc
             </p>
           </div>
 
@@ -144,32 +186,38 @@ export function WeddingChecklist() {
       {/* Milestone Filter Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-2">
         <button
-          onClick={() => setSelectedMilestone('all')}
+          onClick={() => setSelectedMilestone("all")}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
-            selectedMilestone === 'all'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            selectedMilestone === "all"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
           }`}
         >
           Tất Cả ({tasks.length})
         </button>
 
-        {MILESTONES.map(m => {
-          const count = tasks.filter(t => t.milestone.includes(m) || m.includes(t.milestone)).length;
+        {MILESTONES.map((m) => {
+          const count = tasks.filter(
+            (t) => milestoneLabel(t.milestone) === m,
+          ).length;
           return (
             <button
               key={m}
               onClick={() => setSelectedMilestone(m)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
                 selectedMilestone === m
-                  ? 'bg-rose-500 text-white shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? "bg-rose-500 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
               <span>{m}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                selectedMilestone === m ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  selectedMilestone === m
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
                 {count}
               </span>
             </button>
@@ -179,33 +227,51 @@ export function WeddingChecklist() {
 
       {/* Tasks List */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+        {missing && <p role="status" className="text-sm text-slate-500">Công việc trong thông báo không còn khả dụng trong kế hoạch của bạn.</p>}
         {filteredTasks.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs">
-            Không có công việc nào trong mốc này. Bấm [+ Thêm Việc Mới] để thêm nhé!
+            Không có công việc nào trong mốc này. Bấm [+ Thêm Việc Mới] để thêm
+            nhé!
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filteredTasks.map(task => (
+            {filteredTasks.map((task) => (
               <div
                 key={task.id}
+                id={`notification-task-${task.id}`}
+                tabIndex={-1}
+                data-notification-focus={focusId === task.id}
                 className="py-3.5 flex items-center justify-between gap-3 group hover:bg-slate-50/60 px-3 rounded-2xl transition"
               >
                 <div className="flex items-center gap-3 flex-1">
                   <input
                     type="checkbox"
                     checked={task.isCompleted}
+                    aria-label={`Hoàn thành: ${task.title}`}
                     onChange={() => handleToggle(task.id)}
                     className="w-5 h-5 rounded-md border-slate-300 text-rose-500 focus:ring-rose-400 cursor-pointer accent-rose-500"
                   />
                   <div className="flex-1">
-                    <span className={`text-sm font-semibold transition ${
-                      task.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'
-                    }`}>
+                    <span
+                      className={`text-sm font-semibold transition ${
+                        task.isCompleted
+                          ? "line-through text-slate-400"
+                          : "text-slate-800"
+                      }`}
+                    >
                       {task.title}
                     </span>
                     <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
-                      <span className="font-bold text-rose-600/80">⏳ {task.milestone}</span>
-                      {task.notes && <span>• Phụ trách: <strong>{task.notes}</strong></span>}
+                      <span className="font-bold text-rose-600/80">
+                        ⏳ {milestoneLabel(task.milestone)}
+                      </span>
+                      {task.notes && (
+                        <span>
+                          • Phụ trách: <strong>{task.notes}</strong>
+                        </span>
+                      )}
+                      <span>· {task.owner === "Bride" ? "Cô dâu" : task.owner === "Groom" ? "Chú rể" : "Cả hai"}</span>
+                      {task.dueDate && <span>· Hạn {new Date(task.dueDate).toLocaleDateString("vi-VN")}</span>}
                     </div>
                   </div>
                 </div>
@@ -222,8 +288,12 @@ export function WeddingChecklist() {
                   )}
 
                   <button
+                    onClick={() => { setNewTaskForm({ ...task, milestone: milestoneLabel(task.milestone), dueDate: task.dueDate?.slice(0, 10) }); setIsAddModalOpen(true); }}
+                    className="p-1.5 text-slate-400 hover:text-slate-800" title="Sửa công việc"
+                  ><Pencil className="w-4 h-4" /></button>
+                  <button
                     onClick={() => handleDelete(task.id)}
-                    className="p-1.5 text-slate-300 hover:text-red-600 rounded-lg transition opacity-0 group-hover:opacity-100"
+                    className="p-1.5 text-slate-300 hover:text-red-600 rounded-lg transition sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                     title="Xóa công việc"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -240,48 +310,68 @@ export function WeddingChecklist() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-base text-slate-900">Thêm Công Việc Mới Vào Checklist</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="font-extrabold text-base text-slate-900">
+                {newTaskForm.id ? "Chỉnh Sửa Công Việc" : "Thêm Công Việc Mới Vào Checklist"}
+              </h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleAddTask} className="space-y-4 my-4 text-xs">
+              <label className="block font-bold text-slate-700">Hạn hoàn thành<input type="date" className="block w-full border border-slate-300 rounded-xl p-2 mt-1" value={newTaskForm.dueDate || ""} onChange={e => setNewTaskForm(f => ({ ...f, dueDate: e.target.value || undefined }))} /></label>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nội Dung Công Việc:</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nội Dung Công Việc:
+                </label>
                 <input
                   type="text"
                   required
                   value={newTaskForm.title}
-                  onChange={(e) => setNewTaskForm(f => ({ ...f, title: e.target.value }))}
+                  onChange={(e) =>
+                    setNewTaskForm((f) => ({ ...f, title: e.target.value }))
+                  }
                   placeholder="Ví dụ: Đặt thiệp cưới, Thuê xe hoa rước dâu..."
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Mốc Thời Gian:</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Mốc Thời Gian:
+                </label>
                 <select
                   value={newTaskForm.milestone}
-                  onChange={(e) => setNewTaskForm(f => ({ ...f, milestone: e.target.value }))}
+                  onChange={(e) =>
+                    setNewTaskForm((f) => ({ ...f, milestone: e.target.value }))
+                  }
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
                 >
-                  {MILESTONES.map(m => (
-                    <option key={m} value={m}>{m}</option>
+                  {MILESTONES.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Phân Công Phụ Trách:</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Phân Công Phụ Trách:
+                </label>
                 <select
-                  value={newTaskForm.notes || 'Cả hai'}
-                  onChange={(e) => setNewTaskForm(f => ({ ...f, notes: e.target.value }))}
+                  value={newTaskForm.owner || "Shared"}
+                  onChange={(e) =>
+                    setNewTaskForm((f) => ({ ...f, owner: e.target.value }))
+                  }
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
                 >
-                  <option value="Cả hai">Cả hai cùng làm</option>
-                  <option value="Chú Rể">Chú Rể phụ trách</option>
-                  <option value="Cô Dâu">Cô Dâu phụ trách</option>
+                  <option value="Shared">Cả hai cùng làm</option>
+                  <option value="Groom">Chú Rể phụ trách</option>
+                  <option value="Bride">Cô Dâu phụ trách</option>
                 </select>
               </div>
 
@@ -298,7 +388,7 @@ export function WeddingChecklist() {
                   disabled={isSaving}
                   className="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition disabled:opacity-50"
                 >
-                  {isSaving ? 'Đang lưu...' : 'Thêm Vào Kế Hoạch'}
+                  {isSaving ? "Đang lưu..." : newTaskForm.id ? "Lưu thay đổi" : "Thêm Vào Kế Hoạch"}
                 </button>
               </div>
             </form>

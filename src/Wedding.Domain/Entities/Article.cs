@@ -53,6 +53,13 @@ public class Article : BaseEntity
         SetUpdated();
     }
 
+    public void Update(string title, string slug, string excerpt, string content, string? thumbnail, string category)
+    {
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content) || !System.Text.RegularExpressions.Regex.IsMatch(slug ?? "", "^[a-z0-9]+(?:-[a-z0-9]+)*$"))
+            throw new DomainException("Tiêu đề, nội dung và slug hợp lệ là bắt buộc.");
+        Title = title.Trim(); Slug = slug!.Trim().ToLowerInvariant(); Excerpt = excerpt.Trim(); Content = content; ThumbnailUrl = thumbnail; Category = category; SetUpdated();
+    }
+
     public void Unpublish()
     {
         IsPublished = false;

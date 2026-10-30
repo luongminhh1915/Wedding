@@ -1,218 +1,159 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, Sparkles, LogIn, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import CategoryBar from './components/CategoryBar';
-import SearchFilterBar from './components/SearchFilterBar';
-import ListingCard from './components/ListingCard';
-import { usePublicCategories, usePublicListings } from './hooks/useBrowse';
-import { useAuthStore } from '../../store/authStore';
-import type { PublicListingsFilter } from '../../types/category.types';
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Search,
+  RotateCcw,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import CategoryBar from "./components/CategoryBar";
+import SearchFilterBar from "./components/SearchFilterBar";
+import BrowseFilterSidebar from "./components/BrowseFilterSidebar";
+import ListingCard from "./components/ListingCard";
+import { usePublicCategories, usePublicListings } from "./hooks/useBrowse";
+import type { PublicListingsFilter } from "../../types/category.types";
+import { clearServiceFilterSearch, readServiceFilters, serviceFilterChips, serviceFilterSearch } from "./serviceFilterModel";
+import "../../styles/service-search.css";
 
 export default function BrowsePage() {
-  const { user, token } = useAuthStore();
-  const [filter, setFilter] = useState<PublicListingsFilter>({
-    sortBy: 'newest',
-    page: 1,
-    pageSize: 12,
-  });
-
-  const { data: categories = [], isLoading: catLoading } = usePublicCategories();
-  const { data: result, isLoading: listLoading, isFetching } = usePublicListings(filter);
-
-  const handleCategorySelect = (id: string | null) => {
-    setFilter(f => ({ ...f, categoryId: id ?? undefined, page: 1 }));
+  const location = useLocation();
+  const navigate = useNavigate();
+  const filter = readServiceFilters(location.search);
+  const updateFilter = (changes: PublicListingsFilter) => {
+    const next = { ...filter, ...changes };
+    navigate({ pathname: location.pathname, search: serviceFilterSearch(next, location.search) });
   };
-
-  const handleFilterChange = (newFilter: PublicListingsFilter) => {
-    setFilter(f => ({ ...f, ...newFilter }));
+  const resetFilter = () => {
+    navigate({ pathname: location.pathname, search: clearServiceFilterSearch(location.search) });
   };
-
-  const listings = result?.items ?? [];
-  const totalCount = result?.totalCount ?? 0;
+  const { data: categories = [], isLoading: catLoading, isError: catError, refetch: refetchCategories } =
+    usePublicCategories();
+  const {
+    data: result,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = usePublicListings(filter);
   const totalPages = result?.totalPages ?? 1;
   const currentPage = result?.page ?? 1;
+  const firstPage = Math.max(1, Math.min(currentPage - 3, totalPages - 6));
+  const chips = serviceFilterChips(filter, categories);
+  const returnPath = `/browse${serviceFilterSearch(filter)}`;
 
   return (
-    <div className="min-h-screen bg-[#fcfbf9]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-rose-100/80">
-        <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-amber-400 flex items-center justify-center text-white shadow-md shadow-rose-200">
-              <Heart className="w-4 h-4 fill-current" />
-            </div>
-            <span className="text-lg font-bold text-slate-800" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Wedding Platform
-            </span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <Link to="/browse" className="text-rose-500 font-semibold">Khám Phá</Link>
-            <Link to="/browse" className="hover:text-rose-500 transition">7 Ngành Cưới</Link>
-            <Link to="/browse" className="hover:text-rose-500 transition">AI Stylist</Link>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            {token && user ? (
-              <Link
-                to={user.role === 'VendorOwner' ? '/vendor/dashboard' : user.role === 'Customer' ? '/customer/dashboard' : '/admin/dashboard'}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold hover:bg-rose-100 transition"
-              >
-                <span className="w-5 h-5 rounded-full bg-rose-200 flex items-center justify-center text-xs font-bold">
-                  {user.fullName.charAt(0)}
-                </span>
-                {user.fullName}
-              </Link>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link to="/login" className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition">
-                  <LogIn className="w-4 h-4" />
-                  Đăng Nhập
-                </Link>
-                <Link to="/register" className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold transition shadow-sm shadow-rose-200">
-                  Đăng Ký
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* ── HERO BANNER ────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-5 mt-8 mb-8">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-rose-50 via-white to-amber-50 border border-rose-100 p-10 text-center shadow-sm">
-          {/* Decorative blobs */}
-          <div className="absolute -top-10 -right-10 w-64 h-64 bg-rose-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-amber-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
-
-          <div className="relative">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-rose-100/70 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-              <Sparkles className="w-3.5 h-3.5" />
-              Nền tảng dịch vụ cưới hàng đầu
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Khám Phá Dịch Vụ Cưới{' '}
-              <span className="bg-gradient-to-r from-rose-500 to-amber-500 bg-clip-text text-transparent">
-                Trong Mơ
-              </span>
+    <main className="service-browse-page">
+      <div className="marketplace-search-at-top browse-marketplace-search">
+        <SearchFilterBar key={location.search} filter={filter} categories={categories} onChange={updateFilter} />
+      </div>
+      <section className="page-intro service-browse-intro">
+        <div className="service-browse-intro-top">
+          <div className="service-browse-intro-copy">
+            <span className="wm-eyebrow">MARKETPLACE DỊCH VỤ CƯỚI</span>
+            <h1>
+              Khám phá dịch vụ cưới,<br /><em>chọn người đồng hành phù hợp.</em>
             </h1>
-            <p className="text-slate-500 text-lg max-w-xl mx-auto mb-8">
-              Hàng trăm nhà cung cấp uy tín — từ tiệc cưới, decor, đến váy cưới và wedding planner.
+            <p>
+              Tìm theo danh mục, khu vực và ngân sách. Xem hình ảnh cùng thông tin
+              dịch vụ trước khi gửi yêu cầu tư vấn.
             </p>
           </div>
+          <img
+            className="service-browse-mascot"
+            src="/wedding-match/be-hy-flowers.png"
+            alt="Bé Hý vui vẻ cầm hoa chào bạn khám phá dịch vụ cưới"
+            width={1254}
+            height={1254}
+            loading="lazy"
+          />
         </div>
+        <div className="service-browse-promises"><span><Search size={14} /> Lọc theo nhu cầu</span><span><ShieldCheck size={14} /> Dịch vụ công khai đã được duyệt</span><span>Không thanh toán ngay trên web</span></div>
       </section>
-
-      <div className="max-w-7xl mx-auto px-5 pb-16 space-y-6">
-        {/* ── CATEGORY BAR ──────────────────────────────────────────────────── */}
+      <div className="browse-content space-y-6">
+        {catError && <p role="alert" className="service-filter-error">Chưa tải được danh mục dịch vụ. Các bộ lọc khác vẫn dùng được. <button type="button" className="service-filter-reset" onClick={() => void refetchCategories()}>Thử lại danh mục</button></p>}
         {catLoading ? (
-          <div className="flex gap-3">
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="h-11 w-32 bg-slate-100 rounded-full animate-pulse" />
+          <div className="flex gap-3 overflow-hidden">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div
+                key={i}
+                className="h-11 w-32 shrink-0 bg-slate-100 rounded-full animate-pulse"
+              />
             ))}
           </div>
         ) : (
           <CategoryBar
             categories={categories}
             selectedId={filter.categoryId ?? null}
-            onSelect={handleCategorySelect}
+            onSelect={(id) =>
+              updateFilter({ categoryId: id ?? undefined, page: 1 })
+            }
           />
         )}
-
-        {/* ── SEARCH & FILTER BAR ───────────────────────────────────────────── */}
-        <SearchFilterBar filter={filter} onChange={handleFilterChange} />
-
-        {/* ── RESULTS HEADER ────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+        <BrowseFilterSidebar key={location.search} filter={filter} onChange={updateFilter} onReset={resetFilter} />
+        {chips.length > 0 && <div className="service-applied-filters" aria-label="Bộ lọc đang áp dụng">
+          <span>Đang lọc:</span>{chips.map(chip => <button type="button" key={chip.key} onClick={() => updateFilter({ ...chip.clear, page: 1 })} aria-label={`Bỏ bộ lọc ${chip.label}`}>{chip.label}<X size={13} aria-hidden="true" /></button>)}
+          <button type="button" className="service-filter-reset" onClick={resetFilter}>Xóa tất cả</button>
+        </div>}
+        <div className="service-results-heading">
+          <p>
             {isFetching ? (
-              <span className="flex items-center gap-1.5 text-rose-500">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Đang tải...
+              <span className="flex items-center gap-2">
+                <Loader2 size={13} className="animate-spin" /> Đang tìm dịch vụ phù hợp...
               </span>
             ) : (
-              <>Tìm thấy <strong className="text-slate-900">{totalCount}</strong> gói dịch vụ</>
+              <>Khám phá <strong>{result?.totalCount ?? 0}</strong> gói dịch vụ cưới</>
             )}
           </p>
+          <span className="hidden sm:block tracking-wider text-[9px] uppercase">
+            Ngày cưới của bạn · Lựa chọn của bạn
+          </span>
         </div>
-
-        {/* ── LISTING GRID ──────────────────────────────────────────────────── */}
-        {listLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
-                <div className="h-52 bg-slate-100" />
-                <div className="p-4 space-y-3">
-                  <div className="h-3 bg-slate-100 rounded w-3/4" />
-                  <div className="h-4 bg-slate-100 rounded" />
-                  <div className="h-4 bg-slate-100 rounded w-5/6" />
-                  <div className="h-3 bg-slate-100 rounded w-1/2" />
+        <div className="browse-results-main">
+          {isError ? (
+            <div className="overview-panel text-center py-16" role="alert">
+              <RotateCcw className="mx-auto mb-4 text-rose-400" size={28} />
+              <h2>Chưa thể tải dịch vụ</h2>
+              <p>Vui lòng kiểm tra kết nối rồi thử lại.</p>
+              <button className="wm-button small mt-6" onClick={() => refetch()}>Thử lại</button>
+            </div>
+          ) : isLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="bg-white rounded-3xl border border-slate-100 overflow-hidden animate-pulse">
+                  <div className="aspect-[4/3] bg-slate-100" />
+                  <div className="p-6 space-y-4"><div className="h-3 bg-slate-100 rounded w-2/3" /><div className="h-5 bg-slate-100 rounded" /><div className="h-3 bg-slate-100 rounded w-1/2" /></div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : listings.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
-            <div className="text-5xl mb-4">💍</div>
-            <h3 className="text-lg font-bold text-slate-700">Không tìm thấy kết quả</h3>
-            <p className="text-sm text-slate-500 mt-1 mb-5">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
-            <button
-              onClick={() => setFilter({ sortBy: 'newest', page: 1, pageSize: 12 })}
-              className="px-5 py-2 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition"
-            >
-              Xóa bộ lọc
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {listings.map(listing => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        )}
-
-        {/* ── PAGINATION ────────────────────────────────────────────────────── */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-4">
-            <button
-              onClick={() => setFilter(f => ({ ...f, page: Math.max(1, (f.page ?? 1) - 1) }))}
-              disabled={currentPage <= 1}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:border-rose-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {[...Array(Math.min(totalPages, 7))].map((_, i) => {
-              const p = i + 1;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setFilter(f => ({ ...f, page: p }))}
-                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition ${
-                    p === currentPage
-                      ? 'bg-rose-500 text-white shadow-sm shadow-rose-200'
-                      : 'border border-slate-200 hover:bg-rose-50 hover:border-rose-300 text-slate-700'
-                  }`}
-                >
-                  {p}
-                </button>
-              );
-            })}
-
-            <button
-              onClick={() => setFilter(f => ({ ...f, page: Math.min(totalPages, (f.page ?? 1) + 1) }))}
-              disabled={currentPage >= totalPages}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:border-rose-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            <span className="text-sm text-slate-500 ml-2">
-              Trang {currentPage} / {totalPages}
-            </span>
-          </div>
-        )}
+              ))}
+            </div>
+          ) : !result?.items.length ? (
+            <div className="overview-panel text-center py-16">
+              <Search className="mx-auto mb-4 text-rose-300" size={30} />
+              <h2>Chưa tìm thấy dịch vụ</h2>
+              <p>Thử một từ khóa khác hoặc mở rộng bộ lọc nhé.</p>
+              <button className="wm-button small mt-6" onClick={resetFilter}>Xóa bộ lọc</button>
+            </div>
+          ) : (
+            <div className="browse-listing-grid">
+              {result.items.map((listing) => <ListingCard key={listing.id} listing={listing} returnPath={returnPath} />)}
+            </div>
+          )}
+          {totalPages > 1 && (
+            <nav aria-label="Phân trang dịch vụ" className="browse-pagination">
+              <button aria-label="Trang trước" disabled={currentPage <= 1} onClick={() => updateFilter({ page: currentPage - 1 })} className="browse-page-button"><ChevronLeft size={16} /></button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => firstPage + i).map((page) => (
+                <button key={page} aria-current={page === currentPage ? "page" : undefined} onClick={() => updateFilter({ page })} className={`browse-page-number${page === currentPage ? " is-current" : ""}`}>{page}</button>
+              ))}
+              <button aria-label="Trang sau" disabled={currentPage >= totalPages} onClick={() => updateFilter({ page: currentPage + 1 })} className="browse-page-button"><ChevronRight size={16} /></button>
+            </nav>
+          )}
+          <section className="browse-combo-banner service-combo-banner">
+            <div><span className="wm-eyebrow">MỘT SHOP, NHIỀU DỊCH VỤ</span><h2>Muốn xem gói combo riêng của nhà cung cấp?</h2><p>Khám phá combo và dịch vụ lẻ trong cùng một hành trình. Bạn có thể trao đổi trước khi xác nhận đơn.</p></div>
+            <Link to={`/combo${filter.categoryId ? `?category=${filter.categoryId}` : ""}`} className="combo-primary">Khám phá combo <ChevronRight size={16} /></Link>
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

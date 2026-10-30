@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.WeddingTools.Commands.ToggleChecklistTask;
 
@@ -20,8 +21,8 @@ public class ToggleChecklistTaskCommandHandler : IRequestHandler<ToggleChecklist
 
     public async Task<bool> Handle(ToggleChecklistTaskCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để thao tác checklist.");
+        var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
+        var userId = scope.OwnerId;
 
         var task = await _context.ChecklistTasks
             .FirstOrDefaultAsync(t => t.Id == request.Id && t.CustomerId == userId, cancellationToken)

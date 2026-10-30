@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
+using Wedding.Application.Features.Reviews;
 using Wedding.Application.Features.Reviews.DTOs;
 using Wedding.Domain.Enums;
 
@@ -23,30 +24,13 @@ public class GetPendingReviewsQueryHandler : IRequestHandler<GetPendingReviewsQu
             .Include(r => r.Customer)
             .Include(r => r.Vendor)
             .Include(r => r.Listing)
+            .Include(r => r.ComboTemplate)
             .Include(r => r.BookingContract)
             .Where(r => r.Status == ReviewStatus.Pending)
             .OrderBy(r => r.CreatedAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return reviews.Select(r => new ReviewDto(
-            Id: r.Id,
-            BookingContractId: r.BookingContractId,
-            ContractCode: r.BookingContract?.ContractCode,
-            ListingId: r.ListingId,
-            ListingTitle: r.Listing.Title,
-            CustomerId: r.CustomerId,
-            CustomerName: r.Customer.FullName,
-            VendorId: r.VendorId,
-            VendorBrandName: r.Vendor.BrandName,
-            Rating: r.Rating,
-            Content: r.Content,
-            PhotosJson: r.PhotosJson,
-            IsVerifiedBuyer: r.IsVerifiedBuyer,
-            Status: r.Status.ToString(),
-            VendorReply: r.VendorReply,
-            VendorRepliedAt: r.VendorRepliedAt,
-            CreatedAt: r.CreatedAt
-        )).ToList();
+        return reviews.Select(review => ReviewRules.Dto(review)).ToList();
     }
 }

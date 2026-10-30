@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wedding.Application.Features.Reviews.DTOs;
+using Wedding.Application.Features.Reviews;
 using Wedding.Application.Features.Reviews.Queries.GetEligibleContracts;
 using Wedding.Application.Features.Reviews.Queries.GetListingReviews;
 using Wedding.Application.Features.Reviews.Queries.GetPendingReviews;
@@ -21,10 +22,10 @@ public class ReviewsController : ControllerBase
 
     /// <summary>
     /// [Customer] Gửi đánh giá dịch vụ cưới.
-    /// Nếu có BookingContractId ở trạng thái Completed sẽ tự động được gắn nhãn Verified Buyer (BR-009).
+    /// Chỉ nhận đánh giá mới cho hợp đồng đúng khách/dịch vụ và đã Completed; không nhận đánh giá tư vấn mới.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SubmitReview([FromBody] SubmitReviewCommand command)
     {
         var result = await _mediator.Send(command);
@@ -35,12 +36,22 @@ public class ReviewsController : ControllerBase
     /// [Customer] Lấy danh sách hợp đồng đã hoàn tất của tôi để chọn viết đánh giá Verified.
     /// </summary>
     [HttpGet("eligible-contracts")]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetEligibleContracts()
     {
         var result = await _mediator.Send(new GetEligibleContractsQuery());
         return Ok(result);
     }
+
+    [HttpGet("eligible-targets")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> GetEligibleTargets()
+        => Ok(await _mediator.Send(new GetEligibleReviewTargetsQuery()));
+
+    [HttpGet("mine")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> GetMyReviews()
+        => Ok(await _mediator.Send(new GetMyReviewsQuery()));
 
     /// <summary>
     /// [Public API] Lấy danh sách đánh giá đã được duyệt của một bài đăng dịch vụ (Listing).
@@ -64,6 +75,29 @@ public class ReviewsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("target/{targetType}/{targetId:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetIndependentReviews(string targetType, Guid targetId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? rating = null,
+        [FromQuery] bool? verifiedOnly = null, [FromQuery] string sort = "newest")
+        => Ok(await _mediator.Send(new GetIndependentReviewsQuery(targetType, targetId, page, pageSize, rating, verifiedOnly, sort)));
+
+    [HttpPost("shop")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> SubmitShopReview([FromBody] SubmitShopReviewCommand command)
+        => Ok(await _mediator.Send(command));
+
+    [HttpPost("combo")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> SubmitComboReview([FromBody] SubmitComboReviewCommand command)
+        => Ok(await _mediator.Send(command));
+
+    [HttpPost("{id:guid}/edit-requests")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> SubmitEditRequest(Guid id, [FromBody] SubmitReviewEditRequestBody request)
+        => Ok(await _mediator.Send(new SubmitReviewEditRequestCommand(id, request.Rating, request.Content,
+            request.PhotosJson, request.QualityRating, request.ServiceRating, request.PunctualityRating, request.ValueRating)));
+
     /// <summary>
     /// [Moderator/Admin] Lấy hàng đợi các bài đánh giá đang chờ kiểm duyệt (Pending).
     /// </summary>
@@ -74,6 +108,21 @@ public class ReviewsController : ControllerBase
         var result = await _mediator.Send(new GetPendingReviewsQuery());
         return Ok(result);
     }
+
+    [HttpGet("moderation/pending-edits")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> GetPendingEdits()
+        => Ok(await _mediator.Send(new GetPendingReviewEditsQuery()));
+
+    [HttpPost("moderation/edit-requests/{id:guid}/approve")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> ApproveEdit(Guid id)
+        => Ok(await _mediator.Send(new ModerateReviewEditRequestCommand(id, true)));
+
+    [HttpPost("moderation/edit-requests/{id:guid}/reject")]
+    [Authorize(Roles = "Moderator,SuperAdmin")]
+    public async Task<IActionResult> RejectEdit(Guid id, [FromBody] RejectReviewRequest request)
+        => Ok(await _mediator.Send(new ModerateReviewEditRequestCommand(id, false, request.Reason)));
 
     /// <summary>
     /// [Moderator/Admin] Phê duyệt bài đánh giá và tự động tính lại điểm uy tín RatingAvg của NCC theo FM-005.
@@ -111,3 +160,5 @@ public class ReviewsController : ControllerBase
 
 public record RejectReviewRequest(string? Reason);
 public record ReplyReviewRequest(string Reply);
+public record SubmitReviewEditRequestBody(int Rating, string Content, string? PhotosJson = null,
+    int? QualityRating = null, int? ServiceRating = null, int? PunctualityRating = null, int? ValueRating = null);

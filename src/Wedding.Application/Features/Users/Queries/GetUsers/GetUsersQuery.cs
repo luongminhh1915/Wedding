@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Users.DTOs;
+using Wedding.Domain.Entities;
 
 namespace Wedding.Application.Features.Users.Queries.GetUsers;
 
@@ -26,7 +27,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, List<UserMana
         return users.Select(u => new UserManagementDto(
             u.Id,
             u.FullName,
-            u.Email,
+            u.Email ?? "",
             u.PhoneNumber,
             u.Role.ToString(),
             u.AvatarUrl,
@@ -34,7 +35,10 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, List<UserMana
             u.CreatedAt,
             u.LastLoginAt,
             u.Vendor?.Id,
-            u.Vendor?.BrandName
+            u.Vendor?.BrandName,
+            u.LoginName,
+            u.Vendor == null ? null : OperatingAreaRules.Read(u.Vendor.OperatingRegions, u.Vendor.City).Regions,
+            u.Vendor != null && OperatingAreaRules.Read(u.Vendor.OperatingRegions, u.Vendor.City).Nationwide
         )).ToList();
     }
 }

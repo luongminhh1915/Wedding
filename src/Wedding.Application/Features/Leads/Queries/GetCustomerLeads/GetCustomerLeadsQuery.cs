@@ -8,7 +8,8 @@ namespace Wedding.Application.Features.Leads.Queries.GetCustomerLeads;
 
 public record GetCustomerLeadsQuery(
     int PageNumber = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    List<Guid>? Ids = null
 ) : IRequest<List<LeadDto>>;
 
 public class GetCustomerLeadsQueryHandler : IRequestHandler<GetCustomerLeadsQuery, List<LeadDto>>
@@ -32,7 +33,7 @@ public class GetCustomerLeadsQueryHandler : IRequestHandler<GetCustomerLeadsQuer
             .Include(l => l.Vendor)
             .Include(l => l.Listing)
             .Include(l => l.Voucher)
-            .Where(l => l.CustomerId == userId)
+            .Where(l => l.CustomerId == userId && (request.Ids == null || request.Ids.Contains(l.Id)))
             .OrderByDescending(l => l.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -64,7 +65,8 @@ public class GetCustomerLeadsQueryHandler : IRequestHandler<GetCustomerLeadsQuer
                 DiscountPercent: l.Voucher.DiscountPercent,
                 Status: l.Voucher.Status.ToString(),
                 ExpiresAt: l.Voucher.ExpiresAt
-            ) : null
+            ) : null,
+            ComboOrderId: l.ComboOrderId
         )).ToList();
     }
 }

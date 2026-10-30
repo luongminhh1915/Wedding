@@ -1,178 +1,173 @@
-import { useState } from 'react';
-import { useAuth } from '../auth/hooks/useAuth';
+import { useSearchParams } from "react-router-dom";
 import {
-  ShieldCheck, FileCheck, DollarSign, Users,
-  LogOut, ChevronRight, Activity, Layers
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import ModerationQueue from './ModerationQueue';
-import UserManagement from './UserManagement';
-import AllListingsManager from './AllListingsManager';
-import FinancialDashboard from './FinancialDashboard';
-import { usePendingListings } from '../vendor-portal/hooks/useListings';
+  Activity,
+  DollarSign,
+  FileCheck,
+  Layers,
+  ShieldCheck,
+  Users,
+  BadgeCheck,
+  Gavel,
+  Receipt,
+  RefreshCw,
+  Star,
+  Percent,
+} from "lucide-react";
+import {
+  AdminKpiPanel,
+  DisputeDesk,
+  VerificationQueue,
+} from "../journey/admin/AdminJourneyPanels";
+import { SettlementsPanel } from "../journey/admin/FinancialLedgerPanel";
+import { ArticleCms, EmergencyMatchingPanel } from "../journey/admin/OperationsPanels";
+import { ComboAdministration } from "../journey/admin/ComboAdministration";
+import { useAuthStore } from "../../store/authStore";
+import ModerationQueue from "./ModerationQueue";
+import UserManagement from "./UserManagement";
+import AllListingsManager from "./AllListingsManager";
+import FinancialDashboard from "./FinancialDashboard";
+import { useModerationQueue } from "./useModerationQueue";
+import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
+import ReviewModerationQueue from "./ReviewModerationQueue";
+import CommissionPolicyManager from "./CommissionPolicyManager";
 
-type Tab = 'moderation' | 'published-listings' | 'users' | 'finance' | 'analytics';
-
-const tabs: { id: Tab; label: string; icon: React.ReactNode; taskLabel?: string }[] = [
-  { id: 'moderation', label: 'Kiểm Duyệt Bài Đăng', icon: <FileCheck className="w-4 h-4" /> },
-  { id: 'published-listings', label: 'Quản Lý Bài Đã Đăng', icon: <Layers className="w-4 h-4" /> },
-  { id: 'users', label: 'Quản Lý User', icon: <Users className="w-4 h-4" /> },
-  { id: 'finance', label: 'Bảng Kê Ngày 25', icon: <DollarSign className="w-4 h-4" />, taskLabel: 'AI-11' },
-  { id: 'analytics', label: 'GMV Dashboard', icon: <Activity className="w-4 h-4" />, taskLabel: 'AI-16' },
-];
+const tabs = [
+  {
+    id: "overview",
+    label: "Tổng quan",
+    icon: Activity,
+    description: "KPI vận hành: GMV, chuyển đổi Lead → HĐ, SLA, tranh chấp, nhật ký thao tác.",
+    roles: ["SuperAdmin", "Finance", "Moderator", "CustomerCare"],
+  },
+  {
+    id: "moderation",
+    label: "Kiểm duyệt",
+    icon: FileCheck,
+    description: "Hàng chờ chung cho bài giới thiệu, dịch vụ thành phần và combo của nhà cung cấp.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "reviews",
+    label: "Đánh giá",
+    icon: Star,
+    description: "Duyệt đánh giá độc lập Shop, Service, Combo và yêu cầu chỉnh sửa.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "published-listings",
+    label: "Gói dịch vụ",
+    icon: Layers,
+    description: "Theo dõi và quản lý các gói dịch vụ trên nền tảng.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "users",
+    label: "Người dùng & đối tác",
+    icon: Users,
+    description: "Kiểm tra thông tin và quản lý trạng thái tài khoản.",
+    roles: ["SuperAdmin"],
+  },
+  {
+    id: "finance",
+    label: "Tài chính & đối soát",
+    icon: DollarSign,
+    description: "Tổng hợp hợp đồng, tiền cọc và hoa hồng của nhà cung cấp.",
+    roles: ["SuperAdmin", "Finance"],
+  },
+  {
+    id: "settlements",
+    label: "Bảng kê tháng",
+    icon: Receipt,
+    description: "Bảng kê, giao dịch ngân hàng, hàng chờ đối soát và hóa đơn có chứng từ thật.",
+    roles: ["SuperAdmin", "Finance"],
+  },
+  {
+    id: "commissions",
+    label: "Chính sách hoa hồng",
+    icon: Percent,
+    description: "Cơ chế phân cấp 5 tầng (Dịch vụ → NCC theo ngành → Toàn NCC → Ngành hàng → Toàn sàn) và xử lý điều chỉnh hoa hồng.",
+    roles: ["SuperAdmin", "Finance"],
+  },
+  {
+    id: "verifications",
+    label: "Xác minh NCC",
+    icon: BadgeCheck,
+    description: "Duyệt hồ sơ pháp lý để cấp huy hiệu “Đã xác minh”.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "disputes",
+    label: "Tranh chấp",
+    icon: Gavel,
+    description: "Xử lý sự cố hợp đồng giữa cặp đôi và nhà cung cấp trong 72 giờ.",
+    roles: ["SuperAdmin", "CustomerCare", "Finance"],
+  },
+  { id: "change-requests", label: "Yêu cầu thay đổi / hủy", icon: RefreshCw, description: "Tiếp nhận đề nghị sau khi NCC phản hồi; không tự thay hợp đồng hoặc hoàn tiền.", roles: ["SuperAdmin", "Finance"] },
+  { id: "cms", label: "Cẩm nang CMS", icon: FileCheck, description: "Tạo, chỉnh sửa, xuất bản và ghim dịch vụ vào bài viết.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "combos", label: "Combo & ưu đãi", icon: Layers, description: "Mẫu combo, duyệt dịch vụ và cấu hình giảm giá.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "emergency", label: "Hỗ trợ khẩn cấp", icon: ShieldCheck, description: "Tạo yêu cầu NCC thay thế cho hợp đồng đang tranh chấp.", roles: ["SuperAdmin", "CustomerCare"] },
+] as const;
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('moderation');
-  const { data: pendingListings = [] } = usePendingListings();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-sm">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="font-bold text-white leading-none">Back-office Quản Trị</p>
-            <p className="text-xs text-slate-400 mt-0.5">Wedding Service Platform</p>
-          </div>
-          <span className="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">
-            {user?.role}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-300">
-            Nhân sự: <strong className="text-white">{user?.fullName}</strong>
-          </span>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Đăng xuất
-          </button>
-        </div>
-      </header>
-
-      {/* Tab Navigation */}
-      <nav className="bg-white border-b border-slate-200 px-6 sticky top-[57px] z-20 shadow-xs">
-        <div className="flex max-w-7xl mx-auto overflow-x-auto">
-          {tabs.map(tab => {
-            const badge = tab.id === 'moderation' && pendingListings.length > 0
-              ? String(pendingListings.length)
-              : tab.taskLabel;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  relative flex items-center gap-2 px-5 py-4 text-sm font-semibold transition border-b-2 whitespace-nowrap
-                  ${activeTab === tab.id
-                    ? 'border-rose-500 text-rose-600 bg-rose-50/30'
-                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
-                  }
-                `}
-              >
-                {tab.icon}
-                {tab.label}
-                {badge && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    tab.id === 'moderation' && pendingListings.length > 0
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-slate-100 text-slate-400'
-                  }`}>
-                    {badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-        {activeTab === 'moderation' && (
-          <div className="h-full">
-            <div className="mb-6">
-              <h1 className="text-xl font-bold text-slate-900">Kiểm Duyệt Bài Đăng Dịch Vụ</h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Xem xét và phê duyệt bài đăng từ Nhà Cung Cấp theo SLA 24h (BR-008).
-              </p>
-            </div>
-            <ModerationQueue />
-          </div>
-        )}
-
-        {activeTab === 'published-listings' && (
-          <div>
-            <div className="mb-6">
-              <h1 className="text-xl font-bold text-slate-900">Quản Lý Bài Đã Đăng</h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Theo dõi toàn bộ các gói dịch vụ trên sàn, kiểm tra thông tin và tạm ẩn/mở lại bài đăng vi phạm.
-              </p>
-            </div>
-            <AllListingsManager />
-          </div>
-        )}
-
-        {activeTab === 'users' && (
-          <div>
-            <div className="mb-6">
-              <h1 className="text-xl font-bold text-slate-900">Quản Lý Người Dùng & Đối Tác</h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Danh sách toàn bộ tài khoản Khách hàng, Nhà cung cấp (Vendor) và Nhân viên điều phối. Cho phép kiểm tra và khóa/mở khóa tài khoản.
-              </p>
-            </div>
-            <UserManagement />
-          </div>
-        )}
-
-        {activeTab === 'finance' && (
-          <div>
-            <div className="mb-6">
-              <h1 className="text-xl font-bold text-slate-900">Bảng Kiểm Kê Tài Chính</h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Tổng hợp hợp đồng, tiền cọc, hoa hồng phải thu và trạng thái thanh toán của từng Nhà Cung Cấp.
-              </p>
-            </div>
-            <FinancialDashboard />
-          </div>
-        )}
-
-        {activeTab !== 'moderation' && activeTab !== 'published-listings' && activeTab !== 'users' && activeTab !== 'finance' && (
-          <ComingSoon
-            title={tabs.find(t => t.id === activeTab)?.label ?? ''}
-            taskLabel={tabs.find(t => t.id === activeTab)?.taskLabel ?? ''}
-          />
-        )}
-      </main>
-    </div>
+  const { user } = useAuthStore();
+  const [params, setParams] = useSearchParams();
+  const visibleTabs = tabs.filter(
+    (tab) => !("roles" in tab) || (tab.roles as readonly string[]).includes(user?.role ?? ""),
   );
-}
-
-function ComingSoon({ title, taskLabel }: { title: string; taskLabel: string }) {
+  const activeTab = visibleTabs.find(tab => tab.id === params.get("tab"))?.id ?? "overview";
+  const setActiveTab = (tab: (typeof tabs)[number]["id"]) => setParams(tab === "overview" ? {} : { tab });
+  const { data: moderation } = useModerationQueue({ type: "all", status: "Pending", search: "", page: 1, pageSize: 1 });
+  const current = tabs.find((tab) => tab.id === activeTab)!;
   return (
-    <div className="flex flex-col items-center justify-center h-64 text-center bg-white rounded-2xl border border-dashed border-slate-300">
-      <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-        <ChevronRight className="w-6 h-6 text-slate-400" />
+    <main className="portal-shell">
+      <div className="portal-heading">
+        <div>
+          <ShieldCheck size={24} strokeWidth={1.5} />
+        </div>
+        <div>
+          <h1>Không gian quản trị</h1>
+          <p>{user?.fullName} · Cùng vận hành một trải nghiệm cưới tốt hơn.</p>
+        </div>
+        <span>{user?.role}</span>
       </div>
-      <h3 className="text-lg font-bold text-slate-700">{title}</h3>
-      {taskLabel && (
-        <p className="text-sm text-slate-500 mt-1">
-          Đang phát triển — <span className="font-semibold text-rose-500">{taskLabel}</span>
-        </p>
-      )}
-    </div>
+      <nav className="planner-tabs" aria-label="Quản trị hệ thống">
+        {visibleTabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            className={activeTab === id ? "active" : ""}
+            onClick={() => setActiveTab(id)}
+            aria-current={activeTab === id ? "page" : undefined}
+          >
+            <Icon size={17} />
+            {label}
+            {id === "moderation" && (moderation?.pendingCount ?? 0) > 0 && (
+              <span className="bg-amber-100 text-amber-700 text-[9px] rounded-full px-2 py-0.5">
+                {moderation?.pendingCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
+      <div className="feature-content">
+        <div className="mb-6">
+          <h2 className="font-semibold text-slate-800">{current.label}</h2>
+          <p className="text-xs text-slate-400 mt-2">{current.description}</p>
+        </div>
+        {activeTab === "moderation" && <ModerationQueue />}
+        {activeTab === "reviews" && <ReviewModerationQueue />}
+        {activeTab === "published-listings" && <AllListingsManager />}
+        {activeTab === "users" && <UserManagement />}
+        {activeTab === "finance" && <FinancialDashboard />}
+        {activeTab === "overview" && <AdminKpiPanel />}
+        {activeTab === "settlements" && <SettlementsPanel />}
+        {activeTab === "commissions" && <CommissionPolicyManager />}
+        {activeTab === "verifications" && <VerificationQueue />}
+        {activeTab === "disputes" && <DisputeDesk />}
+        {activeTab === "change-requests" && <OrderRequestInbox audience="finance" />}
+        {activeTab === "cms" && <ArticleCms />}
+        {activeTab === "emergency" && <EmergencyMatchingPanel />}
+        {activeTab === "combos" && <ComboAdministration />}
+      </div>
+    </main>
   );
 }

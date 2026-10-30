@@ -1,309 +1,133 @@
-import { useState } from 'react';
-import {
-  CheckCircle2, XCircle, Eye, Clock, Building2, MapPin,
-  ImageIcon, ChevronRight, AlertTriangle, Loader2
-} from 'lucide-react';
-import { usePendingListings, useApproveListing, useRejectListing } from '../vendor-portal/hooks/useListings';
-import type { ListingDto } from '../../types/listing.types';
+import { useRef, useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Eye, Loader2, RefreshCw } from "lucide-react";
+import { useAuthStore } from "../../store/authStore";
+import axiosClient from "../../services/axiosClient";
+import { Pagination } from "../../components/Pagination";
+import { ServiceDetails } from "../customer/components/ServiceDetails";
+import { listingImagePreview } from "../vendor-portal/components/listingEditModel";
+import { apiError } from "../journey/api";
+import { comboDate, comboPreviewPath } from "../journey/combo/comboTemplateEditorModel";
+import { useModerationQueue } from "./useModerationQueue";
+import { ApprovalConfirmationDialog, type ApprovalConfirmationDetails } from "./ApprovalConfirmationDialog";
+import { MODERATION_TYPES, MODERATION_STATUSES, moderationFilters, moderationSelection, updateModerationFilters, selectModerationRow,
+  moderationStatus, moderationDecision, type ModerationDetail, type ModerationFilters } from "./moderationQueueModel";
 
+const button = "rounded-xl border border-[#dedccf] bg-white px-4 py-2 text-sm font-semibold text-[#233a42] disabled:opacity-50";
+const input = "min-w-0 w-full rounded-xl border border-[#dedccf] bg-white px-3 py-2 text-sm text-[#233a42]";
+const money = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
+const label = (status: string) => MODERATION_STATUSES.find(([value]) => value === status)?.[1] ?? status;
+const kindLabel = (type: string) => MODERATION_TYPES.find(([value]) => value === type)?.[1] ?? type;
+function Gallery({ urls }: { urls: string[] }) {
+  return urls.length > 0 ? <div className="my-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{[...new Set(urls)].map((url, index) => <a key={url} href={listingImagePreview(url, import.meta.env.VITE_API_URL || "")} target="_blank" rel="noreferrer"><img src={listingImagePreview(url, import.meta.env.VITE_API_URL || "")} alt={`Ảnh nội dung đang xem ${index + 1}`} loading="lazy" className="aspect-square w-full rounded-xl object-cover" /></a>)}</div> : <p className="my-4 text-xs text-slate-500">Nội dung này chưa có ảnh.</p>;
+}
+function Content({ detail }: { detail: ModerationDetail }) {
+  const listing = detail.listing; const item = detail.serviceItem; const combo = detail.combo;
+  if (listing) return <>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-semibold">{listing.title}</h3><p className="mt-2 text-xs text-slate-500">{listing.categoryName} · {listing.vendorBrandName}</p></div><Link className={button} to={`/listings/${listing.id}?preview=vendor${listing.latestRevision ? `&revision=${listing.latestRevision.id}` : ""}`} target="_blank" rel="noreferrer">Xem trước đầy đủ</Link></div>
+    <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-xs text-slate-500">Khoảng giá niêm yết</dt><dd>{money(listing.minPrice)} – {money(listing.maxPrice)}</dd></div><div><dt className="text-xs text-slate-500">Khu vực</dt><dd>{listing.location}</dd></div></dl>
+    <h4 className="mt-5 font-semibold">Mô tả</h4><p className="my-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{listing.description}</p>
+    <Gallery urls={listing.media.map(image => image.mediaUrl)} /><ServiceDetails details={listing.serviceDetails} cancellationPolicy={listing.cancellationPolicy} />
+    {listing.latestRevision?.reviewNote && <p className="mt-3 whitespace-pre-wrap text-sm">Phản hồi: {listing.latestRevision.reviewNote}</p>}
+  </>;
+  if (item) return <>
+    <h3 className="text-xl font-semibold">{item.name}</h3><p className="mt-2 text-xs text-slate-500">{item.vendorName} · {item.isActive ? "Đang bật kinh doanh" : "Đang tắt kinh doanh"}</p>
+    <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-xs text-slate-500">Giá / đơn vị</dt><dd>{money(item.basePrice)} / {item.unit}</dd></div><div><dt className="text-xs text-slate-500">Khu vực / sức chứa</dt><dd>{item.regions} · {item.minGuests}–{item.maxGuests} khách</dd></div><div><dt className="text-xs text-slate-500">Số đơn tối đa mỗi ngày</dt><dd>{item.maxBookingsPerDay}</dd></div></dl>
+    <Link className={button + " mt-4 inline-block"} to={`/listings/${item.listingId}?preview=vendor`} target="_blank" rel="noreferrer">Xem ảnh & bài giới thiệu liên quan</Link>
+    <h4 className="mt-5 font-semibold">Biến thể & món kèm</h4><ul className="mt-3 space-y-2 text-sm">{item.variants.map(variant => <li key={variant.id ?? variant.name}>{variant.name} · chênh lệch {money(variant.priceDelta)}</li>)}{item.addOns.map(addOn => <li key={addOn.id ?? addOn.name}>{addOn.name} · {money(addOn.price)}{addOn.perUnit ? "/đơn vị" : "/gói"}</li>)}</ul>
+    {!item.variants.length && !item.addOns.length && <p className="mt-2 text-xs text-slate-500">Không có biến thể hoặc món kèm.</p>}
+    <h4 className="mt-5 font-semibold">Điều kiện hủy</h4><p className="mt-2 whitespace-pre-wrap text-sm">{item.cancellationPolicy}</p>{item.reviewNote && <p className="mt-3 whitespace-pre-wrap text-sm">Phản hồi: {item.reviewNote}</p>}
+  </>;
+  if (combo) return <>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-semibold">{combo.name}</h3><p className="mt-2 text-xs text-slate-500">{combo.ownerVendorName || "Chưa gắn NCC"} · {combo.style} · {combo.region || "Chưa ghi khu vực"}</p></div><Link className={button} to={comboPreviewPath(combo.id, combo.latestRevision?.id)} target="_blank" rel="noreferrer">Xem trước đầy đủ</Link></div>
+    <Gallery urls={[combo.imageUrl, ...(combo.content?.galleryUrls ?? [])].filter((url): url is string => !!url)} />
+    <p className="whitespace-pre-wrap text-sm leading-relaxed">{combo.description}</p>
+    <p className="mt-3 text-xs text-slate-500">Thời hạn: {combo.content?.validFromUtc ? comboDate(combo.content.validFromUtc) : "Không đặt ngày bắt đầu"} → {combo.content?.validUntilUtc ? comboDate(combo.content.validUntilUtc) : "Không đặt ngày kết thúc"}</p>
+    <h4 className="mt-5 font-semibold">Các hạng mục ({combo.items.length})</h4><ul className="mt-3 space-y-3">{combo.items.map(slot => { const option = combo.previewOptions?.find(option => option.serviceItemId === slot.serviceItemId); return <li key={slot.categoryId} className="rounded-xl border border-[#dedccf] p-3 text-sm"><b>{option?.title || "Dịch vụ không còn khả dụng"}</b><p className="mt-1 text-xs text-slate-500">{slot.isOptional ? "Tùy chọn" : "Bao gồm"} · {option ? `${money(option.price)}/${option.unit}` : slot.serviceItemId} · {slot.allowedItemIds?.length ?? 0} lựa chọn thay thế</p></li>; })}</ul>
+    <h4 className="mt-5 font-semibold">Điều khoản</h4><p className="mt-2 whitespace-pre-wrap text-sm">{combo.content?.terms || "Chưa ghi điều khoản bổ sung."}</p>{combo.latestRevision?.reviewNote && <p className="mt-3 whitespace-pre-wrap text-sm">Phản hồi: {combo.latestRevision.reviewNote}</p>}
+  </>;
+  return <p role="alert">Không đọc được nội dung đang chọn. Hãy tải lại trước khi duyệt.</p>;
+}
+export function ReviewDetail({ detail, onRefresh, onDone }: { detail: ModerationDetail; onRefresh: () => void; onDone: () => void }) {
+  const qc = useQueryClient(); const [note, setNote] = useState(""); const [validation, setValidation] = useState("");
+  const [approval, setApproval] = useState<{ request: ReturnType<typeof moderationDecision>; contentSignature: string; details: ApprovalConfirmationDetails } | null>(null);
+  const reviewLock = useRef(false);
+  const review = useMutation({ mutationFn: async (request: ReturnType<typeof moderationDecision>) => axiosClient.post(request.url, request.body, { params: request.params }),
+    onSuccess: async () => { setApproval(null); onDone(); await qc.invalidateQueries(); },
+    onSettled: () => { reviewLock.current = false; } });
+  const pending = moderationStatus(detail) === "Pending";
+  const decide = (approve: boolean) => {
+    if (review.isPending || reviewLock.current) return;
+    setValidation("");
+    try {
+      const request = moderationDecision(detail, approve, note);
+      if (approve) {
+        const revision = detail.listing?.latestRevision ?? detail.combo?.latestRevision;
+        review.reset();
+        setApproval({ request, contentSignature: JSON.stringify(detail), details: {
+          typeLabel: kindLabel(detail.type),
+          title: detail.listing?.title ?? detail.serviceItem?.name ?? detail.combo?.latestRevision?.proposal?.name ?? detail.combo?.name ?? "Nội dung đang chọn",
+          vendorName: detail.listing?.vendorBrandName ?? detail.serviceItem?.vendorName ?? detail.combo?.ownerVendorName,
+          versionLabel: revision ? `Phiên bản #${revision.sequence}` : "Nội dung hiện tại đang xem",
+        } });
+        return;
+      }
+      reviewLock.current = true;
+      review.mutate(request);
+    } catch (error) { setValidation(error instanceof Error ? error.message : "Nội dung kiểm duyệt không hợp lệ."); }
+  };
+  const confirmApproval = () => {
+    if (!approval || review.isPending || reviewLock.current) return;
+    try {
+      const current = moderationDecision(detail, true, note);
+      if (JSON.stringify(detail) !== approval.contentSignature || JSON.stringify(current) !== JSON.stringify(approval.request)) throw new Error("Nội dung hoặc ghi chú đã thay đổi. Hãy xem lại đúng phiên bản trước khi duyệt.");
+      reviewLock.current = true;
+      review.mutate(approval.request);
+    } catch (error) {
+      setApproval(null);
+      setValidation(error instanceof Error ? error.message : "Hãy tải lại đúng phiên bản trước khi duyệt.");
+    }
+  };
+  return <article className="min-w-0 rounded-2xl border border-[#dedccf] bg-white p-4 text-[#233a42] [overflow-wrap:anywhere] sm:p-6" aria-label="Nội dung phiên bản được chọn">
+    <p className="mb-4 text-xs text-slate-500">{kindLabel(detail.type)} · {label(moderationStatus(detail))}</p><Content detail={detail} />
+    <p role="note" className="mt-5 rounded-xl bg-[#fcf6ea] p-3 text-xs leading-relaxed">Đang xem nội dung riêng của phiên bản được chọn. Duyệt nội dung không thay đổi hoa hồng, giao dịch đã chốt hoặc tự bật lại trạng thái kinh doanh.</p>
+    {pending && <fieldset disabled={review.isPending} className="mt-5 min-w-0 border-t border-slate-100 pt-4"><legend className="sr-only">Quyết định kiểm duyệt</legend>
+      <label className="block text-sm font-semibold" htmlFor="moderation-review-note">Ghi chú / lý do từ chối (bắt buộc khi từ chối)</label><textarea id="moderation-review-note" className={input + " mt-2"} rows={3} maxLength={detail.type === "listing" ? 1000 : 2000} value={note} onChange={event => setNote(event.target.value)} />
+      <p className="mt-2 text-xs text-slate-500">Chỉ áp dụng cho đúng phiên bản đang xem. Nếu NCC đã chỉnh sửa, máy chủ sẽ yêu cầu tải lại.</p>
+      <div className="mt-4 flex flex-wrap justify-end gap-3"><button className={button} disabled={!note.trim()} onClick={() => decide(false)}>Từ chối kèm lý do</button><button className={button + " !bg-[#e38c82] !text-[#233a42]"} onClick={() => decide(true)}>{review.isPending ? "Đang gửi..." : "Phê duyệt phiên bản"}</button></div>
+    </fieldset>}
+    {(validation || review.isError) && <div role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700"><p>{validation || apiError(review.error)}</p><button className={button + " mt-3"} disabled={review.isPending} onClick={onRefresh}>Tải lại đúng phiên bản</button></div>}
+    {approval && <ApprovalConfirmationDialog details={approval.details} busy={review.isPending} error={review.isError ? apiError(review.error) : undefined}
+      onCancel={() => { if (!review.isPending && !reviewLock.current) setApproval(null); }} onConfirm={confirmApproval} />}
+  </article>;
+}
 export default function ModerationQueue() {
-  const { data: listings = [], isLoading } = usePendingListings();
-  const approveMutation = useApproveListing();
-  const rejectMutation = useRejectListing();
-
-  const [selectedListing, setSelectedListing] = useState<ListingDto | null>(null);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
-
-  const handleApprove = async (id: string, title: string) => {
-    if (!confirm(`Duyệt bài đăng "${title}"?\n\nBài sẽ chuyển sang trạng thái Active và hiển thị công khai.`)) return;
-    await approveMutation.mutateAsync(id);
-    if (selectedListing?.id === id) setSelectedListing(null);
-  };
-
-  const openRejectModal = (id: string) => {
-    setRejectTarget(id);
-    setRejectReason('');
-    setShowRejectModal(true);
-  };
-
-  const handleReject = async () => {
-    if (!rejectTarget || !rejectReason.trim()) return;
-    await rejectMutation.mutateAsync({ id: rejectTarget, reason: rejectReason });
-    setShowRejectModal(false);
-    setRejectTarget(null);
-    if (selectedListing?.id === rejectTarget) setSelectedListing(null);
-  };
-
-  // Tính giờ còn lại (SLA 24h từ lúc nộp)
-  const getSlaInfo = (listing: ListingDto) => {
-    const submittedAt = new Date(listing.createdAt).getTime();
-    const deadline = submittedAt + 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const hoursLeft = Math.max(0, Math.floor((deadline - now) / (1000 * 60 * 60)));
-    const isUrgent = hoursLeft <= 4;
-    return { hoursLeft, isUrgent };
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-48 text-slate-500">
-        <Loader2 className="w-5 h-5 animate-spin mr-2 text-rose-400" />
-        Đang tải hàng đợi kiểm duyệt...
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex gap-6 h-full">
-      {/* Left panel — list */}
-      <div className="w-full max-w-sm flex-shrink-0 space-y-3">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Hàng Đợi Kiểm Duyệt</h2>
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
-            {listings.length} bài chờ
-          </span>
-        </div>
-
-        {listings.length === 0 && (
-          <div className="text-center py-16 bg-emerald-50 rounded-2xl border border-emerald-200">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-            <p className="font-semibold text-emerald-700">Hàng đợi trống!</p>
-            <p className="text-sm text-emerald-600 mt-1">Tất cả bài đăng đã được xử lý.</p>
-          </div>
-        )}
-
-        {listings.map((listing: ListingDto) => {
-          const { hoursLeft, isUrgent } = getSlaInfo(listing);
-          return (
-            <button
-              key={listing.id}
-              onClick={() => setSelectedListing(listing)}
-              className={`w-full text-left p-4 rounded-xl border transition ${
-                selectedListing?.id === listing.id
-                  ? 'border-rose-300 bg-rose-50 shadow-sm'
-                  : 'border-slate-200 bg-white hover:border-rose-200 hover:shadow-sm'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-slate-900 line-clamp-2">{listing.title}</p>
-                  <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
-                    <Building2 className="w-3 h-3" />
-                    <span>{listing.vendorBrandName}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
-                    <MapPin className="w-3 h-3" />
-                    <span>{listing.location}</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 mt-1" />
-              </div>
-
-              {/* SLA indicator */}
-              <div className={`mt-3 flex items-center gap-1.5 text-xs font-semibold ${isUrgent ? 'text-red-600' : 'text-amber-600'}`}>
-                {isUrgent ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                <span>Còn {hoursLeft}h để xử lý (SLA 24h)</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Right panel — detail */}
-      <div className="flex-1 min-w-0">
-        {!selectedListing ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 py-24 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-            <Eye className="w-10 h-10 mb-3 text-slate-300" />
-            <p className="font-medium">Chọn một bài đăng để xem chi tiết</p>
-            <p className="text-sm mt-1">Kiểm tra nội dung trước khi duyệt hoặc từ chối</p>
-          </div>
-        ) : (
-          <ListingDetailPanel
-            listing={selectedListing}
-            onApprove={() => handleApprove(selectedListing.id, selectedListing.title)}
-            onReject={() => openRejectModal(selectedListing.id)}
-            isApproving={approveMutation.isPending}
-            isRejecting={rejectMutation.isPending}
-          />
-        )}
-      </div>
-
-      {/* Reject modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900">Từ Chối Bài Đăng</h3>
-                <p className="text-xs text-slate-500">Lý do sẽ được thông báo đến nhà cung cấp (BR-008)</p>
-              </div>
-            </div>
-
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Lý do từ chối <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={rejectReason}
-              onChange={e => setRejectReason(e.target.value)}
-              rows={4}
-              placeholder="Vd: Hình ảnh bị mờ, thiếu thông tin giá, nội dung không phù hợp..."
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none"
-            />
-            <p className="text-xs text-slate-400 mt-1">{rejectReason.length}/1000 ký tự</p>
-
-            <div className="flex justify-end gap-3 mt-5">
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="px-4 py-2 text-sm text-slate-600 rounded-xl hover:bg-slate-100 transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleReject}
-                disabled={!rejectReason.trim() || rejectMutation.isPending}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition disabled:opacity-60"
-              >
-                {rejectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                Xác Nhận Từ Chối
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+  const [params, setParams] = useSearchParams(); const { user, token } = useAuthStore();
+  const filters = moderationFilters(params); const selected = moderationSelection(params); const query = useModerationQueue(filters);
+  const [notice, setNotice] = useState("");
+  const detail = useQuery({ queryKey: ["moderation-detail", user?.id, user?.role, selected?.type, selected?.id, selected?.revisionId], enabled: !!token && !!selected && ["Moderator", "SuperAdmin"].includes(user?.role ?? ""),
+    retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false,
+    queryFn: async () => (await axiosClient.get<ModerationDetail>(`/api/moderation-queue/${selected!.type}/${selected!.id}`, { params: { revisionId: selected!.revisionId } })).data });
+  const update = (patch: Partial<ModerationFilters>) => { setNotice(""); setParams(updateModerationFilters(params, patch)); };
+  const refreshDetail = () => { if (!selected) return; const next = new URLSearchParams(params); next.delete("reviewRevision"); setParams(next, { replace: true }); void detail.refetch(); void query.refetch(); };
+  const done = () => { const next = new URLSearchParams(params); for (const key of ["reviewType", "reviewId", "reviewRevision"]) next.delete(key); setParams(next, { replace: true }); setNotice("Đã lưu quyết định và thông báo tới đúng NCC. Các dữ liệu tài chính được giữ nguyên."); };
+  const version = detail.data?.serviceItem?.reviewVersion ?? detail.data?.listing?.latestRevision?.id ?? detail.data?.combo?.latestRevision?.id ?? "legacy";
+  return <section aria-label="Hàng chờ kiểm duyệt thống nhất" className="min-w-0">
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-[#233a42]">Hàng chờ nội dung</h2><p className="mt-1 text-xs text-slate-500">Bài giới thiệu, dịch vụ thành phần và combo · {query.data?.pendingCount ?? "…"} nội dung chờ duyệt.</p></div><button className={button} onClick={() => { void query.refetch(); if (selected) void detail.refetch(); }}>Tải lại hàng chờ</button></div>
+    <div className="mb-5 grid min-w-0 gap-3 rounded-2xl border border-[#dedccf] bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr_auto]">
+      <label className="min-w-0 text-xs font-semibold text-slate-600">Loại nội dung<select aria-label="Loại nội dung kiểm duyệt" className={input + " mt-2"} value={filters.type} onChange={event => update({ type: event.target.value })}>{MODERATION_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
+      <label className="min-w-0 text-xs font-semibold text-slate-600">Trạng thái<select aria-label="Trạng thái kiểm duyệt" className={input + " mt-2"} value={filters.status} onChange={event => update({ status: event.target.value })}>{MODERATION_STATUSES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
+      <form key={filters.search} className="flex min-w-0 items-end gap-2" onSubmit={event => { event.preventDefault(); update({ search: String(new FormData(event.currentTarget).get("search") ?? "") }); }}><label className="min-w-0 flex-1 text-xs font-semibold text-slate-600">Tên đề xuất / nhà cung cấp<input name="search" className={input + " mt-2"} defaultValue={filters.search} maxLength={150} placeholder="Tìm trong nội dung đề xuất mới nhất" /></label><button className={button}>Tìm</button></form>
+      <button className={button + " self-end"} onClick={() => update({ type: "all", status: "Pending", search: "", page: 1, pageSize: 10 })}>Xóa bộ lọc</button>
     </div>
-  );
-}
-
-// ─── Detail Panel ─────────────────────────────────────────────────────────────
-
-interface DetailPanelProps {
-  listing: ListingDto;
-  onApprove: () => void;
-  onReject: () => void;
-  isApproving: boolean;
-  isRejecting: boolean;
-}
-
-function ListingDetailPanel({ listing, onApprove, onReject, isApproving, isRejecting }: DetailPanelProps) {
-  const submittedAt = new Date(listing.createdAt);
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden h-full flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-slate-100">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">{listing.title}</h3>
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-600">
-              <span className="flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5" /> {listing.vendorBrandName}
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" /> {listing.location}
-              </span>
-              <span className="text-xs text-slate-400">
-                Nộp lúc: {submittedAt.toLocaleString('vi-VN')}
-              </span>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
-              ⏳ Chờ Duyệt
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-5">
-        {/* Thông tin giá */}
-        <div className="grid grid-cols-3 gap-4">
-          <InfoBox label="Ngành Hàng" value={listing.categoryName} />
-          <InfoBox
-            label="Giá Tối Thiểu"
-            value={`${listing.minPrice.toLocaleString('vi-VN')}đ`}
-            highlight
-          />
-          <InfoBox
-            label="Giá Tối Đa"
-            value={`${listing.maxPrice.toLocaleString('vi-VN')}đ`}
-            highlight
-          />
-        </div>
-
-        {/* Mô tả */}
-        <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mô Tả Chi Tiết</p>
-          <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-            {listing.description || '(Không có mô tả)'}
-          </div>
-        </div>
-
-        {/* Ảnh portfolio */}
-        <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Album Portfolio ({listing.media.length} ảnh)
-          </p>
-          {listing.media.length === 0 ? (
-            <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-50 rounded-xl p-4">
-              <ImageIcon className="w-4 h-4" />
-              <span>Chưa có ảnh nào được tải lên</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 gap-2">
-              {listing.media.map((m: import('../../types/listing.types').ListingMediaDto) => (
-                <div key={m.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 group">
-                  <img src={m.mediaUrl} alt="" className="w-full h-full object-cover" />
-                  {m.isFeatured && (
-                    <span className="absolute top-1 left-1 text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-bold">
-                      Featured
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Action footer */}
-      <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
-        <p className="text-xs text-slate-500">
-          Xem xét kỹ nội dung trước khi duyệt. Lý do từ chối sẽ được gửi ngay cho NCC.
-        </p>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <button
-            onClick={onReject}
-            disabled={isRejecting || isApproving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 bg-white hover:bg-red-50 text-red-600 text-sm font-semibold transition disabled:opacity-60"
-          >
-            {isRejecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-            Từ Chối
-          </button>
-          <button
-            onClick={onApprove}
-            disabled={isApproving || isRejecting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold shadow-sm transition disabled:opacity-60"
-          >
-            {isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Phê Duyệt Bài Đăng
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoBox({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="bg-slate-50 rounded-xl p-3">
-      <p className="text-xs text-slate-500 font-semibold mb-1">{label}</p>
-      <p className={`text-sm font-bold ${highlight ? 'text-rose-700' : 'text-slate-900'}`}>{value}</p>
-    </div>
-  );
+    {notice && <p role="status" className="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</p>}
+    {query.isPending ? <p role="status" className="flex items-center gap-2 p-8"><Loader2 className="animate-spin" size={18} />Đang tải hàng chờ...</p> : query.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(query.error)}</p><button className={button + " mt-3"} onClick={() => void query.refetch()}><RefreshCw size={16} className="mr-2 inline" />Thử lại</button></div> : <>
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[300px_minmax(0,1fr)]"><div className="min-w-0 space-y-3">
+        {!query.data?.items.length && <div className="rounded-2xl border border-[#dedccf] bg-white p-6 text-center text-slate-500"><CheckCircle2 className="mx-auto mb-3" /><p>Không có nội dung phù hợp bộ lọc.</p></div>}
+        {query.data?.items.map(row => <button key={`${row.type}:${row.id}:${row.revisionId ?? row.changedAt}`} className={`w-full rounded-2xl border p-4 text-left [overflow-wrap:anywhere] ${selected?.id === row.id && selected.type === row.type ? "border-[#e38c82] bg-[#fcf6ea]" : "border-[#dedccf] bg-white"}`} onClick={() => { setNotice(""); setParams(selectModerationRow(params, row)); }}><span className="block text-xs text-slate-500">{kindLabel(row.type)} · {label(row.status)}</span><b className="mt-2 block text-sm text-[#233a42]">{row.title}</b><span className="mt-2 block text-xs text-slate-500">{row.vendorName}</span><span className="mt-2 block text-xs text-slate-500">{row.revisionSequence ? `Phiên bản #${row.revisionSequence}` : "Nội dung hiện tại"} · {comboDate(row.changedAt)}</span></button>)}
+      </div><div className="min-w-0">{!selected ? <div className="rounded-2xl border border-dashed border-[#dedccf] p-10 text-center text-slate-500"><Eye className="mx-auto mb-3" /><p>Chọn nội dung để xem đúng đề xuất, ảnh và điều khoản trước khi duyệt.</p></div> : detail.isPending ? <p role="status" className="p-8">Đang tải phiên bản được chọn...</p> : detail.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(detail.error)}</p><button className={button + " mt-3"} onClick={refreshDetail}>Tải lại đúng phiên bản</button></div> : detail.data && <ReviewDetail key={`${detail.data.type}:${detail.data.id}:${version}`} detail={detail.data} onRefresh={refreshDetail} onDone={done} />}</div></div>
+      {query.data && <Pagination page={query.data.page} pageSize={query.data.pageSize} totalCount={query.data.totalCount} isLoading={query.isFetching} onPageChange={page => update({ page })} label="Phân trang hàng chờ kiểm duyệt" />}
+    </>}
+  </section>;
 }

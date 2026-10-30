@@ -84,7 +84,8 @@ public class GetLeadDetailQueryHandler : IRequestHandler<GetLeadDetailQuery, Lea
                 DiscountPercent: lead.Voucher.DiscountPercent,
                 Status: lead.Voucher.Status.ToString(),
                 ExpiresAt: lead.Voucher.ExpiresAt
-            ) : null
+            ) : null,
+            ComboOrderId: lead.ComboOrderId
         );
     }
 }

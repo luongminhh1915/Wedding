@@ -1,4 +1,5 @@
 export interface BudgetItem {
+  owner?: string; weddingProfileId?: string; contractId?: string;
   id: string;
   itemName: string;
   plannedCost: number;
@@ -17,6 +18,7 @@ export interface BudgetSummary {
 }
 
 export interface SaveBudgetItemPayload {
+  owner?: string;
   id?: string;
   itemName: string;
   plannedCost: number;
@@ -25,6 +27,7 @@ export interface SaveBudgetItemPayload {
 }
 
 export interface ChecklistTask {
+  owner?: string; weddingProfileId?: string; contractId?: string;
   id: string;
   title: string;
   milestone: string;
@@ -35,6 +38,7 @@ export interface ChecklistTask {
 }
 
 export interface SaveChecklistTaskPayload {
+  owner?: string;
   id?: string;
   title: string;
   milestone: string;

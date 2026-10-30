@@ -20,10 +20,10 @@ public class RegisterCustomerCommandValidator : AbstractValidator<RegisterCustom
 {
     public RegisterCustomerCommandValidator()
     {
-        RuleFor(x => x.FullName).NotEmpty().WithMessage("Họ và tên không được để trống.").MaximumLength(150);
-        RuleFor(x => x.Email).NotEmpty().WithMessage("Email không được để trống.").EmailAddress().WithMessage("Email không hợp lệ.");
-        RuleFor(x => x.PhoneNumber).NotEmpty().WithMessage("Số điện thoại không được để trống.").Matches(@"^0\d{9}$").WithMessage("Số điện thoại không đúng định dạng (10 chữ số bắt đầu bằng 0).");
-        RuleFor(x => x.Password).NotEmpty().WithMessage("Mật khẩu không được để trống.").MinimumLength(6).WithMessage("Mật khẩu tối thiểu 6 ký tự.");
+        RuleFor(x => x.FullName).Must(value => AuthInputRules.RequiredText(value, 150)).WithMessage("Họ và tên cần từ 1 đến 150 ký tự.");
+        RuleFor(x => x.Email).ValidEmail();
+        RuleFor(x => x.PhoneNumber).Phone();
+        RuleFor(x => x.Password).NewPassword();
     }
 }
 
@@ -45,22 +45,23 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
 
     public async Task<AuthResponseDto> Handle(RegisterCustomerCommand request, CancellationToken cancellationToken)
     {
-        var emailLower = request.Email.Trim().ToLowerInvariant();
-        var exists = await _context.Users.AnyAsync(u => u.Email == emailLower, cancellationToken);
-        if (exists)
-        {
-            throw new DomainException("Email này đã được sử dụng trên hệ thống.");
-        }
-
+        var validation = new RegisterCustomerCommandValidator().Validate(request);
+        if (!validation.IsValid) throw new DomainException(validation.Errors[0].ErrorMessage);
+        var emailLower = AuthInputRules.Email(request.Email);
         var passwordHash = _passwordHasher.Hash(request.Password);
-        var user = User.Create(request.FullName, emailLower, request.PhoneNumber, passwordHash, UserRole.Customer);
+        return await _context.ExecuteSerializableAsync(async ct =>
+        {
+            if (await _context.Users.AnyAsync(u => u.Email == emailLower, ct))
+                throw new DomainException("Email này đã được sử dụng trên hệ thống.");
+            var user = User.Create(request.FullName, emailLower, request.PhoneNumber, passwordHash, UserRole.Customer);
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync(cancellationToken);
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync(ct);
 
-        var token = _jwtProvider.GenerateToken(user);
-        var userDto = new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber, user.Role.ToString(), user.AvatarUrl, null, null);
+            var token = _jwtProvider.GenerateToken(user);
+            var userDto = new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber, user.Role.ToString(), user.AvatarUrl, null, null);
 
-        return new AuthResponseDto(token, userDto);
+            return new AuthResponseDto(token, userDto);
+        }, cancellationToken);
     }
 }

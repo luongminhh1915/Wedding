@@ -17,6 +17,7 @@ export interface Lead {
   vendorBrandName: string;
   listingId?: string;
   listingTitle?: string;
+  comboOrderId?: string | null;
   phoneNumber: string; // BR-002: Bị mask dạng 0987***123 trừ khi khách mở khóa
   isPhoneUnlocked: boolean;
   weddingDate?: string;
