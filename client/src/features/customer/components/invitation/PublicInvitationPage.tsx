@@ -76,14 +76,14 @@ export default function PublicInvitationPage() {
   };
   if (query.isLoading)
     return (
-      <main className="min-h-screen flex flex-col justify-center items-center bg-[#f2efe4]">
+      <main className="min-h-screen flex flex-col justify-center items-center bg-[#fcf6ea]">
         <Loader2 className="animate-spin" />
         <p className="mt-3 text-sm">Đang mở thiệp cưới...</p>
       </main>
     );
   if (query.isError || !i)
     return (
-      <main className="min-h-screen flex flex-col justify-center items-center text-center p-6 bg-[#f2efe4] text-[#25334c]">
+      <main className="min-h-screen flex flex-col justify-center items-center text-center p-6 bg-[#fcf6ea] text-[#233a42]">
         <Heart size={40} />
         <h1 className="text-2xl font-bold my-4">Thiệp chưa được chia sẻ</h1>
         <p>
@@ -100,7 +100,7 @@ export default function PublicInvitationPage() {
     <main className="min-h-screen py-0 md:py-10 bg-[#e9e6db]">
       <InvitationView template={template} invitation={i}>
         <section
-          className="bg-white text-[#25334c] rounded-3xl p-5 md:p-7 font-sans"
+          className="bg-white text-[#233a42] rounded-3xl p-5 md:p-7 font-sans"
           aria-label="RSVP"
         >
           <h3 className="text-2xl text-center font-serif mb-2">
@@ -230,7 +230,7 @@ export default function PublicInvitationPage() {
               </label>
               <button
                 disabled={submit.isPending}
-                className="w-full rounded-xl py-3 bg-[#25334c] text-[#f2efe4] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                className="w-full rounded-xl py-3 bg-[#e38c82] text-[#233a42] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <Send size={14} />
                 {submit.isPending
@@ -250,7 +250,7 @@ export default function PublicInvitationPage() {
           )}
         </section>
         {content.sections?.wishes !== false && i.recentWishes.length > 0 && (
-          <section className="rounded-3xl p-5 bg-white text-[#25334c]">
+          <section className="rounded-3xl p-5 bg-white text-[#233a42]">
             <h3 className="text-xl text-center mb-4">
               {en ? "Guestbook" : "Sổ lưu bút"}
             </h3>

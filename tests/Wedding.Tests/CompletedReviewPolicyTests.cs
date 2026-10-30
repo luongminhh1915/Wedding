@@ -133,18 +133,20 @@ public class CompletedReviewPolicyTests
         var historical = Review.Create(null, f.Listing.Id, f.Customer.Id, f.Vendor.Id, 2, Content, null, false); historical.Approve();
         var completed = await f.AddContract(ContractStatus.Completed, f.OtherCustomer);
         var verified = Review.Create(completed.Id, f.Listing.Id, f.OtherCustomer.Id, f.Vendor.Id, 5, Content, null, true); verified.Approve();
-        f.Db.Reviews.AddRange(historical, verified); await f.Db.SaveChangesAsync();
+        var shopReview = Review.CreateShop(completed.Id, null, f.OtherCustomer.Id, f.Vendor.Id, 4, Content, null); shopReview.Approve();
+        f.Db.Reviews.AddRange(historical, verified, shopReview); await f.Db.SaveChangesAsync();
         await ReviewRules.RefreshVendorAsync(f.Db, f.Vendor.Id, default); await f.Db.SaveChangesAsync();
         var previousVersion = historical.UpdatedAt; var previousTime = historical.CreatedAt;
-        Assert.Equal(4m, f.Vendor.RatingAvg); Assert.Equal(2, f.Vendor.TotalReviews);
-        await f.AddContract(ContractStatus.Completed);
-        Assert.Empty(await f.Eligible());
-        await Assert.ThrowsAsync<DomainException>(() => f.Submit(null));
+        Assert.Equal(4m, f.Vendor.RatingAvg); Assert.Equal(1, f.Vendor.TotalReviews);
+        var newContract = await f.AddContract(ContractStatus.Completed);
+        Assert.Equal(newContract.Id, Assert.Single(await f.Eligible()).ContractId);
+        var newReview = await f.Submit(newContract.Id);
+        Assert.Equal(ReviewStatus.Pending.ToString(), newReview.Status);
         f.Db.ChangeTracker.Clear();
         var old = await f.Db.Reviews.AsNoTracking().SingleAsync(review => review.Id == historical.Id);
         Assert.False(old.IsVerifiedBuyer); Assert.Null(old.BookingContractId); Assert.Equal(ReviewStatus.Approved, old.Status);
         Assert.Equal(Content, old.Content); Assert.Equal(previousTime, old.CreatedAt); Assert.Equal(previousVersion, old.UpdatedAt);
-        var vendor = await f.Db.Vendors.AsNoTracking().SingleAsync(); Assert.Equal(4m, vendor.RatingAvg); Assert.Equal(2, vendor.TotalReviews);
+        var vendor = await f.Db.Vendors.AsNoTracking().SingleAsync(); Assert.Equal(4m, vendor.RatingAvg); Assert.Equal(1, vendor.TotalReviews);
         var reviews = await new GetListingReviewsQueryHandler(f.Db).Handle(new(ListingId: f.Listing.Id), default);
         Assert.Equal(2, reviews.Count); Assert.Contains(reviews, review => review.Id == historical.Id && !review.IsVerifiedBuyer);
     }

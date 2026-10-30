@@ -42,8 +42,11 @@ try {
         throw 'ZIP configuration must be fail-closed SQL Server without seeding, migration or secrets.'
     }
     $launcher = [xml](Read-ZipText 'web.config')
-    $iisApp = $launcher.configuration.location.'system.webServer'.aspNetCore
+    $webServer = $launcher.configuration.location.'system.webServer'
+    $iisApp = $webServer.aspNetCore
     if ($iisApp.processPath -ne 'dotnet' -or $iisApp.arguments -ne '.\Wedding.WebApi.dll' -or $iisApp.stdoutLogEnabled -ne 'false') { throw 'Unexpected IIS launcher.' }
+    $auth = $webServer.security.authentication
+    if ($auth.anonymousAuthentication.enabled -ne 'true' -or $auth.basicAuthentication.enabled -ne 'false') { throw 'IIS launcher must allow public anonymous access and disable Basic authentication.' }
     $variables = @($iisApp.environmentVariables.environmentVariable)
     if ($variables.Count -ne 1 -or $variables[0].name -ne 'ASPNETCORE_ENVIRONMENT' -or $variables[0].value -ne 'Production') { throw 'IIS launcher must contain Production only; no credentials.' }
     $runtime = Read-ZipText 'Wedding.WebApi.runtimeconfig.json' | ConvertFrom-Json

@@ -12,6 +12,8 @@ public class Vendor : BaseEntity
     public string Hotline { get; private set; } = string.Empty;
     public string? Address { get; private set; }
     public string City { get; private set; } = string.Empty;
+    // Null on legacy rows: use City for display, without rewriting address or service coverage.
+    public string? OperatingRegions { get; private set; }
     public string? Bio { get; private set; }
     public string? LogoUrl { get; private set; }
     public string? CoverImageUrl { get; private set; }
@@ -58,12 +60,17 @@ public class Vendor : BaseEntity
         return vendor;
     }
 
+    /// <summary>Admin can prepare a shop, but cannot record the Vendor's own policy acknowledgement.</summary>
+    public static Vendor CreateForAdministration(Guid userId, string brandName, string slug,
+        string contactPerson, string hotline, string city)
+        => CreateCore(userId, brandName, slug, contactPerson, hotline, city, 0m, allowMissingHotline: true);
+
     private static Vendor CreateCore(Guid userId, string brandName, string slug, string contactPerson,
-        string hotline, string city, decimal commissionRate)
+        string hotline, string city, decimal commissionRate, bool allowMissingHotline = false)
     {
         if (string.IsNullOrWhiteSpace(brandName))
             throw new DomainException("Tên thương hiệu không được để trống.");
-        if (string.IsNullOrWhiteSpace(hotline))
+        if (!allowMissingHotline && string.IsNullOrWhiteSpace(hotline))
             throw new DomainException("Hotline đối tác không được để trống.");
         return new Vendor
         {
@@ -72,7 +79,7 @@ public class Vendor : BaseEntity
             BrandName = brandName.Trim(),
             Slug = slug.Trim().ToLowerInvariant(),
             ContactPerson = contactPerson.Trim(),
-            Hotline = hotline.Trim(),
+            Hotline = hotline?.Trim() ?? "",
             City = city.Trim(),
             CommissionRate = commissionRate,
             RatingAvg = 0m,
@@ -94,6 +101,14 @@ public class Vendor : BaseEntity
         Bio = bio;
         LogoUrl = logoUrl;
         CoverImageUrl = coverImageUrl;
+        SetUpdated();
+    }
+
+    public void SetOperatingAreas(IReadOnlyList<string>? operatingRegions, bool nationwide, string? legacyCity = null)
+    {
+        var normalized = OperatingAreaRules.Normalize(legacyCity ?? City, operatingRegions, nationwide);
+        if (OperatingRegions == normalized.StorageValue) return;
+        OperatingRegions = normalized.StorageValue;
         SetUpdated();
     }
 

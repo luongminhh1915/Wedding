@@ -8,6 +8,7 @@ import {
   type OrderJourneyItem,
 } from "../../journey/customerOrders/customerOrderApi";
 import { orderCapability } from "../../journey/customerOrders/orderPresentation";
+import { orderReadBlockedMessage } from "../../journey/customerOrders/OrderReadError";
 
 export type CustomerOrderIntent =
   | "edit"
@@ -78,12 +79,14 @@ export function CustomerOrderActionDialog({
   lead,
   onClose,
   onSuccess,
+  readBlocked = false,
 }: {
   item: OrderJourneyItem;
   intent: CustomerOrderIntent;
   lead?: Lead;
   onClose: () => void;
   onSuccess?: () => void;
+  readBlocked?: boolean;
 }) {
   const id = useId();
   const action = useCustomerOrderAction();
@@ -111,7 +114,7 @@ export function CustomerOrderActionDialog({
         Number(form.estimatedBudget) <= 100000000000));
   async function submit() {
     setValidation("");
-    if (!orderCapability(item.capabilities, copy.capability)) {
+    if (readBlocked || !orderCapability(item.capabilities, copy.capability)) {
       setValidation("Thao tác không còn được phép. Hãy đóng và tải lại hồ sơ.");
       return;
     }
@@ -173,6 +176,7 @@ export function CustomerOrderActionDialog({
       onClose={onClose}
       busy={action.isPending}
       confirmDisabled={
+        readBlocked || !orderCapability(item.capabilities, copy.capability) ||
         (!noReason && reason.trim().length < 10) ||
         (intent === "edit" && !validLeadForm)
       }
@@ -181,7 +185,7 @@ export function CustomerOrderActionDialog({
         intent === "stop-pending" ||
         intent === "cancellation"
       }
-      error={validation || (action.isError ? apiError(action.error) : "")}
+      error={readBlocked ? orderReadBlockedMessage : validation || (action.isError ? apiError(action.error) : "")}
     >
       <div className="customer-order-form">
         {intent === "edit" && (

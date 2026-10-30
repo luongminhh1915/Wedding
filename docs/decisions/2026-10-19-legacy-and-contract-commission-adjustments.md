@@ -1,5 +1,7 @@
 # Quyết định: Hoa hồng NCC cũ và điều chỉnh riêng hợp đồng
 
+**Cập nhật21/10 — PARTIALLY SUPERSEDED:** chỉ yêu cầu chọn BusinessGroup lúc signup và dùng membership làm phạm vi tạo dịch vụ được thay bởi [decision chọn loại dịch vụ trực tiếp](2026-10-21-service-category-without-vendor-membership.md). Nội dung bên dưới giữ như lịch sử; rate cũ, snapshot, basis/activation/adjustment không bị thay thế.
+
 Ngày xác nhận: 19/10/2026 (Asia/Saigon). Nguồn: yêu cầu tiếp tục triển khai do người dùng gửi ngày 19/10/2026, Phần 2. Đây là quyết định nghiệp vụ đã được người dùng xác nhận, bổ sung Master Prompt; không phải cơ chế tài chính mới đã triển khai đầy đủ.
 
 ## 1. Quyết định đã chốt

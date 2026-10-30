@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiError } from "../api";
 import { useCatalog, useComboMutation, useComboTemplates, useRules, type CatalogItem, type CatalogTemplate } from "../comboApi";
@@ -8,15 +8,41 @@ import { vnd } from "../format";
 import { ComboLifecycleCard } from "../combo/ComboLifecycleCard";
 import { ComboTemplateEditor } from "../combo/ComboTemplateEditor";
 import { serviceItemReviewPayload } from "./serviceItemReview";
+import { ApprovalConfirmationDialog, type ApprovalConfirmationDetails } from "../../admin/ApprovalConfirmationDialog";
 
-function ReviewItem({ item, onRefresh }: { item: CatalogItem; onRefresh: () => void }) {
+export function ReviewItem({ item, onRefresh }: { item: CatalogItem; onRefresh: () => void }) {
   const review = useComboMutation(`/api/combos/items/${item.id}/review`);
   const [note, setNote] = useState("");
   const [validationError, setValidationError] = useState("");
+  const [approval, setApproval] = useState<{ payload: ReturnType<typeof serviceItemReviewPayload>; itemId: string; contentSignature: string; details: ApprovalConfirmationDetails } | null>(null);
+  const reviewLock = useRef(false);
+  const sendReview = (payload: ReturnType<typeof serviceItemReviewPayload>) => {
+    if (review.isPending || reviewLock.current) return;
+    reviewLock.current = true;
+    review.mutate(payload, { onSuccess: () => setApproval(null), onSettled: () => { reviewLock.current = false; } });
+  };
   const decide = (approve: boolean) => {
+    if (review.isPending || reviewLock.current) return;
     setValidationError("");
-    try { review.mutate(serviceItemReviewPayload(item, approve, note)); }
+    try {
+      const payload = serviceItemReviewPayload(item, approve, note);
+      if (approve) {
+        review.reset();
+        setApproval({ payload, itemId: item.id, contentSignature: JSON.stringify(item), details: { typeLabel: "Dịch vụ thành phần", title: item.name, vendorName: item.vendorName, versionLabel: "Nội dung hiện tại đang xem" } });
+      } else sendReview(payload);
+    }
     catch (error) { setValidationError(error instanceof Error ? error.message : "Chưa gửi được kết quả kiểm duyệt."); }
+  };
+  const confirmApproval = () => {
+    if (!approval || review.isPending || reviewLock.current) return;
+    try {
+      const current = serviceItemReviewPayload(item, true, note);
+      if (item.id !== approval.itemId || JSON.stringify(item) !== approval.contentSignature || JSON.stringify(current) !== JSON.stringify(approval.payload)) throw new Error("Dịch vụ hoặc ghi chú đã thay đổi. Hãy xem lại đúng nội dung trước khi duyệt.");
+      sendReview(approval.payload);
+    } catch (error) {
+      setApproval(null);
+      setValidationError(error instanceof Error ? error.message : "Hãy tải lại dịch vụ trước khi duyệt.");
+    }
   };
   return <article className="min-w-0 rounded-xl border border-[var(--line)] p-4 [overflow-wrap:anywhere]">
     <div className="flex flex-wrap items-start justify-between gap-2"><h3 className="font-semibold">{item.name}</h3><StatusPill status={item.moderationStatus} label={item.moderationStatus === "Pending" ? "Chờ kiểm duyệt" : undefined} /></div>
@@ -24,7 +50,7 @@ function ReviewItem({ item, onRefresh }: { item: CatalogItem; onRefresh: () => v
     <p className="mt-2 whitespace-pre-wrap text-xs muted">{item.cancellationPolicy}</p>
     <Link className="mt-2 inline-block text-xs underline" to={`/listings/${item.listingId}?preview=vendor`} target="_blank" rel="noopener noreferrer">Xem bài giới thiệu dịch vụ</Link>
     {(item.variants.length > 0 || item.addOns.length > 0) && <details className="mt-3 text-xs"><summary className="cursor-pointer font-semibold">Biến thể & món kèm ({item.variants.length + item.addOns.length})</summary><ul className="mt-2 space-y-2">{item.variants.map(variant => <li key={variant.id ?? variant.name}>Biến thể: {variant.name} · {vnd(variant.priceDelta)}</li>)}{item.addOns.map(addOn => <li key={addOn.id ?? addOn.name}>Món kèm: {addOn.name} · {vnd(addOn.price)}{addOn.perUnit ? "/đơn vị" : "/gói"}</li>)}</ul></details>}
-    {item.reviewNote && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-[#faf8f0] p-3 text-xs"><b>Phản hồi kiểm duyệt:</b> {item.reviewNote}</p>}
+    {item.reviewNote && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-[#fcf6ea] p-3 text-xs"><b>Phản hồi kiểm duyệt:</b> {item.reviewNote}</p>}
     {item.moderationStatus === "Pending" && <fieldset disabled={review.isPending} className="mt-4 min-w-0 space-y-3"><legend className="sr-only">Kết quả kiểm duyệt {item.name}</legend>
       <p className="text-xs muted">Kết quả chỉ áp dụng cho đúng nội dung bạn đang xem. Nếu NCC đã chỉnh sửa và gửi lại, hãy tải lại trước khi quyết định.</p>
       <label className="block"><span className="label">Ghi chú / lý do từ chối dịch vụ (bắt buộc khi từ chối)</span><textarea className="input" rows={3} maxLength={2000} value={note} onChange={event => setNote(event.target.value)} /></label>
@@ -32,6 +58,8 @@ function ReviewItem({ item, onRefresh }: { item: CatalogItem; onRefresh: () => v
       {!item.reviewVersion && <p role="alert" className="text-xs text-amber-800">Chưa có phiên bản kiểm duyệt hợp lệ. Tải lại dịch vụ để tiếp tục.</p>}
     </fieldset>}
     {(validationError || review.isError) && <div role="alert" className="mt-3"><ErrorText>{validationError || apiError(review.error)}</ErrorText><button type="button" className="btn btn-outline mt-2" disabled={review.isPending} onClick={onRefresh}>Tải lại dịch vụ</button></div>}
+    {approval && <ApprovalConfirmationDialog details={approval.details} busy={review.isPending} error={review.isError ? apiError(review.error) : undefined}
+      onCancel={() => { if (!review.isPending && !reviewLock.current) setApproval(null); }} onConfirm={confirmApproval} />}
   </article>;
 }
 const filters = [["all", "Tất cả"], ["Draft", "Nháp"], ["Pending", "Chờ duyệt"], ["Approved", "Đã duyệt"], ["Rejected", "Bị từ chối"]];

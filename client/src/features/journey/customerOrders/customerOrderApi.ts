@@ -42,6 +42,7 @@ export interface OrderCapabilities {
   canRequestCancellation: boolean;
   canConfirm?: boolean;
   canRespondQuote?: boolean;
+  canAcceptQuote?: boolean;
   blockedReason?: string | null;
 }
 export interface OrderChangeRequest {

@@ -80,7 +80,8 @@ public class GetVendorLeadsQueryHandler : IRequestHandler<GetVendorLeadsQuery, L
                 DiscountPercent: l.Voucher.DiscountPercent,
                 Status: l.Voucher.Status.ToString(),
                 ExpiresAt: l.Voucher.ExpiresAt
-            ) : null
+            ) : null,
+            ComboOrderId: l.ComboOrderId
         )).ToList();
     }
 }

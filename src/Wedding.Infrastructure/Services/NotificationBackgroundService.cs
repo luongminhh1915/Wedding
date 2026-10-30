@@ -54,7 +54,8 @@ public class NotificationBackgroundService(IServiceScopeFactory scopes, ILogger<
     private static async Task AddReminder(IApplicationDbContext db, Guid userId, string key, string message, string contextKind, Guid contextId, CancellationToken ct)
     {
         if (await db.Notifications.AnyAsync(n => n.UserId == userId && n.DeduplicationKey == key, ct)) return;
-        var email = await db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstOrDefaultAsync(ct);
-        if (email != null) db.Notifications.Add(Notification.Create(userId, "Email", email, message, key, contextKind, contextId));
+        var recipient = await db.Users.Where(u => u.Id == userId).Select(u => new { u.Email }).FirstOrDefaultAsync(ct);
+        if (recipient != null) db.Notifications.Add(Notification.Create(userId,
+            string.IsNullOrWhiteSpace(recipient.Email) ? "InApp" : "Email", recipient.Email ?? "", message, key, contextKind, contextId));
     }
 }

@@ -1,459 +1,117 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  CheckCheck,
-  ChevronDown,
-  FileCheck2,
-  Heart,
-  LayoutDashboard,
-  Mail,
-  MapPin,
-  MessageCircle,
-  Sparkles,
-  Star,
-  Users,
-  Wallet,
+  ArrowDown, ArrowRight, ArrowUpRight, Building2, CalendarHeart, Camera, Check,
+  CheckCheck, ChevronDown, Flower2, Gift, Heart, MapPin, PartyPopper, Search,
+  Shirt, Sparkles, Users, type LucideIcon,
 } from "lucide-react";
 import { dashboardPath } from "../../utils/navigation";
 import { useAuthStore } from "../../store/authStore";
-import {
-  FeaturePreview,
-  MobilePreview,
-  PlannerPreview,
-  type PreviewKind,
-} from "./BrandPreviews";
+import { FeaturePreview, type PreviewKind } from "./BrandPreviews";
+import { usePublicCategories, usePublicListings } from "../customer/hooks/useBrowse";
+import type { CategoryDto } from "../../types/category.types";
+import ListingCard from "../customer/components/ListingCard";
+import { serviceCategoryLabel, serviceFilterSearch } from "../customer/serviceFilterModel";
+import { marketplaceSearchFilters, type MarketplaceSearchDraft } from "./marketplaceSearchModel";
+import "./home-romantic.css";
 
-const features = [
-  {
-    title: (
-      <>
-        Lên plan,
-        <br />
-        không lên stress
-      </>
-    ),
-    description:
-      "Checklist thông minh, công việc rõ ràng, quản lý ngân sách chi tiết.",
-    preview: "checklist" as PreviewKind,
-    to: "/customer/dashboard?tab=checklist",
-    className: "navy-tint",
-  },
-  {
-    title: (
-      <>
-        Khách mời đông,
-        <br />
-        quản lý vẫn gọn
-      </>
-    ),
-    description:
-      "Một nơi theo dõi RSVP, lời chúc và số lượng khách xác nhận tham dự.",
-    preview: "guests" as PreviewKind,
-    to: "/customer/dashboard?tab=invitations",
-    className: "cream",
-  },
-  {
-    title: (
-      <>
-        Thiệp cưới đẹp,
-        <br />
-        gửi trong một chạm
-      </>
-    ),
-    description:
-      "Thiệp cưới online đẹp mắt, gửi dễ dàng, theo dõi RSVP tức thì.",
-    preview: "invitation" as PreviewKind,
-    to: "/customer/dashboard?tab=invitations",
-    className: "cream",
-  },
-  {
-    title: (
-      <>
-        Vendor hợp gu,
-        <br />
-        khỏi tìm tới khuya
-      </>
-    ),
-    description:
-      "Khám phá dịch vụ, xem portfolio và gửi yêu cầu tư vấn dễ dàng.",
-    preview: "vendors" as PreviewKind,
-    to: "/browse",
-    className: "navy-tint",
-  },
+const features: { title: string; description: string; preview: PreviewKind; to: string; tone: string; icon: LucideIcon; action: string }[] = [
+  { title: "Lên plan, không lên stress", description: "Từng công việc và khoản chi đều có nơi. Cùng nhau chuẩn bị, từng chút một.", preview: "checklist", to: "/customer/dashboard?tab=checklist", tone: "peach", icon: CheckCheck, action: "Mở checklist cưới" },
+  { title: "Khách mời đông, quản lý vẫn gọn", description: "Danh sách khách, xếp bàn và phản hồi tham dự gọn lại trong một không gian.", preview: "guests", to: "/customer/dashboard?tab=guests", tone: "sage", icon: Users, action: "Quản lý khách mời" },
+  { title: "Một lời mời thật riêng", description: "Thêm ảnh, kể câu chuyện của hai bạn và gửi thiệp online đến những người thương.", preview: "invitation", to: "/customer/dashboard?tab=invitations", tone: "rose", icon: Heart, action: "Thiết kế thiệp cưới" },
+  { title: "Tìm người đồng hành hợp gu", description: "Xem dịch vụ, hình ảnh và trao đổi với nhà cung cấp trước khi đưa ra lựa chọn.", preview: "vendors", to: "/browse", tone: "butter", icon: Flower2, action: "Khám phá dịch vụ" },
 ];
-const tools = [
-  {
-    label: "Checklist cưới",
-    icon: CheckCheck,
-    to: "/customer/dashboard?tab=checklist",
-  },
-  {
-    label: "Ngân sách cưới",
-    icon: Wallet,
-    to: "/customer/dashboard?tab=budget",
-  },
-  {
-    label: "Khách mời & RSVP",
-    icon: Users,
-    to: "/customer/dashboard?tab=invitations",
-  },
-  {
-    label: "Thiệp cưới online",
-    icon: Mail,
-    to: "/customer/dashboard?tab=invitations",
-  },
-  { label: "Tìm nhà cung cấp", icon: Star, to: "/browse" },
-  {
-    label: "Chat & báo giá",
-    icon: MessageCircle,
-    to: "/customer/dashboard?tab=contracts",
-  },
-  {
-    label: "Hợp đồng dịch vụ",
-    icon: FileCheck2,
-    to: "/customer/dashboard?tab=contracts",
-  },
-  {
-    label: "Theo dõi thanh toán",
-    icon: Wallet,
-    to: "/customer/dashboard?tab=contracts",
-  },
-];
+const categoryStyles: Record<string, { icon: LucideIcon; tile: number; hint: string }> = {
+  "quay-chup-photo-video": { icon: Camera, tile: 0, hint: "Lưu giữ khoảnh khắc" },
+  "thiep-cuoi-qua-tang": { icon: Gift, tile: 1, hint: "Gửi trao yêu thương" },
+  "tiec-su-kien-khac": { icon: PartyPopper, tile: 2, hint: "Thêm sắc màu ngày vui" },
+  "wedding-planner": { icon: CalendarHeart, tile: 3, hint: "Có người cùng mình lo" },
+  "trang-diem-makeup": { icon: Sparkles, tile: 4, hint: "Rạng rỡ theo cách của bạn" },
+  "trang-tri-decor": { icon: Flower2, tile: 5, hint: "Đẹp từ những điều nhỏ" },
+  "tiem-cuoi-venues": { icon: Building2, tile: 6, hint: "Nơi ngày vui bắt đầu" },
+  "vay-cuoi-vest": { icon: Shirt, tile: 7, hint: "Dành cho ngày đặc biệt" },
+};
+const categoryIcons: Record<string, LucideIcon> = { Building2, CalendarHeart, Camera, Flower2, Gift, PartyPopper, Shirt, Sparkles };
+const initialSearchDraft: MarketplaceSearchDraft = { categoryId: "", keyword: "", location: "", maxPrice: "" };
 const faqs = [
-  [
-    "Wedding Match giúp hai bạn chuẩn bị cưới như thế nào?",
-    "Hai bạn có thể theo dõi checklist, quản lý ngân sách, tạo thiệp online, nhận RSVP và tìm kiếm dịch vụ cưới ngay trong một tài khoản.",
-  ],
-  [
-    "Có thể bắt đầu sử dụng miễn phí không?",
-    "Bạn có thể đăng ký tài khoản để bắt đầu lập kế hoạch và sử dụng bộ công cụ cưới. Chi phí dịch vụ của nhà cung cấp được trao đổi riêng khi tư vấn.",
-  ],
-  [
-    "Làm sao để gửi thiệp và nhận RSVP?",
-    "Vào Thiệp mời, chọn mẫu, nhập thông tin và lưu thiệp. Chia sẻ đường dẫn thiệp cho người thân; khách có thể xác nhận tham dự và gửi lời chúc mà không cần đăng nhập.",
-  ],
-  [
-    "Tôi có thể liên hệ nhà cung cấp ở đâu?",
-    "Tại Dịch vụ, bạn có thể lọc gói theo ngành hàng, địa điểm và ngân sách. Mở chi tiết dịch vụ rồi gửi yêu cầu tư vấn để nhận mã ưu đãi và trao đổi với nhà cung cấp.",
-  ],
-  [
-    "Thông tin và kế hoạch của tôi có được lưu lại không?",
-    "Các công việc, chi phí, thiệp cưới và hợp đồng được lưu theo tài khoản. Bạn có thể đăng nhập lại để tiếp tục chỉnh sửa và theo dõi.",
-  ],
+  ["Wedding Match giúp hai bạn chuẩn bị cưới như thế nào?", "Hai bạn có thể lập checklist, quản lý ngân sách cá nhân, tạo thiệp online, theo dõi khách mời và tìm dịch vụ cưới trong cùng một tài khoản."],
+  ["Tìm dịch vụ trên đây có cần thanh toán ngay không?", "Bạn có thể xem thông tin và gửi yêu cầu tư vấn trước. Thành phần dịch vụ, báo giá và hợp đồng được trao đổi với nhà cung cấp trong các bước tiếp theo."],
+  ["Thông tin và kế hoạch của tôi có được lưu lại không?", "Các công việc, chi phí, thiệp cưới và yêu cầu dịch vụ được lưu theo tài khoản. Đăng nhập lại để tiếp tục chuẩn bị cùng nhau."],
 ];
+function categoryStyle(category: CategoryDto) {
+  return categoryStyles[category.slug] ?? { icon: categoryIcons[category.icon ?? ""] ?? Heart, tile: 5, hint: "Tìm lựa chọn dành cho bạn" };
+}
 
 export default function HomePage() {
   const { user, token } = useAuthStore();
   const startPath = token && user ? dashboardPath(user) : "/register";
-  const [slide, setSlide] = useState(0);
-
-  return (
-    <main className="wm-home">
-      <section className="wm-hero">
-        <div className="hero-copy">
-          <span className="hero-kicker">
-            WEDDING <b>MATCH</b> · CHỌN ĐÚNG, CƯỚI AN TÂM
-          </span>
-          <h1>
-            <span>Chọn đúng.</span>
-            <em>Cưới yên tâm.</em>
-          </h1>
-          <p>
-            Checklist, ngân sách, khách mời, thiệp cưới và vendor, tất cả{" "}
-            <b>trong một trợ lý cưới</b> dành cho hai bạn.
-          </p>
-          <Link to={startPath} className="wm-button hero-cta">
-            Bắt đầu lên plan miễn phí
-          </Link>
-          <div className="hero-promises">
-            <span>Miễn phí</span>
-            <i />
-            <span>Dễ dùng</span>
-            <i />
-            <span>Dành cho mọi cặp đôi</span>
+  const navigate = useNavigate();
+  const [marketplaceSearch, setMarketplaceSearch] = useState(initialSearchDraft);
+  const categoryQuery = usePublicCategories();
+  const categories = categoryQuery.data ?? [];
+  const featuredListings = usePublicListings({ sortBy: "popular", page: 1, pageSize: 4 });
+  const discoverSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const filters = marketplaceSearchFilters(marketplaceSearch);
+    navigate({ pathname: "/browse", search: serviceFilterSearch(filters) });
+  };
+  return <main className="wm-home wm-home-romantic">
+    <section className="wm-hero marketplace-hero">
+      <div className="marketplace-hero-top">
+        <div className="home-hero-copy">
+          <span className="home-eyebrow"><Flower2 size={15} strokeWidth={1.6} aria-hidden="true" />WEDDING MATCH · MARKETPLACE DỊCH VỤ CƯỚI</span>
+          <h1><span>Tìm đúng dịch vụ.</span><em>Chọn đúng người đồng hành.</em></h1>
+          <p>Khám phá dịch vụ cưới theo phong cách, khu vực và ngân sách của hai bạn. Bắt đầu từ một lựa chọn hợp gu, để ngày vui nhẹ nhàng hơn.</p>
+          <div className="home-hero-actions"><Link to="/browse" className="home-primary-action">Khám phá dịch vụ <ArrowUpRight size={18} aria-hidden="true" /></Link><a href="#cong-cu" className="home-intro-action">Wedding Match có gì? <ArrowDown size={16} aria-hidden="true" /></a></div>
+          <div className="home-hero-note"><span><Check size={13} aria-hidden="true" />Xem dịch vụ theo nhu cầu</span><span><Check size={13} aria-hidden="true" />Trao đổi trước khi đặt</span></div>
+        </div>
+        <figure className="home-hero-photo">
+          <span className="home-photo-flower flower-one" aria-hidden="true"><Flower2 size={54} strokeWidth={1} /></span>
+          <span className="home-photo-flower flower-two" aria-hidden="true"><Sparkles size={30} strokeWidth={1} /></span>
+          <div className="home-hero-photo-frame"><img src="/wedding-match/homepage/hero-romantic-couple.png" alt="Ảnh minh họa cặp đôi giữa hoa tươi trong khu vườn cưới" width={1086} height={1448} fetchPriority="high" /><span className="home-photo-note">Một ngày thật đẹp,<br />theo cách của hai bạn.</span></div>
+          <figcaption>Ảnh minh họa phong cách cưới ngoài trời.</figcaption>
+        </figure>
+      </div>
+      <section id="kham-pha-dich-vu" className="marketplace-search-at-top home-marketplace-search" aria-label="Khám phá dịch vụ cưới">
+        <form className="home-search-form" onSubmit={discoverSearch}>
+          <div className="home-search-heading"><Search size={17} aria-hidden="true" /><strong>Bắt đầu tìm dịch vụ cho ngày vui</strong><span>Chọn điều phù hợp với hai bạn.</span></div>
+          <div className="home-search-fields">
+            <label><span>Danh mục dịch vụ</span><select aria-label="Danh mục dịch vụ" value={marketplaceSearch.categoryId} onChange={event => setMarketplaceSearch({ ...marketplaceSearch, categoryId: event.target.value })}><option value="">Tất cả dịch vụ</option>{categories.map(category => <option key={category.id} value={category.id}>{serviceCategoryLabel(category)}</option>)}</select></label>
+            <label><span>Từ khóa</span><input maxLength={150} value={marketplaceSearch.keyword} onChange={event => setMarketplaceSearch({ ...marketplaceSearch, keyword: event.target.value })} placeholder="Chụp ảnh, trang trí..." /></label>
+            <label><span>Khu vực</span><div className="home-search-location"><MapPin size={15} aria-hidden="true" /><input maxLength={100} value={marketplaceSearch.location} onChange={event => setMarketplaceSearch({ ...marketplaceSearch, location: event.target.value })} placeholder="Hà Nội, TP.HCM..." /></div></label>
+            <label><span>Ngân sách tối đa</span><select aria-label="Ngân sách tối đa" value={marketplaceSearch.maxPrice} onChange={event => setMarketplaceSearch({ ...marketplaceSearch, maxPrice: event.target.value })}><option value="">Mọi mức giá</option><option value="10000000">Dưới 10 triệu</option><option value="30000000">Dưới 30 triệu</option><option value="80000000">Dưới 80 triệu</option><option value="150000000">Dưới 150 triệu</option><option value="300000000">Dưới 300 triệu</option></select></label>
+            <button type="submit" className="home-primary-action"><Search size={17} aria-hidden="true" />Tìm dịch vụ</button>
           </div>
-        </div>
-        <div className="hero-art">
-          <PlannerPreview />
-          <div className="milo-intro">
-            <div>
-              Tui là <b>Milo!</b>
-              <small>
-                Tui giúp mọi thứ
-                <br />
-                bớt rối nè!
-              </small>
-            </div>
-            <img
-              src="/wedding-match/milo.png"
-              alt="Milo, người bạn đồng hành của hai bạn"
-            />
-          </div>
-        </div>
+        </form>
       </section>
+    </section>
 
-      <section className="all-in-one section-width" id="cong-cu">
-        <div className="all-in-one-copy">
-          <h2>
-            Một đám cưới.
-            <br />
-            Trăm đầu việc.
-            <br />
-            <em>Không nhất thiết</em>
-            <br />
-            phải trăm cái note.
-          </h2>
-          <span className="little-note">Tui đã gom lại rồi nè. 😉</span>
-          <img
-            src="/wedding-match/milo.png"
-            alt="Milo đang lên kế hoạch cưới"
-            loading="lazy"
-          />
-        </div>
-        <div className="tool-universe">
-          <div className="universe-lines" />
-          <div className="universe-center">
-            <span>
-              WEDDING <b>MATCH</b>
-            </span>
-            <em>
-              Một nơi gọn lại
-              <br />
-              mọi đầu việc
-            </em>
-          </div>
-          {tools.map(({ label, icon: Icon, to }, i) => (
-            <Link className={`orbit-tool orbit-${i}`} key={label} to={to}>
-              <span>
-                <Icon size={16} />
-              </span>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </section>
+    <section className="marketplace-categories section-width" aria-labelledby="marketplace-categories-title">
+      <div className="home-section-heading"><div><span className="home-eyebrow">MỖI ĐIỀU NHỎ, MỘT LỰA CHỌN HỢP GU</span><h2 id="marketplace-categories-title">Khám phá dịch vụ <em>cho ngày cưới</em></h2></div><Link to="/browse" className="home-text-link">Xem tất cả dịch vụ <ArrowRight size={16} aria-hidden="true" /></Link></div>
+      {categoryQuery.isPending ? <div className="home-category-grid" aria-label="Đang tải danh mục">{Array.from({ length: 8 }, (_, i) => <div key={i} className="home-category-skeleton" />)}</div> : categories.length ? <div className="home-category-grid">
+        {categories.slice(0, 8).map(category => {
+          const { icon: Icon, tile, hint } = categoryStyle(category);
+          return <Link key={category.id} to={{ pathname: "/browse", search: serviceFilterSearch({ categoryId: category.id, sortBy: "popular" }) }} className={`home-category-card category-tile-${tile}`}><div className="home-category-copy"><span className="home-category-icon"><Icon size={22} strokeWidth={1.5} aria-hidden="true" /></span><h3>{serviceCategoryLabel(category)}</h3><p>{hint}</p><span className="home-category-arrow" aria-hidden="true"><ArrowUpRight size={16} /></span></div><span className={`home-category-photo tile-${tile}`} role="img" aria-label={`Ảnh minh họa ${serviceCategoryLabel(category)}`} /></Link>;
+        })}
+      </div> : <div className="home-inline-empty" role={categoryQuery.isError ? "alert" : "status"}><p>{categoryQuery.isError ? "Chưa tải được danh mục dịch vụ. Bạn có thể thử lại hoặc mở trang khám phá." : "Danh mục dịch vụ đang được cập nhật."}</p>{categoryQuery.isError && <button type="button" className="home-text-link" onClick={() => void categoryQuery.refetch()}>Thử lại</button>}<Link to="/browse" className="home-text-link">Mở trang khám phá <ArrowRight size={15} /></Link></div>}
+      <p className="home-image-caption">Ảnh danh mục minh họa phong cách dịch vụ.</p>
+    </section>
 
-      <section className="features-section section-width">
-        <div className="section-heading">
-          <span className="wm-eyebrow">
-            Một chút gọn gàng, nhiều hơn hạnh phúc
-          </span>
-          <h2>
-            Chuẩn bị cưới nhẹ nhàng cùng Wedding Match{" "}
-            <span className="heading-flower">✿</span>
-          </h2>
-        </div>
-        <div className="feature-grid">
-          {features.map((feature, i) => (
-            <Link
-              key={feature.preview}
-              to={feature.to}
-              className={`feature-card ${feature.className} ${slide === i ? "mobile-active" : ""}`}
-            >
-              <div className="feature-copy">
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-                <span className="feature-arrow">
-                  <ArrowUpRight size={21} />
-                </span>
-              </div>
-              <div className="feature-image">
-                <FeaturePreview kind={feature.preview} />
-              </div>
-            </Link>
-          ))}
-        </div>
-        <div className="feature-dots">
-          {features.map((feature, i) => (
-            <button
-              key={feature.preview}
-              aria-label={`Xem tính năng ${i + 1}`}
-              aria-pressed={slide === i}
-              className={slide === i ? "active" : ""}
-              onClick={() => setSlide(i)}
-            />
-          ))}
-        </div>
-      </section>
+    <section className="marketplace-featured section-width" aria-labelledby="marketplace-featured-title">
+      <div className="home-section-heading"><div><span className="home-eyebrow">CÙNG TÌM MỘT NGƯỜI ĐỒNG HÀNH</span><h2 id="marketplace-featured-title">Một lựa chọn đẹp. <em>Một ngày thật riêng.</em></h2><p>Xem thông tin và hình ảnh từ những dịch vụ đang hiển thị trên Wedding Match.</p></div><Link to="/browse" className="home-text-link">Khám phá marketplace <ArrowRight size={16} /></Link></div>
+      {featuredListings.isLoading ? <div className="home-listing-grid" aria-label="Đang tải dịch vụ">{Array.from({ length: 4 }, (_, i) => <div key={i} className="home-listing-skeleton" />)}</div> : featuredListings.data?.items.length ? <div className="home-listing-grid">{featuredListings.data.items.map(listing => <ListingCard key={listing.id} listing={listing} returnPath="/" />)}</div> : <div className="home-marketplace-empty">
+        <div className="home-marketplace-empty-icon"><Flower2 size={42} strokeWidth={1} aria-hidden="true" /></div><div><span className="home-eyebrow">TỪ MỘT ĐIỀU HỢP GU</span><h3>{featuredListings.isError ? "Chưa tải được danh sách dịch vụ" : "Marketplace đang được cập nhật"}</h3><p>{featuredListings.isError ? "Bạn có thể tải lại danh sách hoặc mở trang khám phá để tiếp tục tìm kiếm." : "Các dịch vụ sẽ xuất hiện khi nhà cung cấp đăng và được duyệt. Trong lúc đó, bạn có thể xem các danh mục hoặc bắt đầu kế hoạch cưới của riêng mình."}</p></div><div className="home-empty-actions">{featuredListings.isError ? <button type="button" className="home-primary-action" onClick={() => void featuredListings.refetch()}>Tải lại dịch vụ <ArrowRight size={16} /></button> : <Link to="/browse" className="home-primary-action">Khám phá dịch vụ <ArrowRight size={16} /></Link>}<Link to="/register?role=vendor" className="home-text-link">Bạn là nhà cung cấp? Tham gia cùng chúng mình <ArrowUpRight size={15} /></Link></div>
+      </div>}
+    </section>
 
-      <section className="invitation-showcase section-width">
-        <div className="section-heading">
-          <span className="wm-eyebrow">
-            Gửi một lời mời. Kể một chuyện tình.
-          </span>
-          <h2>
-            Thiệp điện tử kể chuyện cưới.
-            <br />
-            Gửi trọn <em>yêu thương.</em>
-          </h2>
-          <p>
-            Ảnh cưới, lời nhắn, bản đồ và RSVP gói gọn trong một lời mời online.
-          </p>
-        </div>
-        <div className="invitation-scene">
-          <div className="invitation-demo">
-            <span className="demo-tag">MẪU MINH HỌA</span>
-            <div className="invitation-demo-inner">
-              <span>THE WEDDING OF</span>
-              <h3>
-                Anh Minh
-                <br />
-                <em>&</em>
-                <br />
-                Hoàng Yến
-              </h3>
-              <div className="invite-flower">❀</div>
-              <p>20 . 12 . 2026</p>
-              <small>THE GARDEN HALL</small>
-              <div className="demo-rsvp">
-                <Heart size={14} /> Cùng viết tiếp câu chuyện của chúng mình
-              </div>
-            </div>
-          </div>
-          <div className="invitation-side">
-            <div className="invitation-side-icon">
-              <Mail size={30} strokeWidth={1} />
-            </div>
-            <h3>
-              Một lời mời,
-              <br />
-              ngàn yêu thương.
-            </h3>
-            <p>
-              Chọn phong cách của hai bạn. Thêm câu chuyện tình yêu, chia sẻ
-              đường dẫn và đón nhận lời chúc từ những người thân yêu.
-            </p>
-            <Link
-              className="wm-button"
-              to="/customer/dashboard?tab=invitations"
-            >
-              Thiết kế thiệp của bạn <ArrowRight size={17} />
-            </Link>
-            <div className="invitation-tags">
-              {["RSVP", "Mẫu thiệp", "Lời chúc", "Bản đồ", "Mừng cưới"].map(
-                (text) => (
-                  <span key={text}>
-                    <Check size={12} />
-                    {text}
-                  </span>
-                ),
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+    <section id="cong-cu" className="home-planner-section" aria-labelledby="home-planner-title">
+      <div className="home-section-inner"><div className="home-section-heading is-centered"><span className="home-section-flower" aria-hidden="true"><Flower2 size={30} strokeWidth={1.2} /></span><span className="home-eyebrow">WEDDING PLANNER CỦA HAI BẠN</span><h2 id="home-planner-title">Chuẩn bị cưới <em>nhẹ nhàng hơn.</em></h2><p>Gom những đầu việc quan trọng vào một nơi, để có thêm thời gian tận hưởng hành trình của hai bạn.</p></div>
+        <div className="home-planner-grid">{features.map(({ icon: Icon, ...feature }) => <Link key={feature.preview} to={feature.to} className={`home-planner-card tone-${feature.tone}`}><div className="home-planner-copy"><span className="home-planner-icon"><Icon size={22} strokeWidth={1.4} aria-hidden="true" /></span><h3>{feature.title}</h3><p>{feature.description}</p><span className="home-planner-action">{feature.action} <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="home-planner-preview"><span className="home-preview-note">MINH HỌA CÔNG CỤ</span><FeaturePreview kind={feature.preview} /></div></Link>)}</div>
+        <div className="home-planner-start"><p>Bắt đầu từ kế hoạch của riêng hai bạn.</p><Link to={startPath} className="home-primary-action">{token && user ? "Về không gian của bạn" : "Tạo kế hoạch cưới"} <ArrowRight size={17} aria-hidden="true" /></Link></div>
+      </div>
+    </section>
 
-      <section className="together-section section-width">
-        <div>
-          <span className="wm-eyebrow">LUÔN Ở BÊN HAI BẠN</span>
-          <h2>
-            Lên kế hoạch mọi nơi.
-            <br />
-            <em>Hạnh phúc mọi lúc.</em>
-          </h2>
-          <p>
-            Từ chiếc laptop ở nhà đến điện thoại trên tay. Kiểm tra công việc,
-            cập nhật ngân sách và theo dõi phản hồi khách mời ngay trên trình
-            duyệt.
-          </p>
-          <Link to={startPath} className="wm-button">
-            Mở không gian cưới <ArrowRight size={17} />
-          </Link>
-        </div>
-        <div className="mobile-scene">
-          <div className="soft-orbit" />
-          <MobilePreview />
-          <span className="floating-note">
-            <CheckCheck size={17} /> Từng bước, thật nhẹ nhàng
-          </span>
-        </div>
-      </section>
-
-      <section className="getting-started section-width">
-        <div className="section-heading">
-          <span className="wm-eyebrow">HÀNH TRÌNH CỦA HAI BẠN</span>
-          <h2>
-            Ngày trọng đại,
-            <br />
-            <em>bắt đầu từ những điều nhỏ.</em>
-          </h2>
-        </div>
-        <div className="getting-started-grid">
-          {[
-            {
-              icon: LayoutDashboard,
-              title: "Một kế hoạch rõ ràng",
-              text: "Bắt đầu từ checklist và ngân sách, để từng đầu việc đều có nơi của mình.",
-              to: "/customer/dashboard",
-              label: "Mở Planner",
-            },
-            {
-              icon: Heart,
-              title: "Một lời mời thật riêng",
-              text: "Thiết kế thiệp theo câu chuyện của hai bạn và nhận RSVP ngay tại một nơi.",
-              to: "/customer/dashboard?tab=invitations",
-              label: "Thiết kế thiệp",
-            },
-            {
-              icon: MapPin,
-              title: "Một đối tác phù hợp",
-              text: "Khám phá dịch vụ cưới, xem hình ảnh và trò chuyện cùng nhà cung cấp.",
-              to: "/browse",
-              label: "Tìm dịch vụ",
-            },
-          ].map(({ icon: Icon, ...item }) => (
-            <Link key={item.title} to={item.to}>
-              <Icon size={25} strokeWidth={1.5} />
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-              <span>
-                {item.label} <ArrowUpRight size={15} />
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="faq-section section-width">
-        <div>
-          <span className="wm-eyebrow">HỎI ĐÁP THƯỜNG GẶP</span>
-          <h2>
-            Giải đáp mọi
-            <br />
-            <em>thắc mắc</em>
-          </h2>
-          <p>
-            Một chút giải đáp để hành trình cưới của hai bạn thêm dễ dàng và
-            trọn vẹn.
-          </p>
-          <Sparkles size={38} strokeWidth={1} />
-        </div>
-        <div className="faq-list">
-          {faqs.map(([question, answer]) => (
-            <details key={question}>
-              <summary>
-                {question}
-                <ChevronDown size={18} />
-              </summary>
-              <p>{answer}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-      <section className="closing-cta section-width">
-        <Heart size={28} strokeWidth={1} />
-        <h2>
-          Đám cưới nhiều việc.
-          <br />
-          <em>Mình cùng lo, bạn nhé?</em>
-        </h2>
-        <Link to={startPath} className="wm-button">
-          Bắt đầu lên plan miễn phí <ArrowRight size={17} />
-        </Link>
-      </section>
-    </main>
-  );
+    <section className="home-faq section-width" aria-labelledby="home-faq-title"><div><span className="home-eyebrow">MÌNH CÙNG BẮT ĐẦU NHÉ?</span><h2 id="home-faq-title">Một chút giải đáp,<br /><em>thêm phần an tâm.</em></h2><p>Những điều hai bạn có thể muốn biết trước khi bắt đầu.</p><Link to={startPath} className="home-text-link">Mở không gian Wedding Match <ArrowRight size={16} /></Link></div><div className="home-faq-list">{faqs.map(([question, answer]) => <details key={question}><summary>{question}<ChevronDown size={18} aria-hidden="true" /></summary><p>{answer}</p></details>)}</div></section>
+    <section className="home-closing section-width"><span className="home-closing-flower" aria-hidden="true"><Flower2 size={54} strokeWidth={1} /></span><div><span className="home-eyebrow">MỘT KHỞI ĐẦU NHỎ, MỘT NGÀY THẬT ĐẸP</span><h2>Ngày vui của hai bạn.<br /><em>Mình cùng chuẩn bị nhé?</em></h2></div><Link to={startPath} className="home-primary-action">{token && user ? "Về không gian của bạn" : "Bắt đầu cùng Wedding Match"}<ArrowUpRight size={18} aria-hidden="true" /></Link><Heart size={66} className="home-closing-heart" strokeWidth={.8} aria-hidden="true" /></section>
+  </main>;
 }

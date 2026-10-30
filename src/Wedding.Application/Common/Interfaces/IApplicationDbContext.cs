@@ -17,7 +17,11 @@ public interface IApplicationDbContext
     DbSet<Voucher> Vouchers { get; }
     DbSet<BookingContract> BookingContracts { get; }
     DbSet<Commission> Commissions { get; }
+    DbSet<CommissionPolicyRule> CommissionPolicyRules { get; }
+    DbSet<CommissionComponentBasisApproval> CommissionComponentBasisApprovals { get; }
+    DbSet<CommissionAdjustmentRequest> CommissionAdjustmentRequests { get; }
     DbSet<Review> Reviews { get; }
+    DbSet<ReviewEditRequest> ReviewEditRequests { get; }
     DbSet<Article> Articles { get; }
     DbSet<WeddingInvitation> WeddingInvitations { get; }
     DbSet<GuestRSVP> GuestRSVPs { get; }
@@ -28,6 +32,7 @@ public interface IApplicationDbContext
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<AdvancePayment> AdvancePayments { get; }
     DbSet<OtpCode> OtpCodes { get; }
+    DbSet<PasswordResetToken> PasswordResetTokens { get; }
     DbSet<WeddingProfile> WeddingProfiles { get; }
     DbSet<AppointmentType> AppointmentTypes { get; }
     DbSet<Appointment> Appointments { get; }
@@ -61,6 +66,7 @@ public interface IApplicationDbContext
     DbSet<InvitationTemplate> InvitationTemplates { get; }
     DbSet<CustomerOrderState> CustomerOrderStates { get; }
     DbSet<OrderChangeRequest> OrderChangeRequests { get; }
+    DbSet<PrivateServiceAgreement> PrivateServiceAgreements { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<T> ExecuteSerializableAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken = default);

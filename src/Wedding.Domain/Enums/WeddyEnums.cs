@@ -7,3 +7,5 @@ public enum QuoteStatus { Sent = 1, Accepted = 2, Rejected = 3, Expired = 4, Sup
 public enum SettlementStatus { Open = 1, Closed = 2, Paid = 3, Overdue = 4, InDispute = 5 }
 public enum VerificationStatus { Draft = 0, Submitted = 1, Approved = 2, Rejected = 3, Suspended = 4 }
 public enum DisputeStatus { Open = 1, InReview = 2, ResolvedCustomer = 3, ResolvedVendor = 4 }
+public enum ReviewTargetType { Service = 1, Shop = 2, Combo = 3 }
+public enum ReviewEditStatus { Pending = 1, Approved = 2, Rejected = 3 }

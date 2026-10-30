@@ -23,6 +23,7 @@ public class UploadController : ControllerBase
         _configuration = configuration; _db = db; _user = user;
     }
     private InvitationImageStorage InvitationStorage => new(_env.ContentRootPath, _configuration["Uploads:InvitationRoot"]);
+    private InvitationAudioStorage InvitationAudioStorage => new(_env.ContentRootPath, _configuration["Uploads:InvitationAudioRoot"]);
     private ListingImageStorage ListingStorage => new(_env.ContentRootPath, _configuration["Uploads:ListingRoot"], _env.WebRootPath);
 
     [HttpPost("invitation-images"), Authorize(Roles = "Customer")]
@@ -34,6 +35,28 @@ public class UploadController : ControllerBase
         var scope = await WeddingAccess.ResolveAsync(_db, _user, ct, write: true);
         await using var stream = file.OpenReadStream();
         return Ok(await InvitationStorage.SaveAsync(scope.OwnerId, file.FileName, file.ContentType, stream, file.Length, ct));
+    }
+
+    [HttpPost("invitation-audio"), Authorize(Roles = "Customer")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(13 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 13 * 1024 * 1024)]
+    public async Task<IActionResult> UploadInvitationAudio(IFormFile file, CancellationToken ct)
+    {
+        if (file == null) return BadRequest(new { message = "Vui lòng chọn một file MP3." });
+        var scope = await WeddingAccess.ResolveAsync(_db, _user, ct, write: true);
+        await using var stream = file.OpenReadStream();
+        return Ok(await InvitationAudioStorage.SaveAsync(scope.OwnerId, file.FileName, file.ContentType, stream, file.Length, ct));
+    }
+
+    [HttpGet("/uploads/invitation-audio/{ownerId:guid}/{fileName}"), AllowAnonymous]
+    public IActionResult GetInvitationAudio(Guid ownerId, string fileName)
+    {
+        var path = InvitationAudioStorage.Resolve(ownerId, fileName);
+        if (path == null || !System.IO.File.Exists(path)) return NotFound();
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
+        Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+        return PhysicalFile(path, "audio/mpeg", enableRangeProcessing: true);
     }
 
     [HttpGet("/uploads/invitations/{ownerId:guid}/{fileName}"), AllowAnonymous]

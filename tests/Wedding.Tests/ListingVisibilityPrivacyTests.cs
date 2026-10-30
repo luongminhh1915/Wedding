@@ -49,7 +49,13 @@ public sealed class ListingVisibilityPrivacyTests
     {
         await using var fixture = await Fixture.Create();
         fixture.Listing.Reject("Ghi chú kiểm duyệt riêng"); await fixture.Db.SaveChangesAsync();
-        var current = new Current(owningUser ? fixture.Owner.Id : fixture.OtherOwner.Id, role);
+        var actorId = owningUser ? fixture.Owner.Id : fixture.OtherOwner.Id;
+        if (allowed && role is "Moderator" or "SuperAdmin")
+        {
+            var staff = User.Create("Authenticated listing staff", $"{role}@privacy-staff.example.invalid", "0900000004", "hash", Enum.Parse<UserRole>(role));
+            fixture.Db.Users.Add(staff); await fixture.Db.SaveChangesAsync(); actorId = staff.Id;
+        }
+        var current = new Current(actorId, role);
         var handler = new GetListingDetailQueryHandler(fixture.Db, current);
         if (!allowed)
             await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new(fixture.Listing.Id), default));
@@ -59,6 +65,22 @@ public sealed class ListingVisibilityPrivacyTests
             Assert.Equal("Rejected", result.Status);
             Assert.Equal("Ghi chú kiểm duyệt riêng", result.RejectionReason);
         }
+    }
+
+    [Theory]
+    [InlineData("Moderator")]
+    [InlineData("SuperAdmin")]
+    [InlineData("VendorOwner")]
+    public async Task ForgedRoleClaimCannotGrantPrivatePreviewToAnActualCustomer(string claimedRole)
+    {
+        await using var fixture = await Fixture.Create();
+        fixture.Listing.SetStatus(ListingStatus.Draft); await fixture.Db.SaveChangesAsync();
+        var handler = new GetListingDetailQueryHandler(fixture.Db, new Current(fixture.Customer.Id, claimedRole));
+        if (claimedRole == "VendorOwner")
+            await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new(fixture.Listing.Id), default));
+        else
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new(fixture.Listing.Id), default));
+        Assert.Equal(UserRole.Customer, (await fixture.Db.Users.AsNoTracking().SingleAsync(user => user.Id == fixture.Customer.Id)).Role);
     }
 
     [Fact]
@@ -143,9 +165,17 @@ public sealed class ListingVisibilityPrivacyTests
             var listing = fixture.AddListing(status);
             var review = fixture.Review(listing, fixture.Customer); review.Approve(); fixture.Db.Reviews.Add(review);
         }
+        var lead = Lead.Create(fixture.Customer.Id, fixture.Vendor.Id, fixture.Listing.Id, "0900000000",
+            DateTime.UtcNow.AddDays(30), 100, 1000000, null);
+        var contract = BookingContract.Create(lead.Id, null, fixture.Vendor.Id, fixture.Customer.Id,
+            1000000, 100000, null, lead.WeddingDate);
+        fixture.Db.Leads.Add(lead); fixture.Db.BookingContracts.Add(contract);
+        var directShopReview = Review.CreateShop(contract.Id, null, fixture.Customer.Id, fixture.Vendor.Id,
+            5, "Shop trực tiếp phục vụ rất tận tình và chuyên nghiệp.", null);
+        directShopReview.Approve(); fixture.Db.Reviews.Add(directShopReview);
         await fixture.Db.SaveChangesAsync();
         var result = await new GetListingReviewsQueryHandler(fixture.Db).Handle(new(VendorId: fixture.Vendor.Id), default);
-        Assert.Equal(visible.Id, Assert.Single(result).Id);
+        Assert.Equal(directShopReview.Id, Assert.Single(result).Id);
     }
 
     [Theory]

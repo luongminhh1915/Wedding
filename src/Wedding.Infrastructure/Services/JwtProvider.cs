@@ -33,12 +33,13 @@ public class JwtProvider : IJwtProvider
         {
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Name, user.FullName),
             new(ClaimTypes.Role, user.Role.ToString()),
             new("security_version", user.SecurityVersion.ToString(CultureInfo.InvariantCulture)),
             new("phone_number", user.PhoneNumber)
         };
+
+        if (!string.IsNullOrWhiteSpace(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
         if (user.Vendor != null)
         {

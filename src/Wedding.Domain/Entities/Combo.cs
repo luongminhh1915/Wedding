@@ -112,6 +112,8 @@ public class ComboOrder : BaseEntity
     public string Code { get; private set; } = string.Empty;
     public Guid CustomerId { get; private set; }
     public Guid? ComboTemplateId { get; private set; }
+    public Guid? ComboTemplateRevisionId { get; private set; }
+    public string? ComboTemplateSnapshotJson { get; private set; }
     public DateTime? WeddingDate { get; private set; }
     public int? GuestCount { get; private set; }
     public string? Note { get; private set; }
@@ -125,6 +127,7 @@ public class ComboOrder : BaseEntity
 
     public User Customer { get; private set; } = null!;
     public ICollection<ComboOrderItem> Items { get; private set; } = new List<ComboOrderItem>();
+    public ComboTemplateRevision? ComboTemplateRevision { get; private set; }
 
     private ComboOrder() { }
 
@@ -179,6 +182,15 @@ public class ComboOrder : BaseEntity
         var shares = ComboMoney.AllocateDiscount(sorted.Select(i => i.Price).ToList(), DiscountAmount);
         for (var index = 0; index < sorted.Count; index++) sorted[index].SetDiscount(shares[index]);
         Status = draft ? ComboOrderStatus.Draft : ComboOrderStatus.Submitted; PriceLockUntil = draft ? null : DateTime.UtcNow.AddDays(7); SetUpdated();
+    }
+    public void CaptureTemplateVersion(Guid? revisionId, string? snapshotJson)
+    {
+        if (ComboTemplateId.HasValue != !string.IsNullOrWhiteSpace(snapshotJson) ||
+            revisionId.HasValue && !ComboTemplateId.HasValue ||
+            snapshotJson?.Length > 2_000_000)
+            throw new DomainException("Snapshot phiên bản combo không hợp lệ.");
+        ComboTemplateRevisionId = revisionId;
+        ComboTemplateSnapshotJson = snapshotJson;
     }
     public void SubmitDraft()
     {

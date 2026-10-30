@@ -3,6 +3,8 @@ import { CheckCircle2, X, Loader2, Sparkles, Image } from "lucide-react";
 import { useEligibleContracts, useSubmitReview } from "../../hooks/useReviews";
 import type { SubmitReviewRequest } from "../../../../types/review.types";
 import { matchingReviewContracts, selectedReviewContract } from "./reviewPolicyModel";
+import { reviewErrorMessage } from "../../reviewTransport";
+import { useAuthStore } from "../../../../store/authStore";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -24,7 +26,8 @@ export function ReviewModal({
   onSuccess,
 }: ReviewModalProps) {
   const eligibleQuery = useEligibleContracts(isOpen);
-  const eligibleContracts = matchingReviewContracts(eligibleQuery.data ?? [], listingId, vendorId);
+  const signedCustomer = useAuthStore(state => !!state.token && state.user?.role === "Customer");
+  const eligibleContracts = matchingReviewContracts(signedCustomer && eligibleQuery.isSuccess ? eligibleQuery.data : [], listingId, vendorId);
   const submitMutation = useSubmitReview();
 
   // 4 Tiêu chí chấm sao theo Prototype SCR-05-06
@@ -82,8 +85,7 @@ export function ReviewModal({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: unknown) {
-      const e = err as Error;
-      setErrorMsg(e.message || "Không thể gửi đánh giá.");
+      setErrorMsg(reviewErrorMessage(err, "Không thể gửi đánh giá."));
     }
   };
 
@@ -155,8 +157,9 @@ export function ReviewModal({
                 Chỉ nhận đánh giá mới sau khi hợp đồng đã chuyển sang Hoàn tất. Đánh giá tư vấn cũ được giữ nguyên, nhưng không mở nhận đánh giá mới khi chưa sử dụng dịch vụ.
               </p>
             )}
+            {!signedCustomer && <p role="status" className="text-slate-600 mt-2">Đăng nhập bằng tài khoản khách hàng để kiểm tra hợp đồng đủ điều kiện.</p>}
             {eligibleQuery.isFetching && <p role="status" className="text-slate-500 mt-2">Đang kiểm tra hợp đồng đủ điều kiện...</p>}
-            {eligibleQuery.isError && <p role="alert" className="text-red-700 mt-2">{eligibleQuery.error.message} <button type="button" className="underline" onClick={() => { void eligibleQuery.refetch(); }}>Thử lại</button></p>}
+            {signedCustomer && eligibleQuery.isError && <p role="alert" className="text-red-700 mt-2">{reviewErrorMessage(eligibleQuery.error, "Chưa tải được hợp đồng đủ điều kiện.")} <button type="button" className="underline disabled:opacity-50" disabled={eligibleQuery.isFetching} onClick={() => { void eligibleQuery.refetch(); }}>Thử lại</button></p>}
             {eligibleQuery.isSuccess && !eligibleContracts.length && <p role="status" className="text-slate-600 mt-2">Chưa có hợp đồng đã Hoàn tất và chưa được đánh giá cho dịch vụ này. Bạn không thể gửi đánh giá khi chỉ mới tư vấn, đang thực hiện hoặc có tranh chấp.</p>}
           </div>
 

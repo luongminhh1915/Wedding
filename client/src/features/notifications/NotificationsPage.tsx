@@ -40,7 +40,7 @@ export default function NotificationsPage() {
     }
   };
   const data = query.data;
-  return <main className="wm-notifications container" aria-busy={query.isFetching}>
+  return <main className="wm-notifications" aria-busy={query.isFetching}>
     <div className="wm-notifications-heading">
       <div><span className="wm-notifications-eyebrow">KHÔNG BỎ LỠ ĐIỀU QUAN TRỌNG</span><h1 ref={heading}><Bell size={29} aria-hidden="true" />Thông báo</h1>
         <p>Cập nhật về lịch hẹn, yêu cầu dịch vụ và kế hoạch của bạn.</p></div>

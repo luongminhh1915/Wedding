@@ -1,8 +1,8 @@
-.service-browse-page { --service-navy: #25334d; --service-muted: #68788c; --service-gold: #c4a94f; color: var(--service-navy); }
+.service-browse-page { --service-navy: #233a42; --service-muted: #68788c; --service-gold: #c4a94f; color: var(--service-navy); }
 .service-browse-intro { padding-bottom: 32px; }
 .service-browse-intro h1 { font-size: clamp(32px, 3.2vw, 47px); }
 .service-browse-intro h1 em { color: var(--service-navy); }
-.service-search-panel { position: relative; background: #fff; border: 1px solid #e6e3d8; border-radius: 24px; padding: 25px; box-shadow: 0 12px 35px #25334d07; }
+.service-search-panel { position: relative; background: #fff; border: 1px solid #e6e3d8; border-radius: 24px; padding: 25px; box-shadow: 0 12px 35px #233a4207; }
 .service-search-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .service-search-heading > span { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; }
 .service-search-heading p { color: var(--service-muted); font-size: 12px; margin: 0; }

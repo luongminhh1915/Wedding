@@ -16,10 +16,27 @@ export function apiError(e: unknown, fallback = "Đã có lỗi xảy ra, vui l�
 }
 
 // ---------- P1: Auth OTP / Google ----------
+export interface AuthProviderStatus {
+  emailOtp: boolean;
+  passwordRecovery: boolean;
+  googleClientId?: string | null;
+  facebookAppId?: string | null;
+  facebookGraphApiVersion?: string | null;
+  smsOtp: boolean;
+}
 export const authApi = {
+  providers: () => get<AuthProviderStatus>("/api/auth/providers"),
   requestOtp: (target: string) => post<{ sent: boolean; expiresInSeconds: number }>("/api/auth/otp/request", { target }),
   verifyOtp: (target: string, code: string, fullName?: string) => post<AuthResponse>("/api/auth/otp/verify", { target, code, fullName }),
   google: (idToken: string) => post<AuthResponse>("/api/auth/google", { idToken }),
+  facebook: (accessToken: string) => post<AuthResponse>("/api/auth/facebook", { accessToken }),
+  googleLinkStatus: (token: string) => axiosClient.get<{ linked: boolean }>("/api/auth/google/link-status", { headers: { Authorization: `Bearer ${token}` } }).then(response => response.data),
+  linkGoogle: (idToken: string, token: string) => axiosClient.post<void>("/api/auth/google/link", { idToken }, { headers: { Authorization: `Bearer ${token}` } }),
+  facebookLinkStatus: (token: string) => axiosClient.get<{ linked: boolean }>("/api/auth/facebook/link-status", { headers: { Authorization: "Bearer " + token } }).then(response => response.data),
+  linkFacebook: (accessToken: string, token: string) => axiosClient.post<void>("/api/auth/facebook/link", { accessToken }, { headers: { Authorization: "Bearer " + token } }),
+  requestPasswordReset: (email: string) => post<{ message: string }>("/api/auth/password-reset/request", { email }),
+  confirmPasswordReset: (token: string, newPassword: string, confirmPassword: string) =>
+    post<void>("/api/auth/password-reset/confirm", { token, newPassword, confirmPassword }),
 };
 
 // ---------- P1: Planner ----------

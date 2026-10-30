@@ -10,6 +10,8 @@ import {
   Gavel,
   Receipt,
   RefreshCw,
+  Star,
+  Percent,
 } from "lucide-react";
 import {
   AdminKpiPanel,
@@ -26,6 +28,8 @@ import AllListingsManager from "./AllListingsManager";
 import FinancialDashboard from "./FinancialDashboard";
 import { useModerationQueue } from "./useModerationQueue";
 import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
+import ReviewModerationQueue from "./ReviewModerationQueue";
+import CommissionPolicyManager from "./CommissionPolicyManager";
 
 const tabs = [
   {
@@ -40,6 +44,13 @@ const tabs = [
     label: "Kiểm duyệt",
     icon: FileCheck,
     description: "Hàng chờ chung cho bài giới thiệu, dịch vụ thành phần và combo của nhà cung cấp.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
+  {
+    id: "reviews",
+    label: "Đánh giá",
+    icon: Star,
+    description: "Duyệt đánh giá độc lập Shop, Service, Combo và yêu cầu chỉnh sửa.",
     roles: ["SuperAdmin", "Moderator"],
   },
   {
@@ -68,6 +79,13 @@ const tabs = [
     label: "Bảng kê tháng",
     icon: Receipt,
     description: "Bảng kê, giao dịch ngân hàng, hàng chờ đối soát và hóa đơn có chứng từ thật.",
+    roles: ["SuperAdmin", "Finance"],
+  },
+  {
+    id: "commissions",
+    label: "Chính sách hoa hồng",
+    icon: Percent,
+    description: "Cơ chế phân cấp 5 tầng (Dịch vụ → NCC theo ngành → Toàn NCC → Ngành hàng → Toàn sàn) và xử lý điều chỉnh hoa hồng.",
     roles: ["SuperAdmin", "Finance"],
   },
   {
@@ -136,11 +154,13 @@ export default function AdminDashboard() {
           <p className="text-xs text-slate-400 mt-2">{current.description}</p>
         </div>
         {activeTab === "moderation" && <ModerationQueue />}
+        {activeTab === "reviews" && <ReviewModerationQueue />}
         {activeTab === "published-listings" && <AllListingsManager />}
         {activeTab === "users" && <UserManagement />}
         {activeTab === "finance" && <FinancialDashboard />}
         {activeTab === "overview" && <AdminKpiPanel />}
         {activeTab === "settlements" && <SettlementsPanel />}
+        {activeTab === "commissions" && <CommissionPolicyManager />}
         {activeTab === "verifications" && <VerificationQueue />}
         {activeTab === "disputes" && <DisputeDesk />}
         {activeTab === "change-requests" && <OrderRequestInbox audience="finance" />}

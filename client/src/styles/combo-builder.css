@@ -47,7 +47,7 @@
   gap: 7px 13px;
   flex-wrap: wrap;
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
 }
 .combo-selected-shop span {
   display: inline-flex;
@@ -99,7 +99,7 @@
   gap: 4px;
   font-size: 10px;
   line-height: 1.8;
-  color: #66758b;
+  color: #53637b;
   flex-wrap: wrap;
 }
 .combo-preset-card li > .combo-photo {
@@ -122,7 +122,7 @@
   border: 1px solid #dedccf;
   border-radius: 18px;
   padding: 18px 22px;
-  background: #faf8f0;
+  background: #fcf6ea;
   margin-bottom: 22px;
 }
 .combo-vendor-picker h2 {
@@ -131,7 +131,7 @@
 }
 .combo-vendor-picker p:not(.combo-eyebrow) {
   font-size: 12px;
-  color: #66758b;
+  color: #53637b;
   line-height: 1.7;
   margin-top: 6px;
 }
@@ -139,7 +139,7 @@
   min-width: 240px;
   max-width: 350px;
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
 }
 .combo-vendor-picker select {
   margin-top: 6px;
@@ -170,7 +170,7 @@
   margin-top: 25px;
   border: 1px solid #dedccf;
   border-radius: 18px;
-  background: #faf8f0;
+  background: #fcf6ea;
 }
 .combo-next-step strong {
   font-size: 13px;
@@ -178,7 +178,7 @@
 .combo-next-step p {
   font-size: 12px;
   line-height: 1.7;
-  color: #66758b;
+  color: #53637b;
   margin-top: 6px;
 }
 .combo-next-step .combo-primary {
@@ -189,7 +189,7 @@
   padding: 18px;
   border: 1px solid #dedccf;
   border-radius: 16px;
-  background: #f2efe4;
+  background: #fcf6ea;
   text-align: left;
 }
 .combo-process h3 {
@@ -212,7 +212,7 @@
 }
 .combo-process span {
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
   line-height: 1.7;
 }
 .combo-review-details {
@@ -256,7 +256,7 @@
   padding: 12px 0 26px;
 }
 .combo-eyebrow {
-  color: #66758b;
+  color: #53637b;
   font-size: 10px;
   letter-spacing: 0.17em;
   font-weight: 700;
@@ -273,7 +273,7 @@
 }
 .combo-page-heading p:not(.combo-eyebrow) {
   font-size: 13px;
-  color: #66758b;
+  color: #53637b;
   max-width: 650px;
   line-height: 1.7;
 }
@@ -296,7 +296,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #66758b;
+  color: #53637b;
   font-size: 12px;
 }
 .combo-journey li span {
@@ -309,20 +309,20 @@
   font-size: 11px;
 }
 .combo-journey .active {
-  color: #25334c;
+  color: #233a42;
   font-weight: 600;
 }
 .combo-journey .active span {
-  background: #25334c;
-  color: #f2efe4;
-  border-color: #25334c;
+  background: #233a42;
+  color: #fcf6ea;
+  border-color: #233a42;
 }
 .combo-basics {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: #faf8f0;
+  background: #fcf6ea;
   border: 1px solid #dedccf;
   border-radius: 20px;
   padding: 20px 24px;
@@ -336,14 +336,14 @@
 }
 .combo-basics > div:first-child svg {
   grid-row: span 2;
-  color: #a38429;
+  color: #233a42;
 }
 .combo-basics strong {
   font-size: 13px;
 }
 .combo-basics span {
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
 }
 .combo-basics-fields {
   display: grid;
@@ -387,7 +387,7 @@
 .combo-category-nav > p {
   font-size: 9px;
   letter-spacing: 0.13em;
-  color: #66758b;
+  color: #53637b;
   margin: 0 0 10px 12px;
 }
 .combo-category-nav button {
@@ -401,11 +401,11 @@
   transition: background 0.15s;
 }
 .combo-category-nav button:hover {
-  background: #faf8f0;
+  background: #fcf6ea;
 }
 .combo-category-nav button.selected {
-  background: #25334c;
-  color: #f2efe4;
+  background: #233a42;
+  color: #fcf6ea;
 }
 .combo-category-nav button span {
   display: flex;
@@ -418,7 +418,7 @@
   opacity: 0.66;
 }
 .combo-category-check {
-  color: #a38429;
+  color: #233a42;
 }
 .combo-category-nav .selected .combo-category-check {
   color: #e0c468;
@@ -428,9 +428,9 @@
   scroll-margin-top: calc(var(--wm-header-offset, 88px) + 18px);
 }
 .combo-catalog-controls { flex-wrap: wrap; }
-.combo-catalog-controls .combo-sort { flex: 0 1 160px; color: #66758b; font-size: 11px; }
+.combo-catalog-controls .combo-sort { flex: 0 1 160px; color: #53637b; font-size: 11px; }
 .combo-catalog-controls .combo-sort select { width: 100%; margin-top: 5px; }
-.combo-catalog-status { color: #66758b; font-size: 12px; margin-bottom: 12px; }
+.combo-catalog-status { color: #53637b; font-size: 12px; margin-bottom: 12px; }
 .combo-section-heading {
   padding: 2px 0 17px;
 }
@@ -443,7 +443,7 @@
 .combo-section-heading p:last-child {
   font-size: 12px;
   line-height: 1.65;
-  color: #66758b;
+  color: #53637b;
 }
 .combo-filters {
   display: flex;
@@ -484,14 +484,14 @@
   transition: background 0.15s;
 }
 .combo-primary {
-  background: #25334c;
-  color: #faf8f0;
-  border: 1px solid #25334c;
+  background: #233a42;
+  color: #fcf6ea;
+  border: 1px solid #233a42;
 }
 .combo-secondary {
   border: 1px solid #dedccf;
-  background: #faf8f0;
-  color: #25334c;
+  background: #fcf6ea;
+  color: #233a42;
 }
 .combo-primary:disabled,
 .combo-secondary:disabled {
@@ -506,7 +506,7 @@
 .combo-category-nav button:focus-visible,
 .combo-text-button:focus-visible,
 .combo-icon-button:focus-visible {
-  outline: 2px solid #a38429;
+  outline: 2px solid #233a42;
   outline-offset: 3px;
 }
 .combo-text-button {
@@ -528,7 +528,7 @@
   color: #53637b;
 }
 .combo-icon-button:hover {
-  background: #f2efe4;
+  background: #fcf6ea;
 }
 .combo-product-grid,
 .combo-preset-grid {
@@ -541,11 +541,11 @@
   border: 1px solid #dedccf;
   border-radius: 20px;
   overflow: hidden;
-  background: #faf8f0;
+  background: #fcf6ea;
 }
 .combo-product-card.is-selected {
-  border-color: #a38429;
-  box-shadow: 0 0 0 1px #a3842922;
+  border-color: #233a42;
+  box-shadow: 0 0 0 1px #233a4222;
 }
 .combo-product-image {
   position: relative;
@@ -572,8 +572,8 @@
   gap: 5px;
   align-items: center;
   font-size: 10px;
-  background: #25334c;
-  color: #faf8f0;
+  background: #233a42;
+  color: #fcf6ea;
   border-radius: 20px;
   padding: 5px 9px;
 }
@@ -584,7 +584,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #66758b;
+  color: #53637b;
   font-size: 10px;
   margin-bottom: 7px;
 }
@@ -595,18 +595,18 @@
   min-height: 43px;
 }
 .combo-product-capacity {
-  color: #66758b;
+  color: #53637b;
   font-size: 10px;
   margin: 5px 0;
 }
 .combo-product-price {
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
   margin: 13px 0 5px;
 }
 .combo-product-price strong {
   font-size: 18px;
-  color: #25334c;
+  color: #233a42;
   margin-right: 3px;
   font-weight: 600;
 }
@@ -620,7 +620,7 @@
   display: block;
   text-align: center;
   font-size: 10px;
-  color: #66758b;
+  color: #53637b;
   margin-top: 11px;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -631,7 +631,7 @@
   flex-direction: column;
 }
 .combo-preset-card.is-popular {
-  border-color: #a38429;
+  border-color: #233a42;
 }
 .combo-preset-top {
   display: flex;
@@ -658,7 +658,7 @@
   margin-bottom: 9px;
 }
 .combo-preset-card > p {
-  color: #66758b;
+  color: #53637b;
   font-size: 12px;
   line-height: 1.7;
   margin-bottom: 14px;
@@ -712,7 +712,7 @@
   flex-shrink: 0;
 }
 .combo-cart-panel {
-  background: #faf8f0;
+  background: #fcf6ea;
   border: 1px solid #dedccf;
   border-radius: 22px;
   overflow: hidden;
@@ -746,7 +746,7 @@
 }
 .combo-cart-context,
 .combo-template-source {
-  color: #66758b;
+  color: #53637b;
   font-size: 11px;
   padding: 0 20px;
   line-height: 1.7;
@@ -769,7 +769,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  color: #66758b;
+  color: #53637b;
   font-size: 10px;
 }
 .combo-cart-lines h3 {
@@ -779,7 +779,7 @@
   margin-bottom: 4px;
 }
 .combo-cart-lines li > p {
-  color: #66758b;
+  color: #53637b;
   font-size: 10px;
   margin: 3px 0;
 }
@@ -797,7 +797,7 @@
 .combo-line-bottom strong small {
   display: block;
   font-size: 9px;
-  color: #66758b;
+  color: #53637b;
   font-weight: 400;
 }
 .combo-cart-totals {
@@ -827,7 +827,7 @@
   font-weight: 600;
 }
 .combo-cart-totals > p {
-  color: #66758b;
+  color: #53637b;
   font-size: 11px;
   line-height: 1.6;
   margin: 0 0 15px;
@@ -843,7 +843,7 @@
 }
 .combo-price-conditions {
   font-size: 10px;
-  color: #66758b;
+  color: #53637b;
   margin: 0 0 15px;
   line-height: 1.7;
 }
@@ -861,7 +861,7 @@
 .combo-cart-totals > small {
   display: block;
   text-align: center;
-  color: #66758b;
+  color: #53637b;
   font-size: 10px;
   line-height: 1.6;
   margin-top: 11px;
@@ -889,13 +889,13 @@
   text-align: center;
   gap: 17px;
   padding: 45px 20px;
-  color: #66758b;
+  color: #53637b;
 }
 .combo-empty h1,
 .combo-empty h3 {
   font-family: "Playfair Display", Georgia, serif;
   font-size: 22px;
-  color: #25334c;
+  color: #233a42;
 }
 .combo-empty p {
   font-size: 12px;
@@ -926,7 +926,7 @@
 .wm-combo-dialog {
   margin: auto;
   padding: 24px;
-  background: #faf8f0;
+  background: #fcf6ea;
   border: 1px solid #dedccf;
   border-radius: 24px;
   width: min(560px, calc(100vw - 24px));
@@ -971,7 +971,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #66758b;
+  color: #53637b;
   font-size: 11px;
 }
 .combo-config-title h3 {
@@ -981,7 +981,7 @@
   font-family: "Playfair Display", Georgia, serif;
 }
 .combo-config-title > span {
-  color: #66758b;
+  color: #53637b;
   font-size: 12px;
 }
 .combo-config-options {
@@ -993,7 +993,7 @@
 }
 .combo-config-options > p {
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
   margin-top: 7px;
 }
 .combo-config-options label {
@@ -1015,7 +1015,7 @@
 .wm-combo-dialog input[type="checkbox"] {
   width: 17px;
   height: 17px;
-  accent-color: #25334c;
+  accent-color: #233a42;
   flex-shrink: 0;
 }
 .combo-policy {
@@ -1024,7 +1024,7 @@
   gap: 8px;
   font-size: 11px;
   line-height: 1.8;
-  color: #66758b;
+  color: #53637b;
   margin: 23px 0 19px;
 }
 .combo-policy strong {
@@ -1045,7 +1045,7 @@
 }
 .combo-config-footer span {
   font-size: 10px;
-  color: #66758b;
+  color: #53637b;
 }
 .combo-config-footer strong {
   font-size: 21px;
@@ -1058,7 +1058,7 @@
 }
 .combo-preview-copy {
   font-size: 12px;
-  color: #66758b;
+  color: #53637b;
   line-height: 1.8;
   margin: 10px 0 20px;
 }
@@ -1079,7 +1079,7 @@
 .combo-template-preview-lines small {
   display: block;
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
   margin-top: 6px;
   line-height: 1.6;
 }
@@ -1104,7 +1104,7 @@
 .combo-review-lines p,
 .combo-review-lines summary {
   font-size: 11px;
-  color: #66758b;
+  color: #53637b;
   line-height: 1.8;
   margin-top: 6px;
 }
@@ -1160,7 +1160,7 @@
 }
 .combo-success > p:not(.combo-eyebrow) {
   font-size: 13px;
-  color: #66758b;
+  color: #53637b;
   line-height: 1.8;
 }
 .combo-success ul {
@@ -1177,7 +1177,7 @@
 }
 .combo-success li small {
   display: block;
-  color: #66758b;
+  color: #53637b;
   font-size: 11px;
   margin-top: 5px;
 }
@@ -1189,7 +1189,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #f2efe4;
+  color: #fcf6ea;
   font-size: 11px;
   padding: 8px 4px;
 }
@@ -1199,8 +1199,8 @@
   height: 19px;
   min-width: 19px;
   border-radius: 50%;
-  background: #f2efe4;
-  color: #25334c;
+  background: #fcf6ea;
+  color: #233a42;
   font-weight: 600;
 }
 .browse-combo-banner {
@@ -1210,9 +1210,9 @@
   align-items: center;
   padding: 20px 24px;
   border: 1px solid #dedccf;
-  background: #faf8f0;
+  background: #fcf6ea;
   border-radius: 20px;
-  color: #25334c;
+  color: #233a42;
 }
 .browse-combo-banner h2 {
   font-family: "Playfair Display", Georgia, serif;
@@ -1221,7 +1221,7 @@
 }
 .browse-combo-banner p {
   font-size: 12px;
-  color: #66758b;
+  color: #53637b;
   line-height: 1.7;
 }
 .browse-combo-banner a {
@@ -1237,8 +1237,8 @@
   border: 1px solid #dedccf;
   border-radius: 12px;
   font-size: 11px;
-  color: #25334c;
-  background: #f2efe4;
+  color: #233a42;
+  background: #fcf6ea;
 }
 @media (min-width: 1320px) {
   .combo-preset-grid {
@@ -1295,8 +1295,8 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    background: #25334c;
-    color: #f2efe4;
+    background: #233a42;
+    color: #fcf6ea;
     width: 100%;
     padding: 15px 20px;
     border-radius: 18px;
@@ -1400,7 +1400,7 @@
     overflow-x: auto;
     position: sticky;
     top: 81px;
-    background: #f2efe4;
+    background: #fcf6ea;
     z-index: 20;
     padding: 5px 0 10px;
     scrollbar-width: thin;
@@ -1415,7 +1415,7 @@
     padding: 10px 13px;
     border: 1px solid #dedccf;
     font-size: 12px;
-    background: #faf8f0;
+    background: #fcf6ea;
     border-radius: 13px;
     min-width: 110px;
   }
@@ -1552,7 +1552,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-inline: contain;
-    background: #f2efe4;
+    background: #fcf6ea;
     border-bottom: 1px solid #dedccf;
     padding: 7px 0 11px;
     gap: 8px;
@@ -1569,12 +1569,12 @@
     padding: 11px 12px;
     border: 1px solid #dedccf;
     border-radius: 13px;
-    background: #faf8f0;
+    background: #fcf6ea;
     scroll-snap-align: start;
   }
   .wm-combo .combo-category-nav button.selected {
-    background: #25334c;
-    color: #f2efe4;
+    background: #233a42;
+    color: #fcf6ea;
   }
   .wm-combo .combo-category-nav button > svg:first-child {
     display: block;

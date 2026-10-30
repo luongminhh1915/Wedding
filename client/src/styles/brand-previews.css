@@ -42,7 +42,7 @@
   display: block;
   width: 68px;
   height: 3px;
-  background: #d2ac2b;
+  background: #e38c82;
   margin-top: 21px;
 }
 .hero-art {
@@ -79,50 +79,50 @@
 }
 .feature-content button[class*="bg-gradient"] {
   background-image: none;
-  background-color: #25334c;
+  background-color: #233a42;
 }
 .wm-theme {
   --color-slate-500: #657184;
   --color-slate-600: #4a5870;
   --color-slate-700: #384760;
   --color-slate-800: #2d3b54;
-  --color-slate-900: #25334c;
+  --color-slate-900: #233a42;
   --color-rose-700: #1e2a40;
   --color-rose-800: #182338;
 }
 .planner-tabs button.active,
 .planner-tabs > a.active {
-  color: #f2efe4;
-  background: #25334c;
+  color: #fcf6ea;
+  background: #233a42;
 }
 .closing-cta {
   background: #e7e5db;
   border: 1px solid #dcd8c9;
 }
 .closing-cta > svg {
-  color: #a7841d;
+  color: #b86661;
 }
 .invitation-demo-inner {
-  background: #f2efe4;
+  background: #fcf6ea;
   border-color: #d9c890;
 }
 .invite-flower {
-  color: #a7841d;
+  color: #b86661;
 }
 .orbit-tool:nth-of-type(3n) > span,
 .orbit-tool:nth-of-type(3n + 1) > span {
-  background: #f2efe4;
-  color: #25334c;
+  background: #fcf6ea;
+  color: #233a42;
 }
 .wm-header {
-  box-shadow: 0 12px 32px #25334c1a;
-  border-color: #25334c;
+  box-shadow: 0 12px 32px #233a421a;
+  border-color: #233a42;
 }
 .wm-header .wm-login {
-  background: #f2efe4;
+  background: #fcf6ea;
 }
 .wm-header .wm-account {
-  background: #f2efe4;
+  background: #fcf6ea;
 }
 .preview-brand {
   font:
@@ -132,14 +132,14 @@
   white-space: nowrap;
 }
 .preview-brand b {
-  color: #a7841d;
+  color: #b86661;
 }
 .planner-preview {
   position: relative;
   background: #faf8f0;
   border: 1px solid #d9dcdf;
   border-radius: 18px;
-  box-shadow: 0 25px 65px #25334c12;
+  box-shadow: 0 25px 65px #233a4212;
   overflow: hidden;
   transform: rotate(-2deg);
   text-align: left;
@@ -163,8 +163,8 @@
 .preview-avatar {
   display: grid;
   place-items: center;
-  background: #25334c;
-  color: #f2efe4;
+  background: #233a42;
+  color: #fcf6ea;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -178,8 +178,8 @@
   min-height: 335px;
 }
 .preview-sidebar {
-  background: #25334c;
-  color: #f2efe4;
+  background: #233a42;
+  color: #fcf6ea;
   padding: 25px 12px;
 }
 .preview-sidebar-title {
@@ -204,8 +204,8 @@
   margin-block: 3px;
 }
 .preview-sidebar > span.selected {
-  background: #f2efe4;
-  color: #25334c;
+  background: #fcf6ea;
+  color: #233a42;
 }
 .preview-sidebar-heart {
   margin-top: 26px;
@@ -299,7 +299,7 @@
   content: "";
   width: 60%;
   height: 100%;
-  background: #25334c;
+  background: #233a42;
   position: absolute;
   border-radius: inherit;
 }
@@ -349,9 +349,9 @@
   flex-shrink: 0;
 }
 .preview-task > span.checked {
-  background: #25334c;
-  color: #f2efe4;
-  border-color: #25334c;
+  background: #233a42;
+  color: #fcf6ea;
+  border-color: #233a42;
   display: grid;
   place-items: center;
 }
@@ -407,9 +407,9 @@
   flex-shrink: 0;
 }
 .mini-task > span.done {
-  background: #25334c;
-  color: #f2efe4;
-  border-color: #25334c;
+  background: #233a42;
+  color: #fcf6ea;
+  border-color: #233a42;
   display: grid;
   place-items: center;
 }
@@ -472,7 +472,7 @@
 }
 .mini-invitation > svg {
   margin: 16px auto 9px;
-  color: #a7841d;
+  color: #b86661;
 }
 .mini-invitation h4 {
   font:
@@ -481,7 +481,7 @@
 }
 .mini-invitation h4 em {
   font-size: 17px;
-  color: #a7841d;
+  color: #b86661;
 }
 .mini-invitation p {
   font-size: 9px;
@@ -536,12 +536,12 @@
   width: 235px;
   position: relative;
   z-index: 1;
-  background: #f2efe4;
-  color: #25334c;
-  border: 6px solid #25334c;
+  background: #fcf6ea;
+  color: #233a42;
+  border: 6px solid #233a42;
   border-radius: 33px;
   padding: 35px 17px 16px;
-  box-shadow: 12px 20px 45px #25334c20;
+  box-shadow: 12px 20px 45px #233a4220;
   transform: rotate(6deg);
   text-align: left;
 }
@@ -552,7 +552,7 @@
   transform: translateX(-50%);
   width: 61px;
   height: 13px;
-  background: #25334c;
+  background: #233a42;
   border-radius: 12px;
 }
 .phone-preview .preview-brand {
@@ -575,8 +575,8 @@
   margin: 24px 0 18px;
 }
 .phone-date {
-  background: #25334c;
-  color: #f2efe4;
+  background: #233a42;
+  color: #fcf6ea;
   display: flex;
   align-items: center;
   gap: 13px;
@@ -616,7 +616,7 @@
   display: block;
   height: 100%;
   width: 60%;
-  background: #25334c;
+  background: #233a42;
   border-radius: inherit;
 }
 .phone-panel > small {
@@ -647,7 +647,7 @@
   color: #657184;
 }
 .phone-nav svg:first-child {
-  color: #25334c;
+  color: #233a42;
 }
 
 /* Keep the account and logout controls inside the header on compact laptops. */
@@ -745,10 +745,10 @@
     color: #657184;
   }
   .wm-mobile-nav a.active {
-    color: #25334c;
+    color: #233a42;
   }
   .wm-mobile-nav a.active::before {
-    background: #25334c10;
+    background: #233a4210;
   }
 }
 @media (max-width: 600px) {

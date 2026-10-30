@@ -25,6 +25,10 @@ export interface ListingSummaryDto {
   revisionStatus?: string | null;
   latestRevisionId?: string | null;
   revisionReviewNote?: string | null;
+  categoryId?: string;
+  pricingServiceItemId?: string | null;
+  basePrice?: number | null;
+  priceUnit?: string | null;
 }
 
 export interface VendorListingsPage {
@@ -84,6 +88,7 @@ export interface ListingPricingDto {
   maxBookingsPerDay: number;
   variants?: { id?: string | null; name: string; priceDelta: number }[];
   addOns?: { id?: string | null; name: string; price: number; perUnit: boolean }[];
+  sourceVersion?: string | null;
 }
 export interface ListingPricingOption extends Omit<ListingPricingDto, 'serviceItemId'> {
   id: string;
@@ -126,7 +131,12 @@ export interface ServiceDetailsDto {
   customerRequirements: string;
   notes: string;
   fullService: FullServiceDetailsDto | null;
+  collections?: ServiceCollectionItem[];
+  latestUpdate?: ServiceLatestUpdate | null;
 }
+
+export interface ServiceCollectionItem { id: string; name: string; images: string[]; }
+export interface ServiceLatestUpdate { content: string; imageUrl: string; }
 
 export type ListingStatus = 'Draft' | 'PendingApproval' | 'Active' | 'Rejected' | 'Hidden';
 

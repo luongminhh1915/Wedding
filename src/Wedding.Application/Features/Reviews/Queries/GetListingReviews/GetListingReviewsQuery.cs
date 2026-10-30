@@ -41,15 +41,17 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
             .Include(r => r.Customer)
             .Include(r => r.Vendor)
             .Include(r => r.Listing)
-            .Where(r => r.Status == ReviewStatus.Approved && visibleListings.Select(listing => listing.Id).Contains(r.ListingId));
+            .Where(r => r.Status == ReviewStatus.Approved);
 
         if (request.ListingId.HasValue && request.ListingId.Value != Guid.Empty)
         {
-            query = query.Where(r => r.ListingId == request.ListingId.Value);
+            query = query.Where(r => r.TargetType == ReviewTargetType.Service &&
+                r.ListingId == request.ListingId.Value &&
+                visibleListings.Select(listing => (Guid?)listing.Id).Contains(r.ListingId));
         }
         else if (request.VendorId.HasValue && request.VendorId.Value != Guid.Empty)
         {
-            query = query.Where(r => r.VendorId == request.VendorId.Value);
+            query = query.Where(r => r.TargetType == ReviewTargetType.Shop && r.VendorId == request.VendorId.Value);
         }
 
         var reviews = await query
@@ -62,7 +64,7 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
         return reviews.Select(r => new PublicReviewDto(
             Id: r.Id,
             ListingId: r.ListingId,
-            ListingTitle: r.Listing.Title,
+            ListingTitle: r.Listing == null ? null : r.Listing.Title,
             CustomerName: r.Customer.FullName,
             VendorId: r.VendorId,
             VendorBrandName: r.Vendor.BrandName,
@@ -74,7 +76,8 @@ public class GetListingReviewsQueryHandler : IRequestHandler<GetListingReviewsQu
             VendorReply: r.VendorReply,
             VendorRepliedAt: r.VendorRepliedAt,
             CreatedAt: r.CreatedAt,
-            QualityRating: r.QualityRating, ServiceRating: r.ServiceRating, PunctualityRating: r.PunctualityRating, ValueRating: r.ValueRating, AverageRating: r.AverageRating
+            QualityRating: r.QualityRating, ServiceRating: r.ServiceRating, PunctualityRating: r.PunctualityRating, ValueRating: r.ValueRating, AverageRating: r.AverageRating,
+            TargetType: r.TargetType.ToString(), ComboTemplateId: r.ComboTemplateId
         )).ToList();
     }
 }

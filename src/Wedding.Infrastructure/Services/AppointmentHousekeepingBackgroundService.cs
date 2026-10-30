@@ -42,7 +42,7 @@ public class AppointmentHousekeepingBackgroundService : BackgroundService
                     {
                         a.Expire(); context.AppointmentEvents.Add(AppointmentEvent.Create(a.Id, null, "Expired", "Hết thời hạn phản hồi/giữ cọc"));
                         var customer = await context.Users.FirstOrDefaultAsync(u => u.Id == a.CustomerId, ct);
-                        if (customer != null) await notify.SendAsync("Email", customer.Email, $"Lịch hẹn {a.Code} đã hết hạn. Khoản cọc cần hoàn: {a.RefundDue:N0}đ.", ct);
+                        if (customer != null) await notify.SendAsync("Email", customer.NotificationRecipient, $"Lịch hẹn {a.Code} đã hết hạn. Khoản cọc cần hoàn: {a.RefundDue:N0}đ.", ct);
                     }
                     var noShows = await context.Appointments.Where(a => a.Status == AppointmentStatus.Confirmed && a.StartAt <= now.AddMinutes(-30)).ToListAsync(ct);
                     foreach (var a in noShows)
@@ -56,15 +56,15 @@ public class AppointmentHousekeepingBackgroundService : BackgroundService
                         var hours = (a.StartAt - now).TotalHours;
                         if (!a.CustomerReminder24At.HasValue)
                         {
-                            await notify.SendAsync("Email", a.Customer.Email, $"Nhắc lịch hẹn {a.Code}: {(a.StartAt.AddHours(7)):HH:mm dd/MM/yyyy}.", ct); a.MarkReminder("customer24");
+                            await notify.SendAsync("Email", a.Customer.NotificationRecipient, $"Nhắc lịch hẹn {a.Code}: {(a.StartAt.AddHours(7)):HH:mm dd/MM/yyyy}.", ct); a.MarkReminder("customer24");
                         }
                         if (hours <= 2 && !a.CustomerReminder2At.HasValue)
                         {
-                            await notify.SendAsync("Email", a.Customer.Email, $"Lịch hẹn {a.Code} còn dưới 2 giờ.", ct); a.MarkReminder("customer2");
+                            await notify.SendAsync("Email", a.Customer.NotificationRecipient, $"Lịch hẹn {a.Code} còn dưới 2 giờ.", ct); a.MarkReminder("customer2");
                         }
                         if (hours <= 1 && !a.VendorReminder1At.HasValue)
                         {
-                            await notify.SendAsync("Email", a.Vendor.User.Email, $"Lịch hẹn {a.Code} còn dưới 1 giờ.", ct); a.MarkReminder("vendor1");
+                            await notify.SendAsync("Email", a.Vendor.User.NotificationRecipient, $"Lịch hẹn {a.Code} còn dưới 1 giờ.", ct); a.MarkReminder("vendor1");
                         }
                     }
                     await ExpireComboLocksAsync(context, now, ct);

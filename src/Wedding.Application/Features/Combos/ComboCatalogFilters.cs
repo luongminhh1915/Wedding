@@ -13,7 +13,8 @@ public static class ComboPublicCatalog
     public static IQueryable<ServiceItem> Eligible(IApplicationDbContext db) => db.ServiceItems.AsNoTracking().Where(i =>
         i.IsActive && i.ModerationStatus == "Approved" && i.Listing.Status == ListingStatus.Active && i.Listing.IsActive &&
         i.Listing.VendorId == i.VendorId && i.Listing.CategoryId == i.CategoryId &&
-        db.Categories.Any(c => c.Id == i.CategoryId && c.IsActive) &&
+        db.Categories.Any(c => c.Id == i.CategoryId && c.IsActive &&
+            (!c.BusinessGroupId.HasValue || c.BusinessGroup!.IsActive)) &&
         i.Vendor.IsActive && i.Vendor.User.IsActive && i.Vendor.User.Role == UserRole.VendorOwner &&
         i.Vendor.IsVerified && i.Vendor.AllowInCombos);
 }

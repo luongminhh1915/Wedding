@@ -124,6 +124,7 @@ public class ComboOrderConfiguration : IEntityTypeConfiguration<ComboOrder>
         b.Property(x => x.DiscountPercent).HasPrecision(5, 4);
         b.Property(x => x.Total).HasPrecision(18, 2);
         b.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.ComboTemplateRevision).WithMany().HasForeignKey(x => x.ComboTemplateRevisionId).OnDelete(DeleteBehavior.Restrict);
         b.HasMany(x => x.Items).WithOne(i => i.ComboOrder).HasForeignKey(i => i.ComboOrderId).OnDelete(DeleteBehavior.Cascade);
     }
 }

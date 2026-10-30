@@ -5,6 +5,7 @@ import {
   type InvitationTemplate,
 } from "./invitationApi";
 import { invitationImageSrc } from "./invitationImages";
+import { InvitationMusicPlayer } from "./InvitationMusicPlayer";
 
 export interface InvitationDisplay {
   groomName: string;
@@ -35,10 +36,10 @@ export function InvitationView({
   const c = parseInvitationContent(i.contentJson);
   const en = i.lang === "en";
   const date = new Date(i.eventDate);
-  const primary = template?.primaryColor ?? "#25334c";
-  const paper = template?.backgroundColor ?? "#f2efe4";
+  const primary = template?.primaryColor ?? "#233a42";
+  const paper = template?.backgroundColor ?? "#fcf6ea";
   const dark = i.templateStyle === "midnight";
-  const text = dark ? "#f2efe4" : "#25334c";
+  const text = dark ? "#fcf6ea" : "#233a42";
   const panel = dark ? "#2b3b55" : "#ffffffb8";
   return (
     <article
@@ -150,7 +151,7 @@ export function InvitationView({
           {i.mapUrl && (
             <a
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-sans text-xs"
-              style={{ background: primary, color: dark ? "#25334c" : "#fff" }}
+              style={{ background: primary, color: dark ? "#233a42" : "#fff" }}
               href={i.mapUrl}
               target="_blank"
               rel="noreferrer"
@@ -202,13 +203,7 @@ export function InvitationView({
             </div>
           </section>
         )}
-        {i.musicUrl && (
-          <audio controls preload="none" className="w-full" src={i.musicUrl}>
-            {en
-              ? "Your browser does not support audio."
-              : "Trình duyệt không hỗ trợ phát nhạc."}
-          </audio>
-        )}
+        <InvitationMusicPlayer value={i.musicUrl} english={en} />
         {i.bankInfo && (
           <section
             className="rounded-2xl p-5 text-center"

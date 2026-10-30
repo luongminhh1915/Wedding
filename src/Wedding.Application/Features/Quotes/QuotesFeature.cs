@@ -98,6 +98,7 @@ public class RespondQuoteCommandHandler : IRequestHandler<RespondQuoteCommand, Q
         if (!r.Accept) quote.Reject(r.Note);
         else
         {
+            await Wedding.Application.Features.PrivateServiceAgreements.PrivateAgreementContractHandoff.EnsureReviewedAsync(_context, quote.Lead, quote.CreatedAt, ct);
             quote.Accept();
             if (await _context.BookingContracts.AnyAsync(c => c.LeadId == quote.LeadId &&
                     (c.Status == ContractStatus.PendingVerification || c.Status == ContractStatus.Confirmed), ct))

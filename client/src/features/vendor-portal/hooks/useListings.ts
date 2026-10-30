@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../../services/axiosClient';
 import { useAuthStore } from '../../../store/authStore';
+import { listingStudioActorIsCurrent, type ListingStudioActor } from '../components/listingStudioUpload';
 import type {
   ListingSummaryDto,
   ListingDto,
@@ -46,11 +47,17 @@ export const useMyListingsPage = (params: VendorListingsPageParams) => {
 };
 
 /** Tạo bài đăng mới */
-export const useCreateListing = () => {
+function studioHeaders(actor?: ListingStudioActor) {
+  if (!actor) return undefined;
+  if (!listingStudioActorIsCurrent(actor, useAuthStore.getState())) throw new Error('Phiên nhà cung cấp đã thay đổi. Vui lòng mở lại trình soạn thảo.');
+  return { Authorization: `Bearer ${actor.token}` };
+}
+
+export const useCreateListing = (actor?: ListingStudioActor) => {
   const qc = useQueryClient();
   return useMutation<{ listingId: string }, Error, CreateListingRequest>({
     mutationFn: async (data) => {
-      const res = await axiosClient.post('/api/listings', data);
+      const res = await axiosClient.post('/api/listings', data, { headers: studioHeaders(actor) });
       return res.data;
     },
     onSuccess: () => {
@@ -62,11 +69,11 @@ export const useCreateListing = () => {
 };
 
 /** Cập nhật bài đăng */
-export const useUpdateListing = () => {
+export const useUpdateListing = (actor?: ListingStudioActor) => {
   const qc = useQueryClient();
   return useMutation<void, Error, { id: string } & UpdateListingRequest>({
     mutationFn: async ({ id, ...data }) => {
-      await axiosClient.put(`/api/listings/${id}`, data);
+      await axiosClient.put(`/api/listings/${id}`, data, { headers: studioHeaders(actor) });
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: listingKeys.myListings });
@@ -81,11 +88,11 @@ export const useUpdateListing = () => {
 };
 
 /** Nộp bài lên hàng chờ kiểm duyệt */
-export const useSubmitListing = () => {
+export const useSubmitListing = (actor?: ListingStudioActor) => {
   const qc = useQueryClient();
   return useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      await axiosClient.post(`/api/listings/${id}/submit`);
+      await axiosClient.post(`/api/listings/${id}/submit`, null, { headers: studioHeaders(actor) });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: listingKeys.myListings }); qc.invalidateQueries({ queryKey: ['combo-catalog'] }); },
   });

@@ -41,6 +41,9 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
     public Task<WeddingInvitationDto> Handle(SaveInvitationCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => Save(request, ct), cancellationToken);
     private async Task<WeddingInvitationDto> Save(SaveInvitationCommand request, CancellationToken cancellationToken)
     {
+        var actorId = _currentUserService.UserId ?? throw new DomainException("Bạn cần đăng nhập.");
+        if (!await _context.Users.AnyAsync(user => user.Id == actorId && user.IsActive && user.Role == UserRole.Customer, cancellationToken))
+            throw new DomainException("Chỉ tài khoản khách hàng đang hoạt động được chỉnh sửa thiệp cưới.");
         var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
         var userId = scope.OwnerId;
         if (string.IsNullOrWhiteSpace(request.GroomName) || request.GroomName.Length > 100 || string.IsNullOrWhiteSpace(request.BrideName) || request.BrideName.Length > 100)
@@ -48,9 +51,10 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
         if (string.IsNullOrWhiteSpace(request.VenueName) || request.VenueName.Length > 200 || request.VenueAddress.Length > 300)
             throw new DomainException("Địa điểm tổ chức bắt buộc, tên tối đa 200 và địa chỉ 300 ký tự.");
         if (request.Lang is not ("vi" or "en")) throw new DomainException("Ngôn ngữ không được hỗ trợ.");
-        foreach (var url in new[] { request.MapUrl, request.MusicUrl })
+        foreach (var url in new[] { request.MapUrl })
             if (!string.IsNullOrWhiteSpace(url) && (url.Length > 500 || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
-                throw new DomainException("Liên kết nhạc và bản đồ phải là URL HTTP/HTTPS hợp lệ.");
+                throw new DomainException("Liên kết bản đồ phải là URL HTTP/HTTPS hợp lệ.");
+        var musicUrl = InvitationMusicUrls.Normalize(request.MusicUrl, userId);
         if (!InvitationImageUrls.IsValid(request.CoverImageUrl, userId)) throw new DomainException("Ảnh bìa cần là ảnh đã tải lên hồ sơ này hoặc URL ảnh cũ hợp lệ.");
         if (request.LoveStory?.Length > 3000 || request.BankInfo?.Length > 300 || request.ContentJson?.Length > 30000)
             throw new DomainException("Nội dung vượt quá giới hạn cho phép.");
@@ -119,14 +123,14 @@ public class SaveInvitationCommandHandler : IRequestHandler<SaveInvitationComman
                 mapUrl: request.MapUrl,
                 loveStory: request.LoveStory,
                 coverImageUrl: request.CoverImageUrl,
-                musicUrl: request.MusicUrl,
+                musicUrl: musicUrl,
                 templateStyle: string.IsNullOrWhiteSpace(request.TemplateStyle) ? "rustic" : request.TemplateStyle,
                 bankInfo: request.BankInfo
             );
         }
 
         invitation.Update(request.GroomName, request.BrideName, request.EventDate, request.VenueName, request.VenueAddress,
-            request.MapUrl, request.LoveStory, request.CoverImageUrl, request.MusicUrl, template.Key, request.BankInfo);
+            request.MapUrl, request.LoveStory, request.CoverImageUrl, musicUrl, template.Key, request.BankInfo);
         invitation.Configure(rawSlug, template.Id, request.Lang, contentJson, request.IsPublished);
 
         await _context.SaveChangesAsync(cancellationToken);

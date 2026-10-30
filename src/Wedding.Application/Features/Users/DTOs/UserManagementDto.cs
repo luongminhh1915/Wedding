@@ -11,5 +11,8 @@ public record UserManagementDto(
     DateTime CreatedAt,
     DateTime? LastLoginAt,
     Guid? VendorId,
-    string? VendorBrandName
+    string? VendorBrandName,
+    string? LoginName = null,
+    IReadOnlyList<string>? VendorOperatingRegions = null,
+    bool VendorNationwide = false
 );

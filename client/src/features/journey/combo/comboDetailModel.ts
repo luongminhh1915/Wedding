@@ -14,6 +14,8 @@ export interface DetailVendor {
   logoUrl?: string | null;
   coverImageUrl?: string | null;
   city: string;
+  operatingRegions?: string[] | null;
+  nationwide?: boolean | null;
   address?: string | null;
   bio?: string | null;
   isVerified: boolean;

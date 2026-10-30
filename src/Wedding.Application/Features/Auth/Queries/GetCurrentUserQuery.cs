@@ -34,7 +34,8 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
             user.Role.ToString(),
             user.AvatarUrl,
             user.Vendor?.Id,
-            user.Vendor?.BrandName
+            user.Vendor?.BrandName,
+            user.LoginName
         );
     }
 }

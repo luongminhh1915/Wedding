@@ -1,6 +1,38 @@
 # Deploy Wedding Match cho dự án môn học
 
-Phương án được chuẩn bị: React + ASP.NET Core cùng một website IIS, SQL Server tách riêng trên MonsterASP.NET Free. Không cần Azure, email sinh viên, thẻ ngân hàng hay mua tên miền; dự kiến chi phí hosting **0 đồng** nếu chỉ dùng Free. Không có thao tác đăng ký tài khoản, thanh toán hoặc publish từ các script trong repo.
+## Current22/10 — SmarterASP trial active, deployment in progress
+
+Đây là trạng thái và runbook hiện tại; các hướng dẫn MonsterASP cũ ở phần dưới **lịch sử, không dùng cho host SmarterASP**.
+
+- User yêu cầu triển khai `weddingmatch.website`, chọn SmarterASP plan `W60-US` trial 60 ngày và xác nhận tạo SQL Server DB mới, không sao chép dữ liệu local. Website `site1` active; panel đã map domain vào site. Public DNS delegation/propagation và chứng chỉ HTTPS cho domain riêng vẫn **UNVERIFIED**.
+- Panel được quan sát có quota `0/1` MSSQL DB, `0/1000 MB`; chưa tạo DB, truy vấn, chạy migration hoặc seed. Chủ tài khoản cần tự nhập mật khẩu DB trong panel; không gửi password/OTP/connection string qua chat.
+- Provider công bố ASP.NET Core hosting hỗ trợ `.NET 10.x`; trial page liệt kê .NET 10, MSSQL 2022, remote connect và backup/restore. Form hiện tại có MSSQL 2022 được chọn; quyền hạn/backup của account trial vẫn cần xác nhận sau khi tạo DB. FAQ công bố Let's Encrypt SSL miễn phí cho shared hosting, nhưng chứng chỉ cho domain này chưa được yêu cầu/kiểm tra. Trial không có SMTP, nên khôi phục mật khẩu qua email sẽ cần SMTP ngoài.
+- `tools/New-StudyConfiguration.ps1` defaults to certificate validation. Its optional `-TrustHostedSqlCertificate` comment documents MonsterASP, not this SmarterASP account; **do not use that switch** unless SmarterASP support confirms the exact SQL certificate limitation and the user approves the security trade-off.
+- Local artifact được xác minh bằng `tools/Verify-StudyPackage.ps1`: PASS, 240 ZIP entries, .NET `net10.0`, SQL Server, không có user data/secrets. ZIP SHA-256 `135F7EFFEE649C69539158F1E7672BD81308DB1F415B345B6335FDC09FD94AA2`; source fingerprint khớp manifest `ready.json`. Full release gate (BE 1,141; FE/tests/lint/build; disposable SQL smoke) là kết quả lịch sử lúc 23:27VN 22/10; không phải kiểm chứng host và chưa chạy lại.
+- User đã cung cấp riêng contact data cho ba tài khoản nội bộ, nhưng không lưu PII vào Git/docs. Email Admin đã được người dùng xác nhận hoàn chỉnh. Chưa tạo user: sau khi host DB sẵn sàng, bootstrap duy nhất SuperAdmin bằng `tools/Wedding.DeployAdmin` (password nhập ẩn trong terminal riêng), sau đó tạo Moderator và Finance qua Admin UI. Không bật demo seeding hay dùng mật khẩu mặc định.
+- SmarterASP trial không bao gồm SMTP theo FAQ; tính năng gửi mail khôi phục mật khẩu chưa hoạt động nếu chưa cấu hình một SMTP provider riêng. Không mở đăng ký/thu dữ liệu khách thật trước khi HTTPS thật, SQL persistence, backup/restore, private uploads và privacy notice đã kiểm tra.
+
+### Tiếp theo
+
+1. Form tạo MSSQL DB hiện đang mở trong panel. User tự nhập password và submit; sau khi host báo thành công, ghi nhận server/DB identifiers (không lưu password trong repo), rồi tạo file private deployment config theo mẫu dự án.
+2. Kiểm tra lại exact artifact/hash và hướng dẫn import dành riêng cho SmarterASP; chỉ chạy reviewed offline migration trên DB mới sau khi xác nhận tên DB. Giữ `ApplyMigrations=false`, `SeedDemoData=false` ở Production.
+3. Upload chính xác website ZIP, cấu hình private SQL/JWT/upload roots, smoke-test bằng temporary HTTPS URL trước. Không để `migrate.sql`, backups hoặc config secrets trong `/wwwroot`.
+4. Xác minh DNS tại registrar mà không thay nameservers nếu chưa biết có email/record dịch vụ hiện hữu; sau propagation, yêu cầu/kiểm tra HTTPS certificate cho `weddingmatch.website`.
+5. Tạo ba tài khoản qua luồng an toàn đã nêu; test role isolation, persistence sau app restart, uploads, backup/restore thử trên DB riêng, và ghi nhận giới hạn trial. Chỉ sau đó mới mở cho người dùng ngoài nhóm demo.
+
+Chi tiết trạng thái quan sát, decisions và blockers: [deployment progress 22/10](reports/deployment-progress-2026-10-22.md), [trial decision](decisions/2026-10-22-smarterasp-trial-deployment.md), [handoff checkpoint](AGENT_HANDOFF.md). Provider references: [ASP.NET Core/.NET 10 & MSSQL](https://www.smarterasp.net/asp.net_core_hosting/), [60-day trial: .NET 10, SQL Server, remote connect, backup/restore](https://www.smarterasp.net/free_trial), [FAQ: trial SMTP and free Let's Encrypt](https://www.smarterasp.net/FAQ/), [connection string in current control panel](https://www.smarterasp.net/support/kb/a2374/how-to-find-a-sample-database-connection-string.aspx).
+
+## Cập nhật ưu tiên và giới hạn —21/10/2026
+
+User hiện yêu cầu deploy trước, tên miền mong muốn **weddingmatch.vn**, và xác nhận chưa đăng ký tên miền. Kiến trúc package giữ React + ASP.NET Core cùng một website IIS, SQL Server riêng; chưa chọn/mua host hoặc domain. Script chỉ chuẩn bị/kiểm gói local, không tự đăng ký, thanh toán hay upload host.
+
+**Không dùng MonsterASP Free để thu dữ liệu khách thật.** Kiểm tra lại21/10: Free không gắn domain riêng; Terms3.2 chỉ cho development/testing/evaluation, không cho production workloads hoặc production processing of personal data. [Bảng plan](https://www.monsterasp.net/), [Terms chính thức](https://www.monsterasp.net/Terms/). Phương án Free trước đây dưới đây chỉ giữ như lịch sử kỹ thuật/demo dữ liệu giả, không còn là khuyến nghị cho khảo sát người dùng thật. Nâng cấp trả phí hoặc dùng host có điều kiện phù hợp cần user xác nhận chi phí/tài khoản trước.
+
+Tên miền .vn cần chủ dự án đăng ký qua nhà đăng ký và thực hiện thanh toán/xác minh chủ thể; chưa có nghĩa tên được giữ chỗ. Cấu hình DNS/IP phải lấy đúng host sau khi cấp, không tự đoán IP hoặc dùng forwarding thay hostname/HTTPS. Xem [hướng dẫn VNNIC](https://www.vnnic.vn/vi/ten-mien-vn/danh-cho-chu-the/dang-ky-ten-mien/huong-dan-dang-ky-ten-mien).
+
+## Phương án Free lịch sử — chỉ demo với dữ liệu giả
+
+Phương án đã chuẩn bị17/10: React + ASP.NET Core cùng một website IIS, SQL Server tách riêng trên MonsterASP.NET Free. Không cần Azure/email sinh viên; hosting0đ và dùng subdomain host. Không phù hợp domain riêng hoặc dữ liệu thật theo cập nhật21/10 phía trên.
 
 Free có 5 GB file, 256 MB RAM, SQL Server tối đa 1 GB, địa chỉ `*.runasp.net`. HTTPS cần yêu cầu hỗ trợ sau khi upload; không có backup tự động và không có AlwaysRunning. Đây là lựa chọn tiết kiệm cho khảo sát nhỏ, **không phải cam kết phục vụ 100 người đồng thời**. Thông số kiểm tra ngày 17/10/2026 tại [bảng Free/Premium chính thức](https://help.monsterasp.net/getting-started/first-steps/free-vs-premium).
 

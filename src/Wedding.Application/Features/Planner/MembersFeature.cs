@@ -15,7 +15,7 @@ public class GetWeddingMembersHandler(IApplicationDbContext db, ICurrentUserServ
     {
         var scope = await WeddingAccess.ResolveAsync(db, user, ct);
         var members = await db.WeddingMembers.AsNoTracking().Where(x => x.WeddingProfileId == scope.ProfileId)
-            .Select(x => new WeddingMemberDto(x.Id, x.UserId, x.User.FullName, x.User.Email, x.Role)).ToListAsync(ct);
+            .Select(x => new WeddingMemberDto(x.Id, x.UserId, x.User.FullName, x.User.Email ?? "", x.Role)).ToListAsync(ct);
         var owner = await db.Users.AsNoTracking().FirstAsync(x => x.Id == scope.OwnerId, ct);
         members.Insert(0, new WeddingMemberDto(Guid.Empty, owner.Id, owner.FullName, owner.Email, "Owner"));
         return new(scope.Role, members);

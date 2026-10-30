@@ -182,7 +182,7 @@ public class BookAppointmentCommandHandler(IApplicationDbContext context, ICurre
             var saved = await Appt.WithRefs(context).FirstAsync(x => x.Id == a.Id, token);
             await Appt.SyncConfirmedAsync(context, saved, token);
             context.AppointmentEvents.Add(AppointmentEvent.Create(a.Id, uid, "Booked", r.Note));
-            await notify.SendContextAsync("Email", type.Vendor.User.Email, $"Lịch hẹn mới {a.Code}: {(start + Appt.VnOffset):HH:mm dd/MM/yyyy}.", "appointment", a.Id, token);
+            await notify.SendContextAsync("Email", type.Vendor.User.NotificationRecipient, $"Lịch hẹn mới {a.Code}: {(start + Appt.VnOffset):HH:mm dd/MM/yyyy}.", "appointment", a.Id, token);
             var qr = await Appt.DepositQrAsync(context, saved, token, required: true);
             await context.SaveChangesAsync(token); return Appt.ToDto(saved, qr);
         }, ct);
@@ -244,7 +244,7 @@ public class AppointmentActionCommandHandler(IApplicationDbContext context, ICur
                 if (task != null && !task.IsCompleted) task.ToggleComplete();
             }
             context.AppointmentEvents.Add(AppointmentEvent.Create(a.Id, uid, r.Action, r.Note));
-            await notify.SendContextAsync("Email", vendor ? a.Customer.Email : a.Vendor.User.Email, $"Lịch hẹn {a.Code}: {a.Status}.", "appointment", a.Id, token);
+            await notify.SendContextAsync("Email", vendor ? a.Customer.NotificationRecipient : a.Vendor.User.NotificationRecipient, $"Lịch hẹn {a.Code}: {a.Status}.", "appointment", a.Id, token);
             await context.SaveChangesAsync(token); return Appt.ToDto(a, await Appt.DepositQrAsync(context, a, token));
         }, ct);
     }

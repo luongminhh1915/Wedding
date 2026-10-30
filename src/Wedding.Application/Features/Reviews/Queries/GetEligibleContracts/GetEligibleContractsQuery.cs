@@ -32,7 +32,8 @@ public class GetEligibleContractsQueryHandler : IRequestHandler<GetEligibleContr
             .Include(c => c.Lead).ThenInclude(lead => lead.Listing)
             .Where(c => c.CustomerId == userId && c.Status == ContractStatus.Completed)
             .Where(c => c.Lead.ListingId.HasValue && visibleListingIds.Contains(c.Lead.ListingId.Value))
-            .Where(c => !_context.Reviews.Any(r => r.BookingContractId == c.Id || r.CustomerId == userId && r.ListingId == c.Lead.ListingId))
+            .Where(c => !_context.Reviews.Any(r => r.TargetType == ReviewTargetType.Service &&
+                r.BookingContractId == c.Id && r.ListingId == c.Lead.ListingId))
             .Where(c => !_context.BookingContracts.Any(d => d.CustomerId == userId && d.VendorId == c.VendorId && d.Lead.ListingId == c.Lead.ListingId && d.Status == ContractStatus.Disputed))
             .OrderByDescending(c => c.CreatedAt)
             .AsNoTracking()
@@ -45,7 +46,8 @@ public class GetEligibleContractsQueryHandler : IRequestHandler<GetEligibleContr
             VendorBrandName: c.Vendor.BrandName,
             ListingId: c.Lead?.ListingId,
             ListingTitle: c.Lead?.Listing?.Title,
-            WeddingDate: c.WeddingDate
+            WeddingDate: c.WeddingDate,
+            ComboOrderId: c.Lead?.ComboOrderId
         )).ToList();
     }
 }

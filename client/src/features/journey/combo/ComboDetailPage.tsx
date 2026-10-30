@@ -20,6 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
+import { operatingAreaLabel } from "../../auth/components/operatingAreasModel";
 import { useComboCartStore } from "../../../store/comboCartStore";
 import { apiError, usePlannerOverview } from "../api";
 import { useCatalogBuilder, useComboTemplatePreview } from "../comboApi";
@@ -29,6 +30,7 @@ import { ComboDialog } from "./ComboDialog";
 import { ComboPhoto } from "./ComboPhoto";
 import { comboCatalogReturn } from "./comboFilterModel";
 import { fixedComboSummary } from "./fixedComboModel";
+import { IndependentReviewPanel } from "../../customer/components/reviews/IndependentReviewPanel";
 import { EMPTY_CART, quantityFor, unitName } from "./cartModel";
 import {
   chooseDetailTemplate,
@@ -128,7 +130,10 @@ function ComboDetail({
   readOnly?: boolean;
   returnPath?: string;
 }) {
-  const { template, vendor, required, optional, photos } = model;
+  const { template, vendor, required, optional } = model;
+  const fixed = template.pricingMode === "FixedPrice";
+  const photos = fixed ? mediaUrls([template.imageUrl, ...(template.content?.galleryUrls ?? []),
+    ...required.flatMap(slot => [slot.item?.imageUrl, ...(slot.item?.galleryUrls ?? [])])]) : model.photos;
   const user = useAuthStore((state) => state.user);
   const scope = user?.id ?? "guest";
   const cart = useComboCartStore((state) => state.carts[scope] ?? EMPTY_CART);
@@ -145,7 +150,6 @@ function ComboDetail({
   );
   const guests = cart.guestCount || profile?.guestCount || previewGuests;
   const basePrice = detailBasePrice(model, guests);
-  const fixed = template.pricingMode === "FixedPrice";
   const fixedSummary = fixedComboSummary(template);
   const editable = !readOnly && (!user || user.role === "Customer");
   const hasVariablePricing = required.some(
@@ -173,7 +177,7 @@ function ComboDetail({
   return (
     <main className="wd wd-page wm-combo-detail">
       <div className="container cd-container">
-        {readOnly && <section role="note" className="mb-5 rounded-2xl border border-[#d4c894] bg-[#faf8f0] p-4"><h2 className="font-semibold">Xem trước combo · chỉ đọc</h2><p className="mt-2 text-sm">Bạn đang xem nội dung phiên bản được cấp quyền, không phải tự xuất bản. Chọn combo, gửi yêu cầu và thay đổi giỏ đều được tắt.</p><Link className="mt-2 inline-block text-sm underline" to={returnPath}>Về quản lý combo</Link></section>}
+        {readOnly && <section role="note" className="mb-5 rounded-2xl border border-[#d4c894] bg-[#fcf6ea] p-4"><h2 className="font-semibold">Xem trước combo · chỉ đọc</h2><p className="mt-2 text-sm">Bạn đang xem nội dung phiên bản được cấp quyền, không phải tự xuất bản. Chọn combo, gửi yêu cầu và thay đổi giỏ đều được tắt.</p><Link className="mt-2 inline-block text-sm underline" to={returnPath}>Về quản lý combo</Link></section>}
         <nav className="cd-breadcrumb" aria-label="Đường dẫn">
           <Link to={returnPath}>
             <ArrowLeft size={14} />
@@ -248,8 +252,8 @@ function ComboDetail({
               <h1>{template.name}</h1>
               <p className="cd-subtitle">
                 Combo của <strong>{model.vendorName}</strong>
-                {template.region || vendor?.city
-                  ? ` · ${template.region || vendor?.city}`
+                {template.region || vendor?.city || vendor?.nationwide || vendor?.operatingRegions?.length
+                  ? ` · ${template.region || operatingAreaLabel(vendor?.operatingRegions, vendor?.nationwide, vendor?.city)}`
                   : ""}
               </p>
               {template.description && (
@@ -273,10 +277,15 @@ function ComboDetail({
               </div>
             </header>
             <nav className="cd-section-nav" aria-label="Nội dung combo">
+              {template.content?.detailedDescription && <a href="#gioi-thieu-combo">Giới thiệu</a>}
               <a href="#dich-vu-trong-combo">Dịch vụ bao gồm</a>
               <a href="#nha-cung-cap-combo">Nhà cung cấp</a>
               <a href="#dieu-kien-combo">Điều kiện</a>
             </nav>
+            {template.content?.detailedDescription && <section id="gioi-thieu-combo" className="cd-section">
+              <div className="cd-section-title"><h2>Giới thiệu chi tiết combo</h2></div>
+              <p className="cd-description whitespace-pre-wrap break-words">{template.content.detailedDescription}</p>
+            </section>}
             <section id="dich-vu-trong-combo" className="cd-section">
               <div className="cd-section-title">
                 <p className="cd-eyebrow">BIẾT RÕ TRƯỚC KHI CHỌN</p>
@@ -354,13 +363,13 @@ function ComboDetail({
                 </p>
               )}
               <dl className="cd-vendor-meta">
-                {vendor?.city && (
+                {vendor && (vendor.city || vendor.nationwide || !!vendor.operatingRegions?.length) && (
                   <div>
                     <dt>
                       <MapPin size={15} />
                       Khu vực
                     </dt>
-                    <dd>{vendor.city}</dd>
+                    <dd>{operatingAreaLabel(vendor.operatingRegions, vendor.nationwide, vendor.city)}</dd>
                   </div>
                 )}
                 {vendor?.address && (
@@ -411,21 +420,16 @@ function ComboDetail({
                     Giá hiển thị có phải giá cuối cùng?
                   </summary>
                   <p>
-                    Đây là giá cơ bản tham khảo của các dịch vụ được thêm sẵn,
-                    chưa gồm nâng cấp và dịch vụ đi kèm chưa chọn. Ưu đãi, số
-                    lượng và ngày còn trống được hệ thống kiểm tra lại trong
-                    giỏ; giá chính thức do NCC gửi bằng báo giá để bạn duyệt.
+                    {fixed ? "Đây là giá bán của nguyên gói đã được duyệt, kèm danh sách dịch vụ và phạm vi công bố bên trên. Ngày phục vụ cần NCC xác nhận. Chi phí hoặc nội dung thay đổi riêng chỉ có hiệu lực sau khi hai bên xác nhận đề xuất; hợp đồng đã chốt giữ nguyên nội dung đã ký." : "Đây là giá cơ bản tham khảo của các dịch vụ được thêm sẵn, chưa gồm nâng cấp và dịch vụ đi kèm chưa chọn. Ưu đãi, số lượng và ngày còn trống được hệ thống kiểm tra lại trong giỏ; giá chính thức do NCC gửi bằng báo giá để bạn duyệt."}
                   </p>
                 </details>
                 <details>
                   <summary>
                     <Store size={16} />
-                    Có thể đổi sang NCC khác trong combo này không?
+                    {fixed ? "Có thể thay đổi dịch vụ trong nguyên gói không?" : "Có thể đổi sang NCC khác trong combo này không?"}
                   </summary>
                   <p>
-                    Mỗi combo chỉ thuộc một NCC. Bạn có thể đổi, thêm hoặc bỏ
-                    dịch vụ của chính NCC đó. Muốn đổi NCC, hãy bắt đầu một giỏ
-                    mới; các yêu cầu và bản nháp đã lưu vẫn được giữ.
+                    {fixed ? "Nguyên gói giữ đúng các dịch vụ đã công bố. Sau khi gửi yêu cầu, bạn có thể chat với NCC để nhận đề xuất riêng về nội dung và giá. Bạn cần xác nhận đề xuất trước khi áp dụng. Muốn chọn NCC khác, hãy bắt đầu giỏ mới; yêu cầu đã gửi vẫn được giữ." : "Mỗi combo chỉ thuộc một NCC. Bạn có thể đổi, thêm hoặc bỏ dịch vụ của chính NCC đó. Muốn đổi NCC, hãy bắt đầu một giỏ mới; các yêu cầu và bản nháp đã lưu vẫn được giữ."}
                   </p>
                 </details>
                 <details>
@@ -598,6 +602,9 @@ function ComboDetail({
             </div>
           </ComboDialog>
         )}
+        {!readOnly && <div className="mt-8">
+          <IndependentReviewPanel targetType="Combo" targetId={template.id} targetName={template.name} />
+        </div>}
       </div>
     </main>
   );
@@ -634,7 +641,7 @@ function IncludedService({
         {item && slot.valid ? (
           <>
             <p className="cd-service-price">
-              {vnd(item.price)} / {unitName[item.unit] || item.unit}
+              {fixed && "Giá bán lẻ: "}{vnd(item.price)} / {unitName[item.unit] || item.unit}
               <span>
                 {quantity} {unitName[item.unit] || item.unit} mặc định
               </span>
@@ -651,7 +658,7 @@ function IncludedService({
             </div>
             {(item.variants.length > 0 || item.addOns.length > 0) && (
               <details className="cd-upgrades">
-                <summary>Nâng cấp & dịch vụ đi kèm chưa chọn</summary>
+                <summary>{fixed ? "Tùy chọn tham khảo · cần thỏa thuận riêng" : "Nâng cấp & dịch vụ đi kèm chưa chọn"}</summary>
                 {item.variants.length > 0 && (
                   <>
                     <h4>Nâng cấp gói</h4>

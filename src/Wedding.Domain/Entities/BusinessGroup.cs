@@ -23,6 +23,8 @@ public class BusinessGroup : BaseEntity
 public static class BusinessGroupPolicy
 {
     public const string InitialVersion = "2026-10-19-v1";
+    // General signup acknowledgement only; not approval/signature of a specific rate.
+    public const string ServiceCategoryRegistrationVersion = "2026-10-21-service-category-v1";
     public static readonly Guid VenueBanquetId = Guid.Parse("22222222-2222-2222-2222-222222222201");
     public static readonly Guid DecorInvitationsId = Guid.Parse("22222222-2222-2222-2222-222222222202");
     public static readonly Guid PhotoBridalMakeupId = Guid.Parse("22222222-2222-2222-2222-222222222203");

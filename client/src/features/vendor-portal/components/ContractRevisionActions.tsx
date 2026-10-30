@@ -3,6 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import axiosClient from "../../../services/axiosClient";
 import type { Contract } from "../../../types/contract.types";
 import { apiError } from "../../journey/api";
+import { MoneyInput } from "../../../components/MoneyInput";
+import { contractAmounts } from "./contractMoneyModel";
 
 export function ContractRevisionActions({
   contract,
@@ -12,21 +14,24 @@ export function ContractRevisionActions({
   onSuccess: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(contract.contractValue);
-  const [deposit, setDeposit] = useState(contract.depositAmount);
+  const [value, setValue] = useState<number | null>(contract.contractValue);
+  const [deposit, setDeposit] = useState<number | null>(contract.depositAmount);
   const [date, setDate] = useState(contract.weddingDate?.slice(0, 10) ?? "");
   const [policy, setPolicy] = useState(
     contract.cancellationPolicySnapshot ?? "",
   );
   const revise = useMutation({
-    mutationFn: () =>
-      axiosClient.post(`/api/contracts/${contract.id}/revise`, {
-        contractValue: value,
-        depositAmount: deposit,
+    mutationFn: () => {
+      const amounts = contractAmounts(value, deposit);
+      if (!amounts.valid) throw new Error(amounts.error);
+      return axiosClient.post(`/api/contracts/${contract.id}/revise`, {
+        contractValue: amounts.contractValue,
+        depositAmount: amounts.depositAmount,
         weddingDate: date ? `${date}T00:00:00Z` : null,
         cancellationPolicy: policy,
         contractImageUrl: contract.contractImageUrl,
-      }),
+      });
+    },
     onSuccess: () => {
       setOpen(false);
       onSuccess();
@@ -90,25 +95,20 @@ export function ContractRevisionActions({
             </p>
             <label className="block text-xs">
               Tổng giá trị
-              <input
+              <MoneyInput
                 required
                 className="w-full border rounded-lg p-2"
-                type="number"
-                min={1}
                 value={value}
-                onChange={(e) => setValue(+e.target.value)}
+                onValueChange={setValue}
               />
             </label>
             <label className="block text-xs">
               Tổng cọc (đã gồm cọc lịch hẹn)
-              <input
+              <MoneyInput
                 required
                 className="w-full border rounded-lg p-2"
-                type="number"
-                min={0}
-                max={value}
                 value={deposit}
-                onChange={(e) => setDeposit(+e.target.value)}
+                onValueChange={setDeposit}
               />
             </label>
             <label className="block text-xs">

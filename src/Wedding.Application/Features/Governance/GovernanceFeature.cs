@@ -177,10 +177,12 @@ public record GetArticlesQuery(bool IncludeDrafts, string? Slug) : IRequest<List
 public class GetArticlesQueryHandler : IRequestHandler<GetArticlesQuery, List<ArticleDto>>
 {
     private readonly IApplicationDbContext _context;
-    public GetArticlesQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUserService _user;
+    public GetArticlesQueryHandler(IApplicationDbContext context, ICurrentUserService user) { _context = context; _user = user; }
 
     public async Task<List<ArticleDto>> Handle(GetArticlesQuery r, CancellationToken ct)
     {
+        if (r.IncludeDrafts) await ArticleCmsAccess.RequireAsync(_context, _user, ct);
         var q = _context.Articles.AsQueryable();
         if (!r.IncludeDrafts) q = q.Where(a => a.IsPublished);
         if (!string.IsNullOrWhiteSpace(r.Slug)) q = q.Where(a => a.Slug == r.Slug);
@@ -203,9 +205,12 @@ public class SaveArticleCommandHandler : IRequestHandler<SaveArticleCommand, Art
 
     public async Task<ArticleDto> Handle(SaveArticleCommand r, CancellationToken ct)
     {
-        if (await _context.Articles.AnyAsync(a => a.Slug == r.Slug.Trim().ToLower(), ct)) throw new DomainException("Slug bài viết đã tồn tại.");
-        var a = Article.Create(_user.UserId ?? throw new DomainException("Bạn cần đăng nhập."), r.Title, r.Slug, r.Excerpt, r.Content, r.ThumbnailUrl, r.Category, null);
-        a.Update(r.Title, r.Slug, r.Excerpt, r.Content, r.ThumbnailUrl, r.Category);
+        await ArticleCmsAccess.RequireAsync(_context, _user, ct);
+        var slug = ArticleCmsInput.Slug(r.Title, r.Slug, r.Excerpt, r.Content, r.Category);
+        var thumbnail = ArticleImageReferences.Normalize(r.ThumbnailUrl);
+        if (await _context.Articles.AnyAsync(a => a.Slug == slug, ct)) throw new DomainException("Slug bài viết đã tồn tại.");
+        var a = Article.Create(_user.UserId!.Value, r.Title, slug, r.Excerpt ?? "", r.Content, thumbnail, r.Category.Trim(), null);
+        a.Update(r.Title, slug, r.Excerpt ?? "", r.Content, thumbnail, r.Category.Trim());
         if (r.Publish) a.Publish();
         _context.Articles.Add(a);
         await _audit.LogAsync("Article.Create", nameof(Article), a.Id.ToString(), new { r.Title, r.Publish });

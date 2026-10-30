@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
+using Wedding.Application.Features.PrivateServiceAgreements;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
@@ -12,7 +13,7 @@ public record OrderMediaDto(string Title, string? ImageUrl, List<string> Gallery
     string? VendorLogoUrl, string? VendorCoverImageUrl, Guid? ListingId, List<OrderServiceMediaDto> Items);
 public record OrderCapabilitiesDto(bool CanEdit, bool CanWithdraw, bool CanArchive, bool CanRestore,
     bool CanRequestChanges, bool CanStopPending, bool CanRequestChange, bool CanRequestCancellation, string? BlockedReason,
-    bool CanConfirm = false, bool CanRespondQuote = false);
+    bool CanConfirm = false, bool CanRespondQuote = false, bool? CanAcceptQuote = null);
 public record ChangeRequestDto(Guid Id, string Kind, Guid EntityId, Guid CustomerId, Guid VendorId, string Type, string Status,
     string Reason, string? ProposedChanges, DateTime CreatedAt, DateTime? VendorReviewedAt, string? VendorResponse,
     DateTime? FinanceReviewedAt, string? FinanceResponse, bool RequiresFinance);
@@ -109,6 +110,11 @@ public static class CustomerOrderJourney
         var leads = await db.Leads.AsNoTracking().Include(l => l.Vendor).Include(l => l.Listing).ThenInclude(l => l!.Media).Where(l => l.CustomerId == uid && (comboIds == null || relatedLeads.Contains(l.Id)) && (onlyLeadIds == null || onlyLeadIds.Contains(l.Id))).ToListAsync(ct);
         var contracts = await db.BookingContracts.AsNoTracking().Where(c => c.CustomerId == uid && (comboIds == null || relatedLeads.Contains(c.LeadId)) && (onlyLeadIds == null || onlyLeadIds.Contains(c.LeadId))).ToListAsync(ct);
         var quotes = await db.Quotes.AsNoTracking().Where(q => q.CustomerId == uid && (comboIds == null || relatedLeads.Contains(q.LeadId)) && (onlyLeadIds == null || onlyLeadIds.Contains(q.LeadId))).ToListAsync(ct);
+        var contentOrderIds = leads.Where(l => l.ComboOrderId.HasValue).Select(l => l.ComboOrderId!.Value).Distinct().ToList();
+        var contentProposals = contentOrderIds.Count == 0 ? new List<PrivateServiceAgreement>() : await db.PrivateServiceAgreements.AsNoTracking()
+            .Where(p => p.Kind == "combo" && p.CustomerId == uid && contentOrderIds.Contains(p.TargetId) &&
+                (p.Status == "PendingCustomer" || p.Status == "Accepted")).ToListAsync(ct);
+        var proposalsByOrderVendor = contentProposals.ToLookup(p => (p.TargetId, p.VendorId));
         var states = await db.CustomerOrderStates.AsNoTracking().Where(s => s.CustomerId == uid).ToListAsync(ct);
         var requests = await db.OrderChangeRequests.AsNoTracking().Where(r => r.CustomerId == uid).OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
         var appointments = await db.Appointments.AsNoTracking().Where(a => a.CustomerId == uid && a.LeadId != null &&
@@ -135,13 +141,13 @@ public static class CustomerOrderJourney
             return ids.Any(moneyLeadIds.Contains) ? "Đã có cọc/chuyển khoản báo nhận hoặc nghĩa vụ tài chính. Cần NCC/Tài chính đối soát trước khi rút hay sửa thay thế." : null;
         }
         void Add(string kind, Guid id, OrderMediaDto media, bool edit, bool withdraw, bool changes, bool stop, bool changeRequest, bool cancelRequest,
-            string? block, Guid? comboId, string? comboCode, bool confirm = false, bool respond = false)
+            string? block, Guid? comboId, string? comboCode, bool confirm = false, bool respond = false, bool? acceptQuote = null)
         {
             var s = states.FirstOrDefault(x => x.Kind == kind && x.EntityId == id);
-            if (s?.SupersededById != null) { edit = withdraw = changes = stop = changeRequest = cancelRequest = confirm = respond = false; block = "Yêu cầu đã được thay thế. Vui lòng xem phiên bản mới nhất; bản cũ vẫn được giữ trong lịch sử."; }
+            if (s?.SupersededById != null) { edit = withdraw = changes = stop = changeRequest = cancelRequest = confirm = respond = false; if (acceptQuote.HasValue) acceptQuote = false; block = "Yêu cầu đã được thay thế. Vui lòng xem phiên bản mới nhất; bản cũ vẫn được giữ trong lịch sử."; }
             var archived = s?.ArchivedAt != null;
             result.Add(new(kind, id, archived, s?.ArchivedAt, s?.RevisionOfId, s?.SupersededById, media,
-                new(edit, withdraw, !archived, archived, changes, stop, changeRequest, cancelRequest, block, confirm, respond),
+                new(edit, withdraw, !archived, archived, changes, stop, changeRequest, cancelRequest, block, confirm, respond, acceptQuote),
                 requests.Where(r => r.Kind == kind && r.EntityId == id).Select(Map).ToList(), comboId, comboCode, s?.RevisionReason, s?.WithdrawalReason));
         }
         foreach (var o in orders)
@@ -173,20 +179,33 @@ public static class CustomerOrderJourney
             var canStop = pending && activeLead && !moneyLeadIds.Contains(c.LeadId); var confirmed = c.Status is ContractStatus.Confirmed or ContractStatus.Disputed;
             var combo = orders.FirstOrDefault(o => o.Id == l?.ComboOrderId);
             var selectedLine = combo?.Items.FirstOrDefault(i => i.LeadId == c.LeadId);
+            var canConfirm = c.Status == ContractStatus.PendingVerification && c.VerificationDeadline > DateTime.UtcNow && activeLead;
+            string? contentBlock = null;
+            if (canConfirm && l!.ComboOrderId.HasValue)
+            {
+                // Match ConfirmContract: a reused draft's CreatedAt is not the quote issue time.
+                var documentIssuedAt = c.QuoteId.HasValue ? quotes.FirstOrDefault(q => q.Id == c.QuoteId)?.CreatedAt : c.VerificationDeadline.AddHours(-72);
+                contentBlock = documentIssuedAt.HasValue
+                    ? PrivateAgreementContractHandoff.ReviewBlockReason(l, documentIssuedAt.Value, proposalsByOrderVendor[(l.ComboOrderId.Value, l.VendorId)])
+                    : "Không đối chiếu được báo giá gốc của hợp đồng. NCC cần kiểm tra và gửi lại hồ sơ trước khi khách xác nhận.";
+            }
             Add("contract", c.Id, Media(c.ContractCode, l?.Vendor, l?.ListingId != null ? new() { Photo(l.Listing, l.ListingId.Value, selectedLine?.ServiceItemId, selectedLine?.Title ?? l.Listing?.Title ?? c.ContractCode) } : new()),
                 false, false, c.Status == ContractStatus.PendingVerification && activeLead && !moneyLeadIds.Contains(c.LeadId), canStop,
                 activeLead && (pending || confirmed), activeLead && (pending || confirmed),
-                !activeLead ? "Yêu cầu tư vấn gốc đã rút/hết hạn, không thể tiếp tục hợp đồng cũ." : confirmed || moneyLeadIds.Contains(c.LeadId) ? "Hợp đồng/cọc đã có hiệu lực: chỉ gửi đề nghị phối hợp; không tự sửa, hủy hoặc hoàn tiền." : null, combo?.Id, combo?.Code,
-                confirm: c.Status == ContractStatus.PendingVerification && c.VerificationDeadline > DateTime.UtcNow && activeLead);
+                !activeLead ? "Yêu cầu tư vấn gốc đã rút/hết hạn, không thể tiếp tục hợp đồng cũ." : contentBlock ?? (confirmed || moneyLeadIds.Contains(c.LeadId) ? "Hợp đồng/cọc đã có hiệu lực: chỉ gửi đề nghị phối hợp; không tự sửa, hủy hoặc hoàn tiền." : null), combo?.Id, combo?.Code,
+                confirm: canConfirm && contentBlock == null);
         }
         foreach (var q in quotes)
         {
             var l = leads.FirstOrDefault(l => l.Id == q.LeadId); var combo = orders.FirstOrDefault(o => o.Id == l?.ComboOrderId);
             var selectedLine = combo?.Items.FirstOrDefault(i => i.LeadId == q.LeadId);
+            var canRespond = q.Status == QuoteStatus.Sent && q.ValidUntil > DateTime.UtcNow && l != null && l.Status is not (LeadStatus.Cancelled or LeadStatus.Expired) &&
+                !contracts.Any(c => c.LeadId == q.LeadId && c.Status != ContractStatus.Draft);
+            var contentBlock = canRespond && l!.ComboOrderId.HasValue
+                ? PrivateAgreementContractHandoff.ReviewBlockReason(l, q.CreatedAt, proposalsByOrderVendor[(l.ComboOrderId.Value, l.VendorId)]) : null;
             Add("quote", q.Id, Media(q.Code, l?.Vendor, l?.ListingId != null ? new() { Photo(l.Listing, l.ListingId.Value, selectedLine?.ServiceItemId, selectedLine?.Title ?? l.Listing?.Title ?? q.Code) } : new()),
-                false, false, false, false, false, false, l?.Status is LeadStatus.Cancelled or LeadStatus.Expired ? "Yêu cầu gốc đã rút/hết hạn; báo giá cũ không thể được chấp nhận." : null, combo?.Id, combo?.Code,
-                respond: q.Status == QuoteStatus.Sent && q.ValidUntil > DateTime.UtcNow && l != null && l.Status is not (LeadStatus.Cancelled or LeadStatus.Expired) &&
-                    !contracts.Any(c => c.LeadId == q.LeadId && c.Status != ContractStatus.Draft));
+                false, false, false, false, false, false, l?.Status is LeadStatus.Cancelled or LeadStatus.Expired ? "Yêu cầu gốc đã rút/hết hạn; báo giá cũ không thể được chấp nhận." : contentBlock, combo?.Id, combo?.Code,
+                respond: canRespond, acceptQuote: canRespond && contentBlock == null);
         }
         return result;
     }

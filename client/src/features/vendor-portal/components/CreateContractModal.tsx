@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, FileText, Gift, DollarSign, Calendar, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useVendorContracts } from '../hooks/useVendorContracts';
+import { MoneyInput } from '../../../components/MoneyInput';
+import { contractAmounts } from './contractMoneyModel';
 
 interface CreateContractModalProps {
   isOpen: boolean;
@@ -26,8 +28,8 @@ export function CreateContractModal({
   const { createContract, isCreating } = useVendorContracts();
 
   const [voucherCode, setVoucherCode] = useState(defaultVoucherCode);
-  const [contractValue, setContractValue] = useState<string>(defaultBudget ? defaultBudget.toString() : '');
-  const [depositAmount, setDepositAmount] = useState<string>('');
+  const [contractValue, setContractValue] = useState<number | null>(defaultBudget || null);
+  const [depositAmount, setDepositAmount] = useState<number | null>(null);
   const [weddingDate, setWeddingDate] = useState<string>(defaultWeddingDate ? defaultWeddingDate.substring(0, 10) : '');
   const [contractImageUrl, setContractImageUrl] = useState<string>('');
   const [cancellationPolicy, setCancellationPolicy] = useState('Hủy trước 90 ngày: hoàn 100% cọc; trước 30–89 ngày: hoàn 50% cọc; dưới 30 ngày: không hoàn cọc. NCC hủy: hoàn 100% cọc.');
@@ -39,16 +41,9 @@ export function CreateContractModal({
     e.preventDefault();
     setError(null);
 
-    const val = parseFloat(contractValue);
-    const dep = parseFloat(depositAmount || '0');
-
-    if (isNaN(val) || val <= 0) {
-      setError('Vui lòng nhập giá trị hợp đồng hợp lệ.');
-      return;
-    }
-
-    if (isNaN(dep) || dep < 0 || dep > val) {
-      setError('Tiền cọc không hợp lệ (phải từ 0 đến giá trị HĐ).');
+    const amounts = contractAmounts(contractValue, depositAmount, true);
+    if (!amounts.valid) {
+      setError(amounts.error);
       return;
     }
 
@@ -56,8 +51,8 @@ export function CreateContractModal({
       await createContract({
         leadId,
         voucherCode: voucherCode.trim() ? voucherCode.trim().toUpperCase() : undefined,
-        contractValue: val,
-        depositAmount: dep,
+        contractValue: amounts.contractValue,
+        depositAmount: amounts.depositAmount,
         contractImageUrl: contractImageUrl.trim() || undefined,
         weddingDate: weddingDate ? new Date(weddingDate).toISOString() : undefined,
         cancellationPolicy
@@ -127,12 +122,11 @@ export function CreateContractModal({
                   <DollarSign className="w-3.5 h-3.5 text-rose-500" />
                   Tổng Giá Trị HĐ (VNĐ) <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  step="500000"
-                  placeholder="VD: 80000000"
+                <MoneyInput
+                  aria-label="Tổng giá trị hợp đồng (VNĐ)"
+                  placeholder="VD: 80.000.000"
                   value={contractValue}
-                  onChange={(e) => setContractValue(e.target.value)}
+                  onValueChange={setContractValue}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   required
                 />
@@ -143,12 +137,11 @@ export function CreateContractModal({
                   <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
                   Tiền Đặt Cọc Thực Tế <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  step="500000"
-                  placeholder="VD: 20000000"
+                <MoneyInput
+                  aria-label="Tiền đặt cọc thực tế (VNĐ)"
+                  placeholder="VD: 20.000.000"
                   value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
+                  onValueChange={setDepositAmount}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   required
                 />

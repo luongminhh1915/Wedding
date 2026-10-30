@@ -31,7 +31,8 @@ public static class ComboPricing
         var template = r.TemplateId.HasValue ? await context.ComboTemplates.Include(t => t.Items).PubliclyAvailable().FirstOrDefaultAsync(t => t.Id == r.TemplateId, ct) ?? throw new DomainException("Combo mẫu không còn khả dụng.") : null;
         if (template != null && ComboFixedPackages.IsFixed(template)) return await FixedAsync(context, r, template, userId, ct);
         var ids = r.Selections.Select(s => s.ServiceItemId).ToList();
-        var items = await ComboPublicCatalog.Eligible(context).Include(i => i.Vendor).ThenInclude(v => v.User).Include(i => i.Listing).Include(i => i.Variants).Include(i => i.AddOns)
+        var items = await ComboPublicCatalog.Eligible(context).Include(i => i.Vendor).ThenInclude(v => v.User)
+            .Include(i => i.Listing).ThenInclude(listing => listing.Media).Include(i => i.Variants).Include(i => i.AddOns)
             .Where(i => ids.Contains(i.Id)).ToListAsync(ct);
         if (items.Count != ids.Count || items.Any(i => !i.IsActive || i.ModerationStatus != "Approved" || !i.Vendor.IsVerified || !i.Vendor.IsActive || !i.Vendor.User.IsActive || i.Listing.Status != ListingStatus.Active || !i.Listing.IsActive))
             throw new DomainException("Một dịch vụ chưa được duyệt/NCC chưa xác minh hoặc bài đăng không còn Active.");
@@ -68,7 +69,10 @@ public static class ComboPricing
             var perUnit = item.BasePrice + item.Variants.Where(v => variantIds.Contains(v.Id)).Sum(v => v.PriceDelta);
             if (perUnit < 0) throw new DomainException("Tổng biến thể làm giá âm.");
             var price = perUnit * quantity + item.AddOns.Where(a => addonIds.Contains(a.Id)).Sum(a => a.Price * (a.PerUnit ? quantity : 1));
-            lines.Add(new(item.Id, item.ListingId, item.VendorId, item.CategoryId, item.Vendor.BrandName, item.Name, item.Unit, quantity, price, 0, price, item.CancellationPolicy, "Còn năng lực dự kiến; chờ NCC xác nhận bằng báo giá"));
+            lines.Add(new(item.Id, item.ListingId, item.VendorId, item.CategoryId, item.Vendor.BrandName,
+                item.Name, item.Unit, quantity, price, 0, price, item.CancellationPolicy,
+                "Còn năng lực dự kiến; chờ NCC xác nhận bằng báo giá",
+                ComboFixedPackages.Capture(item) with { Quantity = quantity }));
         }
         var subtotal = lines.Sum(l => l.Price); var discount = Math.Round(subtotal * percent, 0);
         var shares = ComboMoney.AllocateDiscount(lines.Select(line => line.Price).ToList(), discount);

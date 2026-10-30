@@ -71,9 +71,9 @@ export const VENDOR_JOURNEY_STAGES = [
   },
   {
     id: "policy", title: "Hiểu chính sách hợp tác đang được ghi nhận", shortTitle: "Chính sách", tab: "partnership-policy", optional: false,
-    summary: "Biết nhóm kinh doanh và chính sách của shop trước khi tư vấn, báo giá hoặc ký hợp đồng.",
+    summary: "Biết nhóm hoa hồng tương ứng với từng loại dịch vụ trước khi tư vấn, báo giá hoặc ký hợp đồng.",
     steps: [
-      "Mở Chính sách hợp tác để đọc các nhóm kinh doanh, chính sách theo nhóm và thông tin phiên bản/thời điểm xác nhận đã lưu.",
+      "Mở Chính sách hợp tác để xem các nhóm hoa hồng tham khảo. Không cần chọn nhóm khi đăng ký; nhóm và mức mặc định được hiển thị khi bạn chọn loại dịch vụ.",
       "Nếu shop thuộc dữ liệu cũ, đọc cảnh báo chính sách cũ được giữ nguyên; liên hệ Admin khi cần rà soát hoặc chuyển đổi.",
       "Với dịch vụ tổ chức cưới A–Z, trao đổi với Admin về cơ sở phí quản lý/tổ chức/điều phối được phê duyệt; không dùng toàn bộ ngân sách cưới làm cơ sở mặc định.",
       "Khi cần thỏa thuận riêng hoặc điều chỉnh một hợp đồng đang thực hiện, liên hệ Admin và lưu trao đổi/chứng từ. Hướng dẫn này không cung cấp luồng tự duyệt hay tự đổi hoa hồng.",
@@ -87,7 +87,7 @@ export const VENDOR_JOURNEY_STAGES = [
     id: "listings", title: "Đăng dịch vụ để khách có thể tìm thấy", shortTitle: "Đăng dịch vụ", tab: "listings", optional: false,
     summary: "Bài dịch vụ giới thiệu shop và là đầu vào để khách gửi yêu cầu tư vấn.",
     steps: [
-      "Mở Dịch vụ của tôi, tạo bài mới và chọn danh mục phù hợp với dịch vụ/nhóm kinh doanh của shop.",
+      "Mở Dịch vụ của tôi, tạo bài mới và tự chọn loại dịch vụ đang hoạt động; xem nhóm hoa hồng và mức mặc định tương ứng, không cần Admin bổ sung nhóm.",
       "Điền tên, khu vực, khoảng giá, mô tả, hạng mục bao gồm/không bao gồm và thêm ảnh thực tế; kiểm tra nội dung trước khi gửi.",
       "Lưu nháp, mở xem trước riêng tư rồi gửi duyệt. Theo dõi trạng thái và sửa theo lý do từ chối nếu có.",
       "Sau khi bài được duyệt, kiểm tra trạng thái bật/ẩn. Khi chỉnh bài đã công khai, gửi bản sửa để duyệt; bản sửa không tự thay nội dung đã được duyệt ngay.",
@@ -247,7 +247,7 @@ export function vendorJourneyStageStatus(stageId: string, data?: VendorJourneySu
     case "policy":
       return data.policyAccepted
         ? { label: "Có dữ liệu", tone: "positive", note: "Đã ghi nhận phiên bản và thời điểm xác nhận chính sách. Điều này không tự kích hoạt thỏa thuận hoa hồng mới." }
-        : { label: "Cần kiểm tra", tone: "attention", note: "Chưa ghi nhận xác nhận chính sách nhóm mới. Shop cũ giữ chính sách hiện tại; mở mục chỉ xem và liên hệ Admin khi cần rà soát." };
+        : { label: "Cần kiểm tra", tone: "attention", note: "Chưa ghi nhận xác nhận điều khoản mới. Bạn vẫn được chọn loại dịch vụ khi tạo bài; shop cũ giữ chính sách hiện tại. Xem chính sách tham khảo hoặc liên hệ Admin nếu cần điều chỉnh chính sách riêng." };
     case "listings":
       if (data.rejectedListingCount > 0) return { label: "Cần xử lý", tone: "attention", note: `${data.rejectedListingCount} bài/bản sửa bị từ chối; kiểm tra lý do. ${data.publicListingCount} bài đã duyệt và đang bật.` };
       if (data.pendingListingCount > 0) return { label: "Chờ duyệt", tone: "pending", note: `${data.pendingListingCount} bài/bản sửa đang chờ duyệt. ${data.publicListingCount} bài đã duyệt và đang bật; bản sửa không tự thay nội dung công khai.` };

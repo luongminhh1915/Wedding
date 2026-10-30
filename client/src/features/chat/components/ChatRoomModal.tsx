@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useChatRoom } from '../hooks/useChatRoom';
 import type { ChatMessage } from '../../../types/chat.types';
+import { MoneyInput } from '../../../components/MoneyInput';
 
 interface ChatRoomModalProps {
   isOpen: boolean;
@@ -25,10 +26,10 @@ export function ChatRoomModal({
   listingTitle,
   voucherCode
 }: ChatRoomModalProps) {
-  const { messages, isLoading, isConnected, sendMessage, refetch } = useChatRoom(leadId);
+  const { messages, isLoading, isConnected, error, sendMessage, refetch } = useChatRoom(leadId);
   const [inputText, setInputText] = useState('');
   const [showQuoteForm, setShowQuoteForm] = useState(false);
-  const [quoteAmount, setQuoteAmount] = useState<string>('');
+  const [quoteAmount, setQuoteAmount] = useState<number | null>(null);
   const [quoteDesc, setQuoteDesc] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
 
@@ -58,18 +59,18 @@ export function ChatRoomModal({
 
   const handleSendQuote = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amount = parseFloat(quoteAmount);
-    if (isNaN(amount) || amount <= 0 || isSending) return;
+    const amount = quoteAmount;
+    if (amount == null || !Number.isFinite(amount) || amount <= 0 || isSending) return;
 
     try {
       setIsSending(true);
       await sendMessage({
-        content: `Báo giá dịch vụ trọn gói: ${amount.toLocaleString('vi-VN')} đ`,
+        content: `Chi phí tham khảo khi trao đổi: ${amount.toLocaleString('vi-VN')} đ`,
         isQuote: true,
         quoteAmount: amount,
         quoteDescription: quoteDesc.trim() || undefined
       });
-      setQuoteAmount('');
+      setQuoteAmount(null);
       setQuoteDesc('');
       setShowQuoteForm(false);
     } catch (err: any) {
@@ -124,6 +125,7 @@ export function ChatRoomModal({
           </div>
         </div>
 
+        {error && <div role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-xs text-red-700">{error} <button type="button" className="ml-2 underline" onClick={() => void refetch()}>Thử tải lại</button></div>}
         {/* Message history */}
         <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#fcfbf9]">
           {isLoading ? (
@@ -131,7 +133,7 @@ export function ChatRoomModal({
               <div className="w-7 h-7 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mb-2" />
               Đang tải tin nhắn...
             </div>
-          ) : messages.length === 0 ? (
+          ) : error && messages.length === 0 ? <p className="text-center text-xs text-slate-500">Chưa tải được cuộc trò chuyện. Kiểm tra thông báo lỗi và thử lại.</p> : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-2">
               <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl">
                 💬
@@ -166,7 +168,7 @@ export function ChatRoomModal({
                       }`}
                     >
                       <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider mb-2 opacity-90">
-                        <Sparkles className="w-3.5 h-3.5" /> Báo Giá Chính Thức
+                        <Sparkles className="w-3.5 h-3.5" /> Chi phí tham khảo
                       </div>
 
                       <div className="text-2xl font-extrabold mb-1">
@@ -180,7 +182,7 @@ export function ChatRoomModal({
                       )}
 
                       <div className="text-[10px] pt-2 border-t border-white/20 flex justify-between items-center opacity-80">
-                        <span>Đã bao gồm chiết khấu</span>
+                        <span>Chưa phải báo giá để xác nhận</span>
                         <span>{isMine ? 'Bạn đã gửi' : 'Từ nhà cung cấp'}</span>
                       </div>
                     </div>
@@ -211,7 +213,7 @@ export function ChatRoomModal({
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
-                <DollarSign className="w-4 h-4 text-amber-600" /> Tạo Báo Giá Gửi Khách Hàng
+                <DollarSign className="w-4 h-4 text-amber-600" /> Gửi chi phí tham khảo
               </span>
               <button
                 type="button"
@@ -221,14 +223,14 @@ export function ChatRoomModal({
                 Đóng
               </button>
             </div>
+            <p className="text-xs leading-relaxed text-amber-900">Thẻ này chỉ dùng để trao đổi. Để khách xem hạng mục, điều khoản và xác nhận, hãy gửi hồ sơ riêng trong mục Báo giá.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input
-                type="number"
-                step="100000"
-                placeholder="Số tiền báo giá (VNĐ) *"
+              <MoneyInput
+                aria-label="Chi phí tham khảo (VNĐ)"
+                placeholder="Chi phí tham khảo (VNĐ) *"
                 value={quoteAmount}
-                onChange={(e) => setQuoteAmount(e.target.value)}
+                onValueChange={setQuoteAmount}
                 className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                 required
               />
@@ -246,7 +248,7 @@ export function ChatRoomModal({
               disabled={isSending}
               className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
             >
-              {isSending ? 'Đang gửi...' : '📤 Gửi Thẻ Báo Giá Này'}
+              {isSending ? 'Đang gửi...' : '📤 Gửi chi phí tham khảo'}
             </button>
           </form>
         )}
@@ -262,10 +264,10 @@ export function ChatRoomModal({
                   ? 'bg-amber-100 border-amber-300 text-amber-800'
                   : 'border-slate-200 hover:bg-slate-50 text-slate-700'
               }`}
-              title="Gửi báo giá"
+              title="Gửi chi phí tham khảo"
             >
               <DollarSign className="w-4 h-4 text-amber-600" />
-              <span className="hidden sm:inline">Báo giá</span>
+              <span className="hidden sm:inline">Ước tính</span>
             </button>
           )}
 

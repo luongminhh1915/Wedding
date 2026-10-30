@@ -10,6 +10,7 @@ import { ContractRevisionActions } from './ContractRevisionActions';
 import { useSearchParams } from 'react-router-dom';
 import { requestedNotificationFocus, useNotificationFocus } from '../../notifications/useNotificationFocus';
 import { ContractCategorySummary } from '../../contracts/ContractCategorySummary';
+import { PrivateServiceAgreementPanel } from '../../private-agreements/PrivateServiceAgreementPanel';
 
 const ADVANCE_STORAGE_KEY = 'wedding_vendor_advance_requests';
 
@@ -285,6 +286,7 @@ export function ContractList() {
                 </div>
 
                 <ContractCategorySummary contract={contract} showCommissionPolicy />
+                <PrivateServiceAgreementPanel kind="contract" id={contract.id} partnerName={contract.customerName} title={contract.contractCode} />
 
                 {/* Banner Thông Báo Yêu Cầu Xin Thanh Toán Trước Đã Gửi */}
                 {advanceRecord && (

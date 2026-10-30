@@ -16,12 +16,13 @@ import { usePublicListingDetail } from "./hooks/useBrowse";
 import { SendLeadModal } from "./components/SendLeadModal";
 import { BookAppointmentModal } from "../journey/appointments/BookAppointmentModal";
 import { ReviewModal } from "./components/reviews/ReviewModal";
-import { ReviewList } from "./components/reviews/ReviewList";
+import { IndependentReviewPanel } from "./components/reviews/IndependentReviewPanel";
 import { ServiceDetails } from "./components/ServiceDetails";
-import { useListingReviews } from "./hooks/useReviews";
+import { useIndependentReviews } from "./hooks/useReviews";
 import { useAuthStore } from "../../store/authStore";
 import { isListingPreview, listingPreviewReturn } from "./listingPreview";
 import { serviceBrowseReturn } from "./serviceFilterModel";
+import { listingPricePresentation } from "./listingPriceModel";
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,9 +43,10 @@ export default function ListingDetailPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false); // P3: đặt lịch hẹn
   const [shareStatus, setShareStatus] = useState("");
-  const { data: reviews = [], refetch: refetchReviews } = useListingReviews(
-    isPreview && listing?.status !== 'Active' ? undefined : id,
-  );
+  const reviewTargetId = isPreview && listing?.status !== 'Active' ? undefined : id;
+  const reviewsQuery = useIndependentReviews("Service", reviewTargetId);
+  const shopReviewsQuery = useIndependentReviews("Shop", reviewTargetId ? listing?.vendorId : undefined);
+  const refetchReviews = () => { void reviewsQuery.refetch(); void shopReviewsQuery.refetch(); };
 
   if (isLoading) return <LoadingState />;
   if (isError || !listing)
@@ -53,11 +55,12 @@ export default function ListingDetailPage() {
   const media = listing.media ?? [];
   const images = media.map((m) => m.mediaUrl);
   const displayImages = images.length > 0 ? images : [null];
+  const price = listingPricePresentation(listing);
 
   return (
-    <main className="feature-content detail-page">
+    <main className="feature-content detail-page service-detail-page">
       {isPreview && (
-        <section role="note" className="rounded-2xl border border-[#d4c894] bg-[#f5f1e6] p-4 mb-5 text-[#25334d]">
+        <section role="note" className="rounded-2xl border border-[#d4c894] bg-[#f5f1e6] p-4 mb-5 text-[#233a42]">
           <h1 className="font-semibold">Xem trước như khách hàng</h1>
           <p className="text-sm mt-1">Đây là bản xem trước chỉ đọc ({listing.status}). Xem trước không xuất bản dịch vụ; khách hàng chỉ thấy nội dung đã được duyệt và đang hoạt động.</p>
           {listing.latestRevision && <p className="text-sm mt-2">Phiên bản #{listing.latestRevision.sequence} · {listing.latestRevision.status}. Nội dung này chưa thay thế bản công khai nếu chưa được duyệt.</p>}
@@ -109,12 +112,20 @@ export default function ListingDetailPage() {
         </div>
       </div>
 
+      <nav className="service-detail-tabs" aria-label="Mục thông tin dịch vụ">
+        <a href="#service-gallery">Hình ảnh</a>
+        <a href="#service-overview">Tổng quan</a>
+        {(listing.serviceDetails?.portfolioUrls?.length || listing.serviceDetails?.videoUrl) ? <a href="#service-portfolio">Portfolio</a> : null}
+        <a href="#service-reviews">Đánh giá</a>
+        {!isPreview && <a href="#service-contact">Liên hệ</a>}
+      </nav>
+
       <div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 service-detail-layout">
           {/* ── Left: Images + Info ─────────────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image gallery */}
-            <div className="relative rounded-3xl overflow-hidden bg-slate-100 aspect-[16/9]">
+            <div id="service-gallery" className="relative rounded-3xl overflow-hidden bg-slate-100 aspect-[16/9] service-detail-gallery">
               {displayImages[activeImg] ? (
                 <img
                   src={displayImages[activeImg]!}
@@ -190,9 +201,9 @@ export default function ListingDetailPage() {
             )}
 
             {/* Info section */}
-            <div className="bg-white rounded-2xl border border-rose-50 p-6 space-y-5">
+            <div id="service-overview" className="bg-white rounded-2xl border border-rose-50 p-6 space-y-5 service-detail-info">
               {/* Title */}
-              <div>
+              <div id="service-description">
                 <h1
                   className="text-2xl font-bold text-slate-900 leading-tight"
                   style={{ fontFamily: "'Playfair Display', serif" }}
@@ -214,7 +225,7 @@ export default function ListingDetailPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <strong className="text-slate-700">{reviews.length} đánh giá</strong>
+                    <strong className="text-slate-700">{reviewsQuery.isError ? "Chưa tải được đánh giá" : reviewsQuery.isLoading ? "Đang tải đánh giá" : `${reviewsQuery.data?.summary.totalReviews ?? 0} đánh giá`}</strong>
                   </span>
                 </div>
               </div>
@@ -233,12 +244,12 @@ export default function ListingDetailPage() {
               <ServiceDetails details={listing.serviceDetails} cancellationPolicy={listing.cancellationPolicy} />
 
               {/* ── Reviews Section (Verified Buyer - BR-009 & FM-005) ──────── */}
-              <div className="pt-6 border-t border-slate-100">
+              <div id="service-reviews" className="pt-6 border-t border-slate-100">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <div>
                     <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-400 fill-current" />
-                      Đánh Giá & Uy Tín Đối Tác ({reviews.length})
+                      Đánh giá dịch vụ{reviewsQuery.isSuccess ? ` (${reviewsQuery.data.summary.totalReviews})` : ""}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Chỉ những khách hàng có hợp đồng hoàn tất mới được
@@ -254,7 +265,10 @@ export default function ListingDetailPage() {
                   </button>}
                 </div>
 
-                <ReviewList reviews={reviews} onRefresh={refetchReviews} />
+                {!isPreview && <div className="space-y-5">
+                  <IndependentReviewPanel targetType="Service" targetId={listing.id} targetName={listing.title} />
+                  <IndependentReviewPanel targetType="Shop" targetId={listing.vendorId} targetName={listing.vendorBrandName} />
+                </div>}
               </div>
             </div>
           </div>
@@ -262,20 +276,17 @@ export default function ListingDetailPage() {
           {/* ── Right: Pricing + CTA ────────────────────────────────────────── */}
           <div className="space-y-4">
             {/* Price card */}
-            <div className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm sticky top-20">
+            <div id="service-contact" className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm sticky top-20 service-detail-price">
               {/* Price */}
               <div className="mb-5">
                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
-                  Khoảng giá niêm yết
+                  {price.caption}
                 </p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-bold text-rose-600">
-                    {listing.minPrice.toLocaleString("vi-VN")}đ
+                    {price.amount}
                   </span>
-                  <span className="text-slate-400 text-sm">—</span>
-                  <span className="text-lg font-semibold text-slate-700">
-                    {listing.maxPrice.toLocaleString("vi-VN")}đ
-                  </span>
+                  {price.unit && <span className="text-slate-500 text-sm">/ {price.unit}</span>}
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
                   Giá chính thức sẽ được báo sau khi tư vấn
@@ -300,7 +311,7 @@ export default function ListingDetailPage() {
               {/* CTA Button */}
               {!isPreview && <><button
                 onClick={() => setIsLeadModalOpen(true)}
-                className="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-sm shadow-lg shadow-rose-200 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="service-contact-cta w-full py-3.5 px-5 rounded-xl text-white font-bold text-sm transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 💌 Nhận Tư Vấn &amp; Ưu Đãi Ngay
               </button>
@@ -327,7 +338,7 @@ export default function ListingDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-slate-800">{reviews.length}</p>
+                  <p className="text-lg font-bold text-slate-800">{reviewsQuery.isSuccess ? reviewsQuery.data.summary.totalReviews : "—"}</p>
                   <p className="text-[10px] text-slate-400 font-medium uppercase">
                     Đánh giá
                   </p>

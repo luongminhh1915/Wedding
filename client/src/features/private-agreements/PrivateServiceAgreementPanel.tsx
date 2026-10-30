@@ -1,0 +1,89 @@
+import { useId, useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronDown, MessageCircle, Plus, RefreshCw, X } from "lucide-react";
+import { ChatRoomModal } from "../chat/components/ChatRoomModal";
+import { apiError } from "../journey/api";
+import { vnDateTime } from "../journey/format";
+import { usePrivateServiceAgreements } from "./privateAgreementApi";
+import { privateAgreementActions, privateAgreementDraft, privateAgreementEffective, privateAgreementPayload, privateAgreementResponse,
+  privateAgreementChatLead, type PrivateAgreementDraft, type PrivateAgreementKind, type PrivateServiceLine } from "./privateAgreementModel";
+
+const statusLabels: Record<string, string> = { PendingCustomer: "Chờ khách xác nhận", Accepted: "Khách đã đồng ý", Rejected: "Khách từ chối", Withdrawn: "NCC đã rút", Superseded: "Đã được thay thế" };
+const money = (value: number) => `${value.toLocaleString("vi-VN")} VNĐ`;
+function ContentLines({ items }: { items: PrivateServiceLine[] }) {
+  return <ul className="mt-2 list-none space-y-2 p-0">{items.map((item, index) => <li key={index} className="rounded-lg border border-slate-200 bg-white p-3 text-sm"><p className="break-words font-semibold">{item.name} <span className="font-normal text-slate-600">× {item.quantity.toLocaleString("vi-VN")}</span></p>{item.details && <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-600">{item.details}</p>}</li>)}</ul>;
+}
+
+/** No private request is fetched until this transaction's section is opened. */
+export function PrivateServiceAgreementPanel({ kind, id, partnerName, title, leadId }: {
+  kind: PrivateAgreementKind; id: string; partnerName?: string; title?: string; leadId?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const { query, mutation, role } = usePrivateServiceAgreements(kind, id, expanded, leadId);
+  const [draft, setDraft] = useState<PrivateAgreementDraft | null>(null);
+  const [review, setReview] = useState<{ id: string; sequence: number; expectedVersion: string; accept: boolean } | null>(null);
+  const [response, setResponse] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatLeadId, setChatLeadId] = useState<string | null>(null);
+  const [failure, setFailure] = useState("");
+  const [notice, setNotice] = useState("");
+  const sectionId = useId();
+  const data = query.data;
+  const actions = data ? privateAgreementActions(data, role) : null;
+  const effective = data ? privateAgreementEffective(data) : null;
+  const leadOptions = data?.leadOptions ?? [];
+  const selectedChatLeadId = data ? privateAgreementChatLead(data, leadId, chatLeadId) : null;
+  const busy = mutation.isPending || query.isFetching;
+  const ready = query.isSuccess && !query.isFetching;
+  const errorText = (error: unknown) => error instanceof Error && !("response" in error) ? error.message : apiError(error);
+  const sendProposal = async () => {
+    if (!draft) return;
+    setFailure(""); setNotice("");
+    try {
+      if (!ready || !actions?.propose || draft.expectedVersion !== data?.currentVersion) throw new Error("Giao dịch đã thay đổi. Hãy tải lại trạng thái, đối chiếu nội dung rồi mở bản soạn mới trước khi gửi.");
+      await mutation.mutateAsync({ body: privateAgreementPayload(draft) }); setDraft(null); setNotice("Đã gửi đề xuất. Nội dung đang thực hiện chỉ thay đổi khi khách xác nhận đồng ý.");
+    }
+    catch (error) { setFailure(errorText(error)); }
+  };
+  const respond = async () => {
+    if (!review || review.accept && !confirmed) return;
+    setFailure(""); setNotice("");
+    try {
+      if (!ready || !actions?.respond || actions.pending?.id !== review.id || review.expectedVersion !== data?.currentVersion) throw new Error("Đề xuất hoặc trạng thái giao dịch đã thay đổi. Quay lại và xem lại đề xuất mới nhất trước khi xác nhận.");
+      await mutation.mutateAsync({ suffix: `/${encodeURIComponent(review.id)}/respond`, body: privateAgreementResponse(review.expectedVersion, review.accept, response) }); setReview(null); setNotice(review.accept ? "Đã xác nhận nội dung thực hiện riêng. Tổng tiền đã chốt giữ nguyên." : "Đã từ chối đề xuất. Nội dung đang thực hiện giữ nguyên.");
+    }
+    catch (error) { setFailure(errorText(error)); }
+  };
+  const withdraw = async () => {
+    if (!data || !actions?.pending) return;
+    setFailure(""); setNotice("");
+    try { await mutation.mutateAsync({ suffix: `/${encodeURIComponent(actions.pending.id)}/withdraw`, body: { expectedVersion: data.currentVersion } }); setNotice("Đã rút đề xuất. Lịch sử và nội dung đã thống nhất được giữ nguyên."); }
+    catch (error) { setFailure(errorText(error)); }
+  };
+  const updateLine = (index: number, change: Partial<PrivateServiceLine>) => setDraft(value => value && ({ ...value, items: value.items.map((item, at) => at === index ? { ...item, ...change } : item) }));
+  return <section className="mt-4 min-w-0 rounded-xl border border-[#ded8c5] bg-[#fcf6ea] text-[#233a42]" aria-labelledby={sectionId}>
+    <button type="button" id={sectionId} className="flex w-full items-center justify-between gap-3 p-3 text-left text-sm font-semibold" aria-expanded={expanded} aria-controls={`${sectionId}-body`} onClick={() => setExpanded(value => !value)}><span>Nội dung thực hiện & đề xuất riêng</span><ChevronDown size={16} className={expanded ? "rotate-180" : ""} /></button>
+    {expanded && <div id={`${sectionId}-body`} className="min-w-0 border-t border-[#ded8c5] p-3 sm:p-4">
+      <p className="text-xs leading-relaxed text-slate-600">Khách và NCC trao đổi trong chat; NCC gửi nội dung điều chỉnh và khách xác nhận riêng cho giao dịch này. Đề xuất này không cần kiểm duyệt lại combo công khai.</p>
+      {query.isPending ? <p role="status" className="mt-3 text-sm">Đang tải nội dung và lịch sử...</p> : query.isError ? <div role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><p>{apiError(query.error, "Chưa tải được thỏa thuận của giao dịch.")}</p><button type="button" className="btn btn-outline mt-2" onClick={() => void query.refetch()}>Thử lại</button></div> : data && <>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#dedccf] bg-white p-3"><div><p className="text-xs text-slate-500">Tổng tiền đã chốt · giữ nguyên</p><p className="mt-1 text-base font-semibold">{money(data.currentTotal)}</p></div><div className="flex flex-wrap gap-2">{selectedChatLeadId ? <button type="button" className="btn btn-outline" onClick={() => setShowChat(true)}><MessageCircle size={14} />Trao đổi trong chat</button> : leadOptions.length > 1 ? <label className="flex flex-wrap items-center gap-2 text-xs"><span>Chọn cuộc trò chuyện</span><select className="input max-w-xs" aria-label="Chọn yêu cầu tư vấn để mở chat" value={chatLeadId ?? ""} onChange={event => setChatLeadId(event.target.value || null)}><option value="">Chọn dịch vụ</option>{leadOptions.map(option => <option key={option.leadId} value={option.leadId}>{option.listingTitle}</option>)}</select><button type="button" className="btn btn-outline" disabled={!chatLeadId} onClick={() => setShowChat(true)}><MessageCircle size={14} />Trao đổi trong chat</button></label> : null}<button type="button" className="btn btn-outline" disabled={busy} onClick={() => void query.refetch()}><RefreshCw size={14} />Tải lại trạng thái</button></div></div>
+        <p className="mt-2 text-xs leading-relaxed text-slate-600">Chỉ thay đổi nội dung thực hiện với cùng tổng tiền. Nếu cần đổi giá, hai bên dùng quy trình báo giá/thỏa thuận tài chính riêng; gửi hoặc đồng ý ở đây không đổi khoản cọc, hoa hồng hay thanh toán đã ghi nhận.</p>
+        {data.blockedReason && <p role="note" className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">{data.blockedReason}</p>}
+        {kind === "combo" && data.blockedReason && <p className="mt-2 text-xs leading-relaxed text-slate-600">Khi đơn đã có hợp đồng, hai bên thực hiện theo báo giá/hợp đồng đã xác nhận và xử lý điều chỉnh tại đúng hợp đồng. Nội dung riêng đã lưu ở combo không tự thay thế nội dung của hợp đồng.</p>}
+        {kind === "contract" && !!data.sourceComboContent?.length && <details className="mt-4 rounded-xl border border-[#d7cda9] bg-white p-3 text-xs"><summary className="cursor-pointer font-semibold">Nội dung combo đã thống nhất trước hợp đồng · chỉ đọc</summary><p className="mt-2 leading-relaxed text-slate-600">Đối chiếu báo giá/hợp đồng; nội dung tham khảo này không tự thay thế nội dung riêng của hợp đồng này.</p><ContentLines items={data.sourceComboContent} />{data.sourceComboId && <Link className="mt-3 inline-block underline" to={role === "Customer" ? `/customer/dashboard?tab=combos&focusKind=combo&focus=${encodeURIComponent(data.sourceComboId)}` : "/vendor/dashboard?tab=leads"}>{role === "Customer" ? "Xem đơn combo nguồn" : "Mở hộp thư yêu cầu từ combo"}</Link>}</details>}
+        <div className="mt-4"><h4 className="text-sm font-semibold">Nội dung đang thực hiện{effective ? ` · đề xuất #${effective.sequence} đã được khách xác nhận` : " · theo hồ sơ gốc"}</h4><ContentLines items={data.effectiveContent} />{effective?.terms && <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-600">Điều kiện đã thống nhất: {effective.terms}</p>}</div>
+        <details className="mt-3 text-xs"><summary className="cursor-pointer font-semibold">Đối chiếu nội dung gốc đã chốt</summary><ContentLines items={data.originalContent} /><p className="mt-2 text-slate-500">Hồ sơ gốc được giữ để đối chiếu với nội dung hai bên đã xác nhận riêng.</p></details>
+        {actions?.pending && <div className="mt-4 rounded-xl border border-amber-200 bg-white p-3"><p className="text-sm font-semibold">Đề xuất #{actions.pending.sequence} · Chờ khách xác nhận</p><p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed">{actions.pending.note}</p><ContentLines items={actions.pending.items} />{actions.pending.terms && <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed">Điều kiện: {actions.pending.terms}</p>}<p className="mt-2 text-xs text-slate-600">Tổng tiền giữ nguyên {money(data.currentTotal)}. Đề xuất này chưa thay nội dung đang thực hiện.</p><div className="mt-3 flex flex-wrap gap-2">{actions.respond && !review && <><button type="button" className="btn btn-primary" disabled={!ready || busy} onClick={() => { setReview({ id: actions.pending!.id, sequence: actions.pending!.sequence, expectedVersion: data.currentVersion, accept: true }); setResponse(""); setConfirmed(false); setFailure(""); }}>Xem lại & đồng ý nội dung</button><button type="button" className="btn btn-outline" disabled={!ready || busy} onClick={() => { setReview({ id: actions.pending!.id, sequence: actions.pending!.sequence, expectedVersion: data.currentVersion, accept: false }); setResponse(""); setFailure(""); }}>Từ chối đề xuất</button></>}{actions.withdraw && <button type="button" className="btn btn-outline" disabled={!ready || busy} onClick={() => void withdraw()}>Rút đề xuất đang chờ</button>}</div></div>}
+        {review && <section className="mt-3 rounded-xl border border-[#b29b55] bg-white p-4" aria-label="Xác nhận phản hồi đề xuất"><h4 className="text-sm font-semibold">{review.accept ? "Xác nhận đồng ý" : "Từ chối"} đề xuất #{review.sequence}</h4><p className="mt-2 text-xs leading-relaxed">{review.accept ? "Khi đồng ý, các hạng mục trong đề xuất sẽ trở thành nội dung thực hiện riêng của giao dịch này. Tổng tiền đã chốt giữ nguyên." : "Nội dung đang thực hiện giữ nguyên. NCC có thể gửi một đề xuất mới sau khi trao đổi."}</p><label className="mt-3 block"><span className="label">Phản hồi (tùy chọn)</span><textarea className="input" rows={2} maxLength={2000} disabled={busy} value={response} onChange={event => setResponse(event.target.value)} /></label>{review.accept && <label className="mt-3 flex items-start gap-2 text-xs leading-relaxed"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)} />Tôi đã xem đủ hạng mục và điều kiện, đồng ý áp dụng nội dung đề xuất cho giao dịch này với tổng tiền giữ nguyên.</label>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" className="btn btn-primary" disabled={busy || review.accept && !confirmed} onClick={() => void respond()}>{busy ? "Đang gửi..." : review.accept ? "Xác nhận đồng ý nội dung" : "Xác nhận từ chối"}</button><button type="button" className="btn btn-outline" disabled={busy} onClick={() => setReview(null)}>Quay lại</button></div></section>}
+        {actions?.propose && !draft && <button type="button" className="btn btn-primary mt-4" disabled={!ready || busy} onClick={() => { setDraft(privateAgreementDraft(data)); setFailure(""); setNotice(""); }}><Plus size={14} />Đề xuất nội dung riêng cho khách</button>}
+        {draft && <section className="mt-4 rounded-xl border border-[#d7cda9] bg-white p-3 sm:p-4" aria-label="Soạn đề xuất nội dung riêng"><div className="flex items-start justify-between gap-3"><h4 className="text-sm font-semibold">Đề xuất nội dung mới · cùng tổng tiền {money(data.currentTotal)}</h4><button type="button" aria-label="Đóng bản soạn đề xuất" disabled={busy} onClick={() => setDraft(null)}><X size={16} /></button></div><p className="mt-2 text-xs leading-relaxed text-slate-600">Nhập toàn bộ nội dung dự kiến thực hiện sau điều chỉnh để khách đối chiếu, gồm cả những hạng mục tiếp tục giữ lại.</p><fieldset disabled={busy} className="mt-3 space-y-3"><legend className="sr-only">Hạng mục đề xuất</legend>{draft.items.map((item, index) => <div key={index} className="grid gap-2 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr_110px]"><label><span className="label">Tên hạng mục {index + 1}</span><input className="input" maxLength={200} value={item.name} onChange={event => updateLine(index, { name: event.target.value })} /></label><label><span className="label">Số lượng</span><input className="input" type="number" min={1} max={10000} step={1} value={item.quantity || ""} onChange={event => updateLine(index, { quantity: Number(event.target.value) })} /></label><label className="sm:col-span-2"><span className="label">Chi tiết nội dung</span><textarea className="input" rows={2} maxLength={10000} value={item.details} onChange={event => updateLine(index, { details: event.target.value })} /></label><button type="button" className="text-left text-xs underline" onClick={() => setDraft(value => value && ({ ...value, items: value.items.filter((_, at) => at !== index) }))}>Bỏ hạng mục</button></div>)}<button type="button" className="btn btn-outline" disabled={draft.items.length >= 30} onClick={() => setDraft(value => value && ({ ...value, items: [...value.items, { name: "", quantity: 1, details: "" }] }))}><Plus size={14} />Thêm hạng mục ({draft.items.length}/30)</button><label className="block"><span className="label">Lý do / nội dung thay đổi</span><textarea className="input" rows={3} maxLength={2000} value={draft.note} onChange={event => setDraft({ ...draft, note: event.target.value })} /></label><label className="block"><span className="label">Điều kiện thực hiện (tùy chọn)</span><textarea className="input" rows={3} maxLength={4000} value={draft.terms} onChange={event => setDraft({ ...draft, terms: event.target.value })} /></label><div className="flex flex-wrap justify-end gap-2"><button type="button" className="btn btn-outline" onClick={() => setDraft(null)}>Hủy bản soạn</button><button type="button" className="btn btn-primary" onClick={() => void sendProposal()}>{mutation.isPending ? "Đang gửi..." : "Gửi khách xác nhận"}</button></div></fieldset></section>}
+        <details className="mt-4 text-xs"><summary className="cursor-pointer font-semibold">Lịch sử đề xuất ({data.history.length})</summary>{data.history.length ? <ul className="mt-3 list-none space-y-3 p-0">{data.history.map(proposal => <li key={proposal.id} className="rounded-xl border border-[#dedccf] bg-white p-3"><p className="font-semibold">#{proposal.sequence} · {statusLabels[proposal.status] ?? proposal.status}{effective?.id === proposal.id ? " · Đang áp dụng" : ""}</p><p className="mt-1 text-slate-500">Gửi {vnDateTime(proposal.createdAt)}{proposal.respondedAt ? ` · Phản hồi ${vnDateTime(proposal.respondedAt)}` : ""}</p><p className="mt-2 whitespace-pre-wrap break-words">{proposal.note}</p><ContentLines items={proposal.items} />{proposal.terms && <p className="mt-2 whitespace-pre-wrap break-words">Điều kiện: {proposal.terms}</p>}{proposal.response && <p className="mt-2 whitespace-pre-wrap break-words">Phản hồi của khách: {proposal.response}</p>}</li>)}</ul> : <p className="mt-2 text-slate-500">Chưa có đề xuất nội dung riêng.</p>}</details>
+      </>}
+      {failure && <p role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{failure}</p>}
+      {data && (draft && draft.expectedVersion !== data.currentVersion || review && review.expectedVersion !== data.currentVersion) && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">Giao dịch hoặc đề xuất đã đổi phiên bản. Bản soạn và phản hồi đang mở vẫn được giữ để bạn đối chiếu; hãy quay lại và mở lại từ trạng thái mới nhất trước khi gửi.</p>}
+      {notice && <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
+    </div>}
+    {showChat && selectedChatLeadId && <ChatRoomModal isOpen onClose={() => setShowChat(false)} leadId={selectedChatLeadId} partnerName={partnerName || (role === "VendorOwner" ? "Khách hàng" : "Nhà cung cấp")} isVendorUser={role === "VendorOwner"} listingTitle={leadOptions.find(option => option.leadId === selectedChatLeadId)?.listingTitle || title || "Trao đổi nội dung thực hiện riêng"} />}
+  </section>;
+}

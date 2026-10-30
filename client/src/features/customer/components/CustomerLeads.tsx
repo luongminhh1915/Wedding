@@ -45,6 +45,7 @@ import {
 import { Pagination } from "../../../components/Pagination";
 import { useOrderPage } from "../../journey/customerOrders/useOrderPage";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
+import { OrderReadError } from "../../journey/customerOrders/OrderReadError";
 
 export function CustomerLeads() {
   const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("lead", "active");
@@ -97,10 +98,8 @@ export function CustomerLeads() {
         </div>
         <button
           className="co-button secondary"
-          onClick={() => {
-            void query.refetch();
-            void journey.refetch();
-          }}
+          disabled={query.isFetching}
+          onClick={() => void query.refetch()}
         >
           <RefreshCw size={14} /> Làm mới
         </button>
@@ -131,14 +130,12 @@ export function CustomerLeads() {
         </p>
       )}
       {notificationFocus.missing && <p className="co-summary-note" role="status">Yêu cầu trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
-      {(query.isError || journey.isError || unlock.isError) && (
+      {unlock.isError && (
         <p className="co-error" role="alert">
-          {apiError(query.error || journey.error || unlock.error)}{" "}
-          {journey.isError &&
-            "Chưa tải được quyền thao tác; các nút thay đổi đang được ẩn an toàn."}
+          {apiError(unlock.error)}
         </p>
       )}
-      {query.isPending ? (
+      {query.isError ? <OrderReadError label="yêu cầu tư vấn" error={query.error} retry={query.refetch} busy={query.isFetching} /> : query.isPending ? (
         <div className="co-loading">
           <p>Đang tải yêu cầu tư vấn...</p>
         </div>
@@ -352,11 +349,13 @@ export function CustomerLeads() {
           })}
         </div>
       )}
-      <Pagination page={query.data?.page ?? page} pageSize={pageSize} totalCount={query.data?.totalCount ?? 0} isLoading={query.isFetching} onPageChange={next => changePage(next, query.data?.filter)} label="Phân trang nhóm tư vấn" />
+      {!query.isError && <Pagination page={query.data?.page ?? page} pageSize={pageSize} totalCount={query.data?.totalCount ?? 0} isLoading={query.isFetching} onPageChange={next => changePage(next, query.data?.filter)} label="Phân trang nhóm tư vấn" />}
       {dialog && (
         <CustomerOrderActionDialog
           key={`${dialog.item.id}:${dialog.intent}`}
           {...dialog}
+          item={metadata.get(dialog.item.id) ?? dialog.item}
+          readBlocked={query.isError || !metadata.has(dialog.item.id)}
           onClose={() => setDialog(null)}
           onSuccess={() =>
             setNotice(

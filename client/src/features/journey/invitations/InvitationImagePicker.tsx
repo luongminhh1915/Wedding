@@ -249,7 +249,7 @@ export function InvitationImagePicker({
             ))}
           </div>
           <progress
-            className="w-full accent-[#25334c]"
+            className="w-full accent-[#233a42]"
             max={100}
             value={progress}
             aria-label="Tiến độ tải ảnh"

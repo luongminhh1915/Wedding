@@ -9,6 +9,7 @@ import { CreateContractModal } from './CreateContractModal';
 import type { Lead } from '../../../types/lead.types';
 import { useSearchParams } from 'react-router-dom';
 import { requestedNotificationFocus, useNotificationFocus } from '../../notifications/useNotificationFocus';
+import { PrivateServiceAgreementPanel } from '../../private-agreements/PrivateServiceAgreementPanel';
 
 // Component đếm ngược SLA 2h realtime BR-003
 function SlaCountdown({ deadline }: { deadline: string }) {
@@ -282,6 +283,7 @@ export function LeadInbox() {
               )}
 
               {/* Actions */}
+              {lead.comboOrderId && <PrivateServiceAgreementPanel kind="combo" id={lead.comboOrderId} leadId={lead.id} partnerName={lead.customerName} title={lead.listingTitle || 'Combo đã gửi'} />}
               <div className="flex items-center justify-end gap-3 pt-2">
                 {lead.status === 'New' ? (
                   <button

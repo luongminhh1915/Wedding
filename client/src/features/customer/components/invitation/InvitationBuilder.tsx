@@ -19,6 +19,8 @@ import type {
 } from "../../../../types/invitation.types";
 import type { WeddingProfile } from "../../../journey/api";
 import { InvitationImagePicker } from "../../../journey/invitations/InvitationImagePicker";
+import { InvitationMusicPicker } from "../../../journey/invitations/InvitationMusicPicker";
+import { invitationMusicSource } from "../../../journey/invitations/invitationMusic";
 
 const slugify = (s: string) =>
   s
@@ -104,7 +106,9 @@ function BuilderForm({
   const [error, setError] = useState("");
   const [coverUploading, setCoverUploading] = useState(false);
   const [albumUploading, setAlbumUploading] = useState(false);
-  const uploading = coverUploading || albumUploading;
+  const [musicUploading, setMusicUploading] = useState(false);
+  const uploading = coverUploading || albumUploading || musicUploading;
+  const invalidMusic = invitationMusicSource(f.musicUrl).kind === "invalid";
   const { data: rsvps = [], isError: rsvpError } = useInvitationRsvps();
   const set = <K extends keyof SaveInvitationRequest>(
     key: K,
@@ -114,7 +118,11 @@ function BuilderForm({
   const serialize = () => JSON.stringify(content);
   const submit = async (publish: boolean) => {
     if (uploading) {
-      setError("Vui lòng đợi tải ảnh xong trước khi lưu thiệp.");
+      setError("Vui lòng đợi tải ảnh và nhạc xong trước khi lưu thiệp.");
+      return;
+    }
+    if (invalidMusic) {
+      setError("Vui lòng chọn nguồn nhạc hợp lệ hoặc bỏ nhạc trước khi lưu thiệp.");
       return;
     }
     setError("");
@@ -162,7 +170,7 @@ function BuilderForm({
         <div className="flex gap-2">
           <button
             className="btn btn-ghost"
-            disabled={saving || uploading}
+            disabled={saving || uploading || invalidMusic}
             onClick={() => void submit(false)}
           >
             <Save size={14} />
@@ -170,12 +178,12 @@ function BuilderForm({
           </button>
           <button
             className="btn btn-primary"
-            disabled={saving || uploading}
+            disabled={saving || uploading || invalidMusic}
             onClick={() => void submit(true)}
           >
             <Eye size={14} />
             {uploading
-              ? "Đang tải ảnh..."
+              ? "Đang tải tệp..."
               : saving
                 ? "Đang lưu..."
                 : "Lưu & xuất bản"}
@@ -200,7 +208,7 @@ function BuilderForm({
               {templates.map((t) => (
                 <button
                   key={t.id}
-                  className={`rounded-xl p-3 border text-center ${f.templateStyle === t.key ? "ring-2 ring-[#25334c]" : "border-[#dedccf]"}`}
+                  className={`rounded-xl p-3 border text-center ${f.templateStyle === t.key ? "ring-2 ring-[#233a42]" : "border-[#dedccf]"}`}
                   style={{
                     background: t.backgroundColor,
                     color: t.primaryColor,
@@ -315,6 +323,12 @@ function BuilderForm({
             onUploadingChange={setAlbumUploading}
             disabled={saving}
           />
+          <InvitationMusicPicker
+            value={f.musicUrl}
+            onChange={url => set("musicUrl", url)}
+            onUploadingChange={setMusicUploading}
+            disabled={saving}
+          />
           <label className="block">
             <span className="label">Câu chuyện của hai bạn</span>
             <textarea
@@ -368,18 +382,6 @@ function BuilderForm({
                   <option value="Playfair">Playfair Display</option>
                   <option value="Inter">Inter</option>
                 </select>
-              </label>
-              <label className="block">
-                <span className="label">
-                  Nhạc nền (URL audio, không tự phát)
-                </span>
-                <input
-                  type="url"
-                  maxLength={500}
-                  className="input"
-                  value={f.musicUrl}
-                  onChange={(e) => set("musicUrl", e.target.value)}
-                />
               </label>
               <label className="block">
                 <span className="label">Thông tin mừng cưới</span>

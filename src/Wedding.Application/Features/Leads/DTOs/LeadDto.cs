@@ -27,7 +27,8 @@ public record LeadDto(
     DateTime SlaDeadline,
     DateTime? AcceptedAt,
     DateTime CreatedAt,
-    VoucherSummaryDto? Voucher
+    VoucherSummaryDto? Voucher,
+    Guid? ComboOrderId = null
 );
 
 public record SendLeadResponseDto(

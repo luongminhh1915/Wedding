@@ -37,10 +37,11 @@ public class DurableNotificationSender(IApplicationDbContext context) : INotific
 
     private async Task PersistAsync(string channel, string to, string message, string? contextKind, Guid? contextId, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(to)) return;
         var user = Guid.TryParse(to, out var id) ? await context.Users.FindAsync(new object[] { id }, ct)
             : await context.Users.FirstOrDefaultAsync(u => u.Email == to || u.PhoneNumber == to, ct);
         if (user == null) return; // Never send private data to a masked or unknown address.
-        var notification = Notification.Create(user.Id, channel == "InApp" ? "InApp" : "Email", user.Email, message,
+        var notification = Notification.Create(user.Id, channel == "InApp" || string.IsNullOrWhiteSpace(user.Email) ? "InApp" : "Email", user.Email, message,
             contextKind: contextKind, contextId: contextId);
         context.Notifications.Add(notification);
         await context.SaveChangesAsync(ct);

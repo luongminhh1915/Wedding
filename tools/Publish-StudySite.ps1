@@ -110,6 +110,12 @@ GO
 <configuration>
   <location path="." inheritInChildApplications="false">
     <system.webServer>
+      <security>
+        <authentication>
+          <anonymousAuthentication enabled="true" />
+          <basicAuthentication enabled="false" />
+        </authentication>
+      </security>
       <handlers><add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" /></handlers>
       <aspNetCore processPath="dotnet" arguments=".\Wedding.WebApi.dll" stdoutLogEnabled="false" hostingModel="inprocess">
         <environmentVariables><environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" /></environmentVariables>
@@ -127,7 +133,7 @@ GO
         Database = @{ Provider = 'SqlServer'; ApplyMigrations = $false; SeedDemoData = $false }
         ConnectionStrings = @{ DefaultConnection = '' }
         JwtSettings = @{ Secret = ''; Issuer = 'WeddingPlatform'; Audience = 'WeddingPlatformClient'; ExpiryMinutes = 1440 }
-        Uploads = @{ InvitationRoot = '../private/uploads/invitations'; ListingRoot = '../private/uploads/listings' }
+        Uploads = @{ InvitationRoot = '../private/uploads/invitations'; InvitationAudioRoot = '../private/uploads/invitation-audio'; ListingRoot = '../private/uploads/listings' }
         Logging = @{ LogLevel = @{ Default = 'Information'; 'Microsoft.AspNetCore' = 'Warning'; 'Microsoft.EntityFrameworkCore.Database.Command' = 'Warning' } }
         AllowedHosts = '*'
     }

@@ -45,7 +45,7 @@ try {
         JwtSettings = @{ Secret = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48)); Issuer = 'WeddingPlatform'; Audience = 'WeddingPlatformClient'; ExpiryMinutes = 240 }
         AllowedHosts = $siteHost
         Cors = @{ Origins = @("https://$siteHost") }
-        Uploads = @{ InvitationRoot = '../private/uploads/invitations'; ListingRoot = '../private/uploads/listings' }
+        Uploads = @{ InvitationRoot = '../private/uploads/invitations'; InvitationAudioRoot = '../private/uploads/invitation-audio'; ListingRoot = '../private/uploads/listings' }
         Logging = @{ LogLevel = @{ Default = 'Information'; 'Microsoft.AspNetCore' = 'Warning'; 'Microsoft.EntityFrameworkCore.Database.Command' = 'Warning' } }
     }
     $parent = [IO.Path]::GetDirectoryName($destination)

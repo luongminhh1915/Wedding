@@ -67,8 +67,10 @@ public static class DependencyInjection
         services.AddScoped<INotificationSender, DurableNotificationSender>();
         services.AddSingleton<SmtpDelivery>();
         services.AddSingleton<IOtpDelivery>(provider => provider.GetRequiredService<SmtpDelivery>());
+        services.AddSingleton<IPasswordResetDelivery>(provider => provider.GetRequiredService<SmtpDelivery>());
         services.AddHttpClient("identity", client => client.Timeout = TimeSpan.FromSeconds(10));
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
+        services.AddSingleton<IFacebookIdentityVerifier, FacebookIdentityVerifier>();
         services.AddSingleton<IMockPaymentGateway, MockPaymentGateway>();
         services.AddScoped<IBillingService, PaymentLedgerService>();
 

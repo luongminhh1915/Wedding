@@ -8,6 +8,7 @@ using Wedding.Domain.Exceptions;
 using Wedding.Application.Features.Planner;
 using Wedding.Application.Features.CustomerOrders;
 using Wedding.Application.Features.Listings;
+using Wedding.Application.Features.CommissionPolicies;
 
 namespace Wedding.Application.Features.Contracts.Commands.ConfirmContract;
 
@@ -66,11 +67,35 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
             if (category.RequiresCommissionBasisApproval || category.BusinessGroup.RequiresCommissionBasisApproval)
                 throw new DomainException("Dịch vụ tổ chức cưới trọn gói cần cơ sở tính hoa hồng được Admin phê duyệt. Chưa thể xác nhận hợp đồng hoặc tính 12% trên toàn bộ giá trị gói.");
         }
-        var rateSource = contract.Vendor.CommissionRate > 0m ? "LegacyVendor" : "CategoryDefault";
-        var resolvedRate = CommissionRules.ResolveRate(category.DefaultCommissionRate, contract.Vendor.CommissionRate);
+        Guid? serviceItemId = contract.Lead.Listing?.PricingServiceItemId;
+        Guid? comboTemplateId = null;
+        if (contract.Lead.ComboOrderId.HasValue)
+        {
+            var comboOrder = await _context.ComboOrders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == contract.Lead.ComboOrderId.Value, cancellationToken);
+            comboTemplateId = comboOrder?.ComboTemplateId;
+        }
+
+        var resolved = await CommissionRateResolver.ResolveRateAsync(
+            _context,
+            contract.VendorId,
+            categoryId,
+            serviceItemId,
+            comboTemplateId,
+            contract.Vendor.CommissionRate,
+            category.DefaultCommissionRate,
+            DateTime.UtcNow,
+            cancellationToken);
+        var rateSource = resolved.RateSource;
+        var resolvedRate = resolved.Rate;
 
         var weddingScope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
         CustomerOrderJourney.EnsureActiveLead(contract.Lead);
+        // A reused Draft retains CreatedAt. Use the newly issued quote / verification window,
+        // not that historical timestamp, after NCC explicitly sends a revised document.
+        var documentIssuedAt = contract.QuoteId.HasValue
+            ? await _context.Quotes.Where(q => q.Id == contract.QuoteId).Select(q => q.CreatedAt).SingleAsync(cancellationToken)
+            : contract.VerificationDeadline.AddHours(-72);
+        await Wedding.Application.Features.PrivateServiceAgreements.PrivateAgreementContractHandoff.EnsureReviewedAsync(_context, contract.Lead, documentIssuedAt, cancellationToken);
 
         // Kiểm tra điều kiện và chuyển sang trạng thái Confirmed (nếu quá 72h sẽ throw exception)
         contract.ConfirmByCustomer();
@@ -84,7 +109,7 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         // P4: chốt (snapshot) tỷ lệ hoa hồng tại thời điểm khách xác nhận – thay đổi tỷ lệ sau này không ảnh hưởng HĐ cũ
         if (!contract.WeddingDate.HasValue) throw new DomainException("Cần ngày cưới để xác định thời điểm giải phóng K2.");
         contract.SnapshotCommissionRate(resolvedRate);
-        contract.SnapshotCommissionCategory(category, rateSource);
+        contract.SnapshotCommissionCategory(category, rateSource, resolved.PolicyVersion);
         var commissionRate = contract.CommissionRateSnapshot!.Value;
         var split = CommissionRules.Split(contract.ContractValue, commissionRate);
 

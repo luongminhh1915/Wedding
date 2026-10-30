@@ -46,16 +46,18 @@ public class SuspendVendorHandler(IApplicationDbContext db, IAuditLogger audit) 
     }
 }
 public record UpdateArticleCommand(Guid Id, string Title, string Slug, string Excerpt, string Content, string? ThumbnailUrl, string Category, bool Publish, List<Guid>? ListingIds) : IRequest<ArticleDto>;
-public class UpdateArticleHandler(IApplicationDbContext db, IAuditLogger audit) : IRequestHandler<UpdateArticleCommand, ArticleDto>
+public class UpdateArticleHandler(IApplicationDbContext db, IAuditLogger audit, ICurrentUserService user) : IRequestHandler<UpdateArticleCommand, ArticleDto>
 {
     public async Task<ArticleDto> Handle(UpdateArticleCommand r, CancellationToken ct)
     {
+        await ArticleCmsAccess.RequireAsync(db, user, ct);
+        var slug = ArticleCmsInput.Slug(r.Title, r.Slug, r.Excerpt, r.Content, r.Category);
+        var thumbnail = ArticleImageReferences.Normalize(r.ThumbnailUrl);
         var article = await db.Articles.FindAsync(new object[] { r.Id }, ct) ?? throw new NotFoundException("Bài viết không tồn tại.");
-        var slug = r.Slug.Trim().ToLowerInvariant();
         if (await db.Articles.AnyAsync(a => a.Id != r.Id && a.Slug == slug, ct)) throw new DomainException("Slug đã tồn tại.");
         var ids = r.ListingIds?.Distinct().Take(10).ToList() ?? new();
         if (await db.Listings.CountAsync(l => ids.Contains(l.Id) && l.Status == ListingStatus.Active && l.IsActive && l.Vendor.IsActive && l.Vendor.User.IsActive, ct) != ids.Count) throw new DomainException("Chỉ được ghim dịch vụ đang hoạt động.");
-        article.Update(r.Title, slug, r.Excerpt, r.Content, r.ThumbnailUrl, r.Category);
+        article.Update(r.Title, slug, r.Excerpt ?? "", r.Content, thumbnail, r.Category.Trim());
         if (r.Publish && !article.IsPublished) article.Publish(); else if (!r.Publish) article.Unpublish();
         db.ArticleListingPins.RemoveRange(await db.ArticleListingPins.Where(p => p.ArticleId == r.Id).ToListAsync(ct));
         foreach (var id in ids) db.ArticleListingPins.Add(ArticleListingPin.Create(article.Id, id));
@@ -64,10 +66,11 @@ public class UpdateArticleHandler(IApplicationDbContext db, IAuditLogger audit) 
     }
 }
 public record DeleteArticleCommand(Guid Id) : IRequest;
-public class DeleteArticleHandler(IApplicationDbContext db, IAuditLogger audit) : IRequestHandler<DeleteArticleCommand>
+public class DeleteArticleHandler(IApplicationDbContext db, IAuditLogger audit, ICurrentUserService user) : IRequestHandler<DeleteArticleCommand>
 {
     public async Task Handle(DeleteArticleCommand r, CancellationToken ct)
     {
+        await ArticleCmsAccess.RequireAsync(db, user, ct);
         var article = await db.Articles.FindAsync(new object[] { r.Id }, ct) ?? throw new NotFoundException("Bài viết không tồn tại.");
         db.Articles.Remove(article); await audit.LogAsync("Article.Delete", nameof(Article), r.Id.ToString()); await db.SaveChangesAsync(ct);
     }
@@ -87,7 +90,7 @@ public class EmergencyMatchHandler(IApplicationDbContext db, ICurrentUserService
         lead.AttachSource("EmergencyMatch"); db.Leads.Add(lead); db.Vouchers.Add(Voucher.Create(lead.Id, contract.CustomerId));
         db.EmergencyMatches.Add(EmergencyMatch.Create(contract.Id, listing.Id, lead.Id, user.UserId!.Value, r.Reason!));
         await audit.LogAsync("Contract.EmergencyMatch", nameof(BookingContract), contract.Id.ToString(), new { lead.Id, r.ReplacementListingId, r.Reason });
-        await db.SaveChangesAsync(token); await notify.SendAsync("Email", contract.Customer.Email, $"CSKH đã tạo yêu cầu NCC thay thế: {listing.Vendor.BrandName}. Bạn cần duyệt báo giá/hợp đồng mới; hợp đồng cũ không bị tự ý chuyển.", token);
+        await db.SaveChangesAsync(token); await notify.SendAsync("Email", contract.Customer.NotificationRecipient, $"CSKH đã tạo yêu cầu NCC thay thế: {listing.Vendor.BrandName}. Bạn cần duyệt báo giá/hợp đồng mới; hợp đồng cũ không bị tự ý chuyển.", token);
         return lead.Id;
     }, ct);
 }

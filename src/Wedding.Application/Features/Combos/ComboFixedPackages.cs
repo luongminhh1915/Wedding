@@ -69,8 +69,8 @@ public static class ComboFixedPackages
     internal static void ValidatePrice(string mode, decimal? price)
     {
         if (mode is not ("Dynamic" or "FixedPrice")) throw new DomainException("Loại giá combo không hợp lệ.");
-        if (mode == "FixedPrice" && (!price.HasValue || price < 0 || price > 100000000000m || price != decimal.Truncate(price.Value)))
-            throw new DomainException("Nhập giá combo theo đồng nguyên, từ 0 đến 100 tỷ VNĐ.");
+        if (mode == "FixedPrice" && (!price.HasValue || price <= 0 || price > 100000000000m || price != decimal.Truncate(price.Value)))
+            throw new DomainException("Nhập giá combo theo đồng nguyên, lớn hơn 0 và tối đa 100 tỷ VNĐ.");
         if (mode == "Dynamic" && price.HasValue) throw new DomainException("Giá cố định cần chọn loại combo FixedPrice.");
     }
 }

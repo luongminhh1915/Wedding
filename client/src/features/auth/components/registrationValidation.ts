@@ -1,5 +1,6 @@
 import { normalizeProvince } from "../../../data/vietnamProvinces.ts";
 import type { RegisterVendorRequest } from "../../../types/auth.ts";
+import { normalizeOperatingAreas } from "./operatingAreasModel.ts";
 
 export type RegistrationRole = "customer" | "vendor";
 
@@ -11,7 +12,8 @@ export type RegistrationValues = {
   confirmPassword: string;
   brandName: string;
   city: string;
-  businessGroupIds: string[];
+  operatingRegions?: string[];
+  nationwide?: boolean;
   partnershipPolicyAccepted: boolean;
 };
 
@@ -19,7 +21,7 @@ export type RegistrationErrors = Partial<Record<keyof RegistrationValues, string
 
 export const EMPTY_REGISTRATION: RegistrationValues = {
   fullName: "", email: "", phoneNumber: "", password: "", confirmPassword: "",
-  brandName: "", city: "", businessGroupIds: [], partnershipPolicyAccepted: false,
+  brandName: "", city: "", partnershipPolicyAccepted: false,
 };
 
 export function normalizeRegistration(values: RegistrationValues): RegistrationValues {
@@ -33,7 +35,7 @@ export function normalizeRegistration(values: RegistrationValues): RegistrationV
   };
 }
 
-export function validateRegistration(values: RegistrationValues, role: RegistrationRole, availableBusinessGroupIds: readonly string[] = []): RegistrationErrors {
+export function validateRegistration(values: RegistrationValues, role: RegistrationRole): RegistrationErrors {
   const fields = normalizeRegistration(values);
   const errors: RegistrationErrors = {};
   if (!fields.fullName || fields.fullName.length > 150) errors.fullName = "Họ và tên cần có từ 1 đến 150 ký tự.";
@@ -47,11 +49,9 @@ export function validateRegistration(values: RegistrationValues, role: Registrat
   if (fields.password !== fields.confirmPassword || !fields.confirmPassword) errors.confirmPassword = "Mật khẩu nhập lại chưa khớp.";
   if (role === "vendor") {
     if (!fields.brandName || fields.brandName.length > 200) errors.brandName = "Tên thương hiệu cần có từ 1 đến 200 ký tự.";
-    if (!normalizeProvince(fields.city)) errors.city = "Chọn một tỉnh / thành phố trong danh sách 34 địa phương hiện hành.";
-    if (availableBusinessGroupIds.length === 0) errors.businessGroupIds = "Chưa tải được chính sách nhóm dịch vụ. Vui lòng thử lại trước khi đăng ký.";
-    else if (fields.businessGroupIds.length === 0 || new Set(fields.businessGroupIds).size !== fields.businessGroupIds.length || fields.businessGroupIds.some(id => !availableBusinessGroupIds.includes(id)))
-      errors.businessGroupIds = "Chọn ít nhất một nhóm dịch vụ trong chính sách hiện hành.";
-    if (!fields.partnershipPolicyAccepted) errors.partnershipPolicyAccepted = "Vui lòng xác nhận đã đọc chính sách hợp tác theo các nhóm đã chọn.";
+    const areas = normalizeOperatingAreas(fields.city, fields.operatingRegions, fields.nationwide, true);
+    if (areas.error) errors.city = areas.error;
+    if (!fields.partnershipPolicyAccepted) errors.partnershipPolicyAccepted = "Vui lòng xác nhận đã hiểu chính sách hoa hồng theo danh mục dịch vụ.";
   }
   return errors;
 }
@@ -60,9 +60,12 @@ export function validateRegistration(values: RegistrationValues, role: Registrat
 export function vendorRegistrationRequest(values: RegistrationValues): RegisterVendorRequest {
   if (!values.partnershipPolicyAccepted) throw new Error("Cần xác nhận chính sách hợp tác trước khi đăng ký.");
   const fields = normalizeRegistration(values);
+  const areas = normalizeOperatingAreas(fields.city, fields.operatingRegions, fields.nationwide, true);
+  if (areas.error) throw new Error(areas.error);
   return {
     fullName: fields.fullName, email: fields.email, phoneNumber: fields.phoneNumber, password: fields.password,
-    brandName: fields.brandName, city: fields.city, businessGroupIds: [...fields.businessGroupIds], partnershipPolicyAccepted: true,
+    brandName: fields.brandName, city: areas.nationwide ? "" : areas.operatingRegions[0], partnershipPolicyAccepted: true,
+    ...(values.operatingRegions !== undefined || values.nationwide !== undefined ? { operatingRegions: areas.operatingRegions, nationwide: areas.nationwide } : {}),
   };
 }
 

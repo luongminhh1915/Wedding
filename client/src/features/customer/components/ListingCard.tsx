@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Eye, Gift, ImageIcon, MapPin, ShoppingBag } from "lucide-react";
 import type { ListingSummaryDto } from "../../../types/listing.types";
+import { listingPricePresentation } from "../listingPriceModel";
 
 export default function ListingCard({
   listing,
@@ -9,6 +10,7 @@ export default function ListingCard({
   listing: ListingSummaryDto;
   returnPath?: string;
 }) {
+  const price = listingPricePresentation(listing);
   return (
     <article className="listing-card">
       <Link
@@ -38,10 +40,9 @@ export default function ListingCard({
             {listing.location}
           </p>
           <div className="listing-card-price">
-            <span>Khoảng giá tham khảo</span>
+            <span>{price.caption}</span>
             <b>
-              {listing.minPrice.toLocaleString("vi-VN")}đ —{" "}
-              {listing.maxPrice.toLocaleString("vi-VN")}đ
+              {price.amount}{price.unit && <> / {price.unit}</>}
             </b>
           </div>
         </div>

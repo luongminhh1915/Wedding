@@ -40,7 +40,7 @@ public class UpdateAccountProfileHandler(IApplicationDbContext db, ICurrentUserS
                 await db.SaveChangesAsync(ct);
             }
             return new UserDto(user.Id, user.FullName, user.Email, user.PhoneNumber, user.Role.ToString(),
-                user.AvatarUrl, user.Vendor?.Id, user.Vendor?.BrandName);
+                user.AvatarUrl, user.Vendor?.Id, user.Vendor?.BrandName, user.LoginName);
         }, cancellationToken);
     }
 }

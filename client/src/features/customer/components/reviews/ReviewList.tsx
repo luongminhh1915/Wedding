@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import type { PublicReview } from "../../../../types/review.types";
 import { reviewHistoryLabel } from "./reviewPolicyModel";
+import { reviewErrorMessage, reviewReadState } from "../../reviewTransport";
+import { canReplyToReview } from "../../reviewCacheModel";
 import { useAuth } from "../../../auth/hooks/useAuth";
 import {
   useVendorReplyReview,
@@ -18,15 +20,27 @@ import {
 
 interface ReviewListProps {
   reviews: PublicReview[];
+  emptyMessage?: string;
   vendorId?: string;
   isVendorOwner?: boolean;
   onRefresh?: () => void;
+  isLoading?: boolean;
+  isFetching?: boolean;
+  isError?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }
 
 export function ReviewList({
   reviews,
+  emptyMessage = "Chưa có đánh giá nào",
   isVendorOwner = false,
   onRefresh,
+  isLoading = false,
+  isFetching = false,
+  isError = false,
+  error,
+  onRetry,
 }: ReviewListProps) {
   const { user } = useAuth();
   const replyMutation = useVendorReplyReview();
@@ -37,41 +51,57 @@ export function ReviewList({
 
   const [replyingReviewId, setReplyingReviewId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [actionError, setActionError] = useState<{ reviewId: string; action: "reply" | "approve" | "reject"; message: string; actor: string } | null>(null);
+  const actor = `${user?.id ?? ""}:${user?.role ?? ""}`;
+  const actionPending = replyMutation.isPending || approveMutation.isPending || rejectMutation.isPending;
 
   const handleSendReply = async (reviewId: string) => {
-    if (!replyText.trim()) return;
+    const review = reviews.find(item => item.id === reviewId);
+    if (!replyText.trim() || !isVendorOwner || !review || !canReplyToReview(user, review)) return;
+    setActionError(null);
     try {
       await replyMutation.mutateAsync({ reviewId, reply: replyText.trim() });
       setReplyingReviewId(null);
       setReplyText("");
       if (onRefresh) onRefresh();
-    } catch {
-      alert("Không thể gửi phản hồi.");
+    } catch (failure) {
+      setActionError({ reviewId, action: "reply", message: reviewErrorMessage(failure, "Không thể gửi phản hồi."), actor });
     }
   };
 
   const handleApprove = async (reviewId: string) => {
+    setActionError(null);
     try {
       await approveMutation.mutateAsync(reviewId);
       if (onRefresh) onRefresh();
-    } catch {
-      alert("Lỗi phê duyệt review.");
+    } catch (failure) {
+      setActionError({ reviewId, action: "approve", message: reviewErrorMessage(failure, "Không thể duyệt đánh giá."), actor });
     }
   };
 
   const handleReject = async (reviewId: string) => {
+    setActionError(null);
     try {
       await rejectMutation.mutateAsync({
         reviewId,
         reason: "Vi phạm quy tắc sàn",
       });
       if (onRefresh) onRefresh();
-    } catch {
-      alert("Lỗi từ chối review.");
+    } catch (failure) {
+      setActionError({ reviewId, action: "reject", message: reviewErrorMessage(failure, "Không thể từ chối đánh giá."), actor });
     }
   };
 
-  if (reviews.length === 0) {
+  const readState = reviewReadState(isLoading, isError, reviews.length);
+  const retry = onRetry ?? onRefresh;
+  const readError = <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+    <p>{reviewErrorMessage(error)}</p>
+    {reviews.length > 0 && <p className="mt-1 text-xs">Các đánh giá bên dưới là dữ liệu đã tải trước đó.</p>}
+    {retry && <button type="button" className="mt-2 underline disabled:opacity-50" disabled={isFetching} onClick={retry}>{isFetching ? "Đang tải lại..." : "Thử lại"}</button>}
+  </div>;
+  if (readState === "loading") return <div role="status" className="flex items-center gap-2 rounded-2xl border border-slate-200 p-5 text-sm text-slate-600"><Loader2 className="h-4 w-4 animate-spin" />Đang tải đánh giá...</div>;
+  if (readState === "error" && reviews.length === 0) return readError;
+  if (readState === "empty") {
     return (
       <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
         <Star className="w-10 h-10 mx-auto mb-2 opacity-30 text-amber-500" />
@@ -79,7 +109,7 @@ export function ReviewList({
           Chưa có đánh giá nào
         </h4>
         <p className="text-xs text-slate-500 mt-1">
-          Hãy là cặp đôi đầu tiên gửi đánh giá cho dịch vụ cưới này nhé!
+          {emptyMessage}
         </p>
       </div>
     );
@@ -87,8 +117,11 @@ export function ReviewList({
 
   return (
     <div className="space-y-4">
+      {isError && readError}
+      {isFetching && !isError && <p role="status" className="text-xs text-slate-500">Đang cập nhật đánh giá...</p>}
       {reviews.some(review => !review.isVerifiedBuyer) && <p className="text-xs text-slate-500 rounded-xl border border-slate-200 p-3">Đánh giá tư vấn cũ vẫn được giữ nguyên và ghi nhãn riêng. Đánh giá mới chỉ được gửi từ hợp đồng đã Hoàn tất; không tự đổi nhãn hoặc trọng số của dữ liệu cũ.</p>}
       {reviews.map((review) => {
+        const canReply = isVendorOwner && canReplyToReview(user, review);
         let photos: string[] = [];
         try {
           if (review.photosJson) {
@@ -107,6 +140,14 @@ export function ReviewList({
                 : "border-slate-200"
             }`}
           >
+            {actionError?.reviewId === review.id && actionError.actor === actor && <div role="alert" className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+              <p>{actionError.message}</p>
+              <button type="button" className="mt-2 underline disabled:opacity-50" disabled={actionPending} onClick={() => {
+                if (actionError.action === "reply") void handleSendReply(review.id);
+                else if (actionError.action === "approve") void handleApprove(review.id);
+                else void handleReject(review.id);
+              }}>Thử lại</button>
+            </div>}
             {/* Header: User & Verified Badge & Rating */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
@@ -195,7 +236,7 @@ export function ReviewList({
                   )}
                 </div>
                 <p className="text-slate-600 italic">"{review.vendorReply}"</p>
-                {isVendorOwner && (
+                {canReply && (
                   <button
                     className="text-xs underline mt-2"
                     onClick={() => {
@@ -207,7 +248,7 @@ export function ReviewList({
                   </button>
                 )}
               </div>
-            ) : isVendorOwner ? (
+            ) : canReply ? (
               <div className="mt-2 pt-2 border-t border-slate-100">
                 {replyingReviewId === review.id ? (
                   <div className="space-y-2">
@@ -228,7 +269,7 @@ export function ReviewList({
                       </button>
                       <button
                         onClick={() => handleSendReply(review.id)}
-                        disabled={replyMutation.isPending || !replyText.trim()}
+                        disabled={actionPending || !replyText.trim()}
                         className="px-3.5 py-1 text-xs font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-500 transition disabled:opacity-50 flex items-center gap-1"
                       >
                         {replyMutation.isPending ? (
@@ -260,14 +301,14 @@ export function ReviewList({
               <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
                 <button
                   onClick={() => handleReject(review.id)}
-                  disabled={rejectMutation.isPending}
+                  disabled={actionPending}
                   className="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition"
                 >
                   ✕ Từ Chối
                 </button>
                 <button
                   onClick={() => handleApprove(review.id)}
-                  disabled={approveMutation.isPending}
+                  disabled={actionPending}
                   className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 transition"
                 >
                   {approveMutation.isPending ? (

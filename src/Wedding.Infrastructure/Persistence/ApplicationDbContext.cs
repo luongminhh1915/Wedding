@@ -28,7 +28,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Voucher> Vouchers => Set<Voucher>();
     public DbSet<BookingContract> BookingContracts => Set<BookingContract>();
     public DbSet<Commission> Commissions => Set<Commission>();
+    public DbSet<CommissionPolicyRule> CommissionPolicyRules => Set<CommissionPolicyRule>();
+    public DbSet<CommissionComponentBasisApproval> CommissionComponentBasisApprovals => Set<CommissionComponentBasisApproval>();
+    public DbSet<CommissionAdjustmentRequest> CommissionAdjustmentRequests => Set<CommissionAdjustmentRequest>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<ReviewEditRequest> ReviewEditRequests => Set<ReviewEditRequest>();
     public DbSet<Article> Articles => Set<Article>();
     public DbSet<WeddingInvitation> WeddingInvitations => Set<WeddingInvitation>();
     public DbSet<GuestRSVP> GuestRSVPs => Set<GuestRSVP>();
@@ -39,6 +43,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<AdvancePayment> AdvancePayments => Set<AdvancePayment>();
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<WeddingProfile> WeddingProfiles => Set<WeddingProfile>();
     public DbSet<AppointmentType> AppointmentTypes => Set<AppointmentType>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
@@ -72,6 +77,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<InvitationTemplate> InvitationTemplates => Set<InvitationTemplate>();
     public DbSet<CustomerOrderState> CustomerOrderStates => Set<CustomerOrderState>();
     public DbSet<OrderChangeRequest> OrderChangeRequests => Set<OrderChangeRequest>();
+    public DbSet<PrivateServiceAgreement> PrivateServiceAgreements => Set<PrivateServiceAgreement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -120,7 +126,90 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 entry.Property(revision => revision.CreatedById).IsModified || entry.Property(revision => revision.CreatedByRole).IsModified ||
                 entry.Property(revision => revision.CreatedAt).IsModified)))
             throw new InvalidOperationException("Combo proposal snapshots and their authors are immutable; create a new revision instead.");
-        var auditedTypes = new[] { typeof(BookingContract), typeof(Commission), typeof(CommissionSettlement), typeof(PaymentTransaction), typeof(AdvancePayment), typeof(VendorVerification), typeof(VendorTaxProfile), typeof(Dispute), typeof(Listing), typeof(Review) };
+        if (ChangeTracker.Entries<ComboOrder>().Any(entry => entry.State == EntityState.Modified &&
+            new[] { nameof(ComboOrder.ComboTemplateId), nameof(ComboOrder.ComboTemplateRevisionId), nameof(ComboOrder.ComboTemplateSnapshotJson) }
+                .Any(field => entry.Property(field).IsModified)))
+            throw new InvalidOperationException("Combo order template version snapshots are immutable.");
+        foreach (var entry in ChangeTracker.Entries<ReviewEditRequest>())
+        {
+            if (entry.State == EntityState.Deleted)
+                throw new InvalidOperationException("Review edit history is append-only and must be retained.");
+            if (entry.State != EntityState.Modified) continue;
+            var allowed = new[] { nameof(ReviewEditRequest.Status), nameof(ReviewEditRequest.ReviewedById),
+                nameof(ReviewEditRequest.ReviewedAt), nameof(ReviewEditRequest.RejectionReason), nameof(ReviewEditRequest.UpdatedAt) };
+            if (entry.Properties.Any(property => property.IsModified && !allowed.Contains(property.Metadata.Name)) ||
+                entry.OriginalValues.GetValue<Wedding.Domain.Enums.ReviewEditStatus>(nameof(ReviewEditRequest.Status)) != Wedding.Domain.Enums.ReviewEditStatus.Pending ||
+                entry.Entity.Status is not (Wedding.Domain.Enums.ReviewEditStatus.Approved or Wedding.Domain.Enums.ReviewEditStatus.Rejected) ||
+                !entry.Entity.ReviewedAt.HasValue || !entry.Entity.ReviewedById.HasValue)
+                throw new InvalidOperationException("Review edit content and authorship are immutable; only pending moderation status may transition once.");
+        }
+        foreach (var entry in ChangeTracker.Entries<PrivateServiceAgreement>())
+        {
+            if (entry.State == EntityState.Deleted)
+                throw new InvalidOperationException("Private service agreement history cannot be deleted.");
+            if (entry.State != EntityState.Modified) continue;
+            var responseFields = new[] { nameof(PrivateServiceAgreement.Status), nameof(PrivateServiceAgreement.Response),
+                nameof(PrivateServiceAgreement.RespondedAt), nameof(PrivateServiceAgreement.RespondedById), nameof(PrivateServiceAgreement.UpdatedAt) };
+            var previousStatus = entry.OriginalValues.GetValue<string>(nameof(PrivateServiceAgreement.Status));
+            var row = entry.Entity;
+            if (entry.Properties.Any(p => p.IsModified && !responseFields.Contains(p.Metadata.Name)) ||
+                previousStatus != "PendingCustomer" || row.Status is not ("Accepted" or "Rejected" or "Withdrawn") ||
+                row.RespondedAt == null || row.RespondedById != (row.Status == "Withdrawn" ? row.CreatedById : row.CustomerId))
+                throw new InvalidOperationException("Private proposal content, original snapshot and final responses are immutable; append a new proposal.");
+        }
+        foreach (var entry in ChangeTracker.Entries<CommissionPolicyRule>())
+        {
+            if (entry.State == EntityState.Deleted)
+                throw new InvalidOperationException("Commission policy history is append-only and cannot be deleted.");
+            if (entry.State != EntityState.Modified) continue;
+            var allowed = new[] { nameof(CommissionPolicyRule.Status), nameof(CommissionPolicyRule.SubmittedAt),
+                nameof(CommissionPolicyRule.ApprovedById), nameof(CommissionPolicyRule.ApprovedAt),
+                nameof(CommissionPolicyRule.RejectionReason), nameof(CommissionPolicyRule.Version), nameof(CommissionPolicyRule.UpdatedAt) };
+            var previousStatus = entry.OriginalValues.GetValue<Wedding.Domain.Enums.CommissionPolicyStatus>(nameof(CommissionPolicyRule.Status));
+            var rule = entry.Entity;
+            var validTransition = previousStatus == Wedding.Domain.Enums.CommissionPolicyStatus.Draft &&
+                    rule.Status == Wedding.Domain.Enums.CommissionPolicyStatus.Submitted && rule.SubmittedAt.HasValue ||
+                previousStatus == Wedding.Domain.Enums.CommissionPolicyStatus.Submitted &&
+                    rule.Status is Wedding.Domain.Enums.CommissionPolicyStatus.Approved or Wedding.Domain.Enums.CommissionPolicyStatus.Rejected &&
+                    rule.ApprovedAt.HasValue && rule.ApprovedById.HasValue;
+            if (entry.Properties.Any(property => property.IsModified && !allowed.Contains(property.Metadata.Name)) || !validTransition)
+                throw new InvalidOperationException("Submitted commission policies are immutable; create a new policy version instead.");
+        }
+        foreach (var entry in ChangeTracker.Entries<CommissionComponentBasisApproval>())
+        {
+            if (entry.State == EntityState.Deleted)
+                throw new InvalidOperationException("Commission component basis history is append-only and cannot be deleted.");
+            if (entry.State != EntityState.Modified) continue;
+            var allowed = new[] { nameof(CommissionComponentBasisApproval.Status), nameof(CommissionComponentBasisApproval.SubmittedAt),
+                nameof(CommissionComponentBasisApproval.ApprovedById), nameof(CommissionComponentBasisApproval.ApprovedAt),
+                nameof(CommissionComponentBasisApproval.RejectionReason), nameof(CommissionComponentBasisApproval.Version),
+                nameof(CommissionComponentBasisApproval.UpdatedAt) };
+            var previousStatus = entry.OriginalValues.GetValue<Wedding.Domain.Enums.CommissionPolicyStatus>(nameof(CommissionComponentBasisApproval.Status));
+            var basis = entry.Entity;
+            var validTransition = previousStatus == Wedding.Domain.Enums.CommissionPolicyStatus.Draft &&
+                    basis.Status == Wedding.Domain.Enums.CommissionPolicyStatus.Submitted && basis.SubmittedAt.HasValue ||
+                previousStatus == Wedding.Domain.Enums.CommissionPolicyStatus.Submitted &&
+                    basis.Status is Wedding.Domain.Enums.CommissionPolicyStatus.Approved or Wedding.Domain.Enums.CommissionPolicyStatus.Rejected &&
+                    basis.ApprovedAt.HasValue && basis.ApprovedById.HasValue;
+            if (entry.Properties.Any(property => property.IsModified && !allowed.Contains(property.Metadata.Name)) || !validTransition)
+                throw new InvalidOperationException("Submitted commission component basis is immutable; append a new approval sequence instead.");
+        }
+        foreach (var entry in ChangeTracker.Entries<CommissionAdjustmentRequest>())
+        {
+            if (entry.State == EntityState.Deleted)
+                throw new InvalidOperationException("Commission adjustment decisions are append-only and cannot be deleted.");
+            if (entry.State != EntityState.Modified) continue;
+            var allowed = new[] { nameof(CommissionAdjustmentRequest.Status), nameof(CommissionAdjustmentRequest.DecidedById),
+                nameof(CommissionAdjustmentRequest.DecidedAt), nameof(CommissionAdjustmentRequest.DecisionReason),
+                nameof(CommissionAdjustmentRequest.Version), nameof(CommissionAdjustmentRequest.UpdatedAt) };
+            var previousStatus = entry.OriginalValues.GetValue<Wedding.Domain.Enums.CommissionAdjustmentStatus>(nameof(CommissionAdjustmentRequest.Status));
+            if (entry.Properties.Any(property => property.IsModified && !allowed.Contains(property.Metadata.Name)) ||
+                previousStatus != Wedding.Domain.Enums.CommissionAdjustmentStatus.Submitted ||
+                entry.Entity.Status is not (Wedding.Domain.Enums.CommissionAdjustmentStatus.Approved or Wedding.Domain.Enums.CommissionAdjustmentStatus.Rejected) ||
+                !entry.Entity.DecidedAt.HasValue || !entry.Entity.DecidedById.HasValue)
+                throw new InvalidOperationException("Commission adjustment request snapshots are immutable and can receive one final decision only.");
+        }
+        var auditedTypes = new[] { typeof(BookingContract), typeof(Commission), typeof(CommissionSettlement), typeof(CommissionPolicyRule), typeof(CommissionComponentBasisApproval), typeof(CommissionAdjustmentRequest), typeof(PaymentTransaction), typeof(AdvancePayment), typeof(VendorVerification), typeof(VendorTaxProfile), typeof(Dispute), typeof(Listing), typeof(Review), typeof(ReviewEditRequest) };
         var changes = ChangeTracker.Entries().Where(e => auditedTypes.Contains(e.Entity.GetType()) && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).ToArray();
         foreach (var change in changes)
             AuditLogs.Add(AuditLog.Create(currentUser?.UserId, currentUser?.Role ?? "System", $"Persist.{change.State}", change.Entity.GetType().Name,

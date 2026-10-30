@@ -45,6 +45,8 @@ import { Pagination } from "../../../components/Pagination";
 import { useOrderPage } from "../../journey/customerOrders/useOrderPage";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
 import { ContractCategorySummary } from "../../contracts/ContractCategorySummary";
+import { PrivateServiceAgreementPanel } from "../../private-agreements/PrivateServiceAgreementPanel";
+import { OrderReadError, orderReadBlockedMessage } from "../../journey/customerOrders/OrderReadError";
 
 export function MyContracts() {
   const { page, pageSize, filter, setFilter, focusId, changePage, listRef } = useOrderPage("contract");
@@ -56,7 +58,7 @@ export function MyContracts() {
   } = useCustomerContracts(1, 1, false);
   const query = useCustomerOrderPage<Contract>("contract", page, pageSize, filter, focusId);
   const contracts = query.data?.items ?? [];
-  const { isLoading, isError, error, refetch } = query;
+  const { isError, error, refetch } = query;
   const journey = { data: query.data?.metadata, isError, error, refetch };
   const [now, setNow] = useState(() => Date.now());
   const [dialog, setDialog] = useState<{
@@ -89,6 +91,8 @@ export function MyContracts() {
   }));
   const groups = groupCustomerOrders(rows);
   const notificationFocus = useNotificationFocus("contract", rows.map(row => row.id), query.isSuccess && !query.isFetching);
+  const verificationCaps = verification ? metadata.get(verification.contract.id)?.capabilities : undefined;
+  const verificationBlocked = !!verification && (query.isError || !orderCapability(verificationCaps, verification.type === "confirm" ? "canConfirm" : "canRequestChanges"));
   function showVerification(contract: Contract, type: "confirm" | "reject") {
     setReason("");
     setActionError("");
@@ -96,7 +100,7 @@ export function MyContracts() {
     setVerification({ contract, type });
   }
   async function submitVerification() {
-    if (!verification) return;
+    if (!verification || verificationBlocked) return;
     if (verification.type === "reject" && !reason.trim()) {
       setActionError("Vui lòng chỉ rõ thông tin cần NCC điều chỉnh.");
       return;
@@ -137,10 +141,8 @@ export function MyContracts() {
         </div>
         <button
           className="co-button secondary"
-          onClick={() => {
-            void refetch();
-            void journey.refetch();
-          }}
+          disabled={query.isFetching}
+          onClick={() => void refetch()}
         >
           <RefreshCw size={14} /> Làm mới
         </button>
@@ -169,14 +171,7 @@ export function MyContracts() {
         </p>
       )}
       {notificationFocus.missing && <p className="co-summary-note" role="status">Hợp đồng trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
-      {(isError || journey.isError) && (
-        <p className="co-error" role="alert">
-          {apiError(error || journey.error)}{" "}
-          {journey.isError &&
-            "Chưa thể xác định quyền thao tác. Vui lòng làm mới."}
-        </p>
-      )}
-      {isLoading ? (
+      {isError ? <OrderReadError label="hợp đồng" error={error} retry={refetch} busy={query.isFetching} /> : query.isPending ? (
         <div className="co-loading">
           <p>Đang tải hợp đồng...</p>
         </div>
@@ -259,6 +254,7 @@ export function MyContracts() {
                       }
                     >
                       <ContractCategorySummary contract={contract} />
+                      <PrivateServiceAgreementPanel kind="contract" id={contract.id} partnerName={contract.vendorBrandName} title={title} />
                       {pending && (
                         <p className="co-summary-note">
                           {expired
@@ -444,7 +440,7 @@ export function MyContracts() {
           })}
         </div>
       )}
-      <Pagination page={query.data?.page ?? page} pageSize={pageSize} totalCount={query.data?.totalCount ?? 0} isLoading={query.isFetching} onPageChange={next => changePage(next, query.data?.filter)} label="Phân trang nhóm hợp đồng" />
+      {!isError && <Pagination page={query.data?.page ?? page} pageSize={pageSize} totalCount={query.data?.totalCount ?? 0} isLoading={query.isFetching} onPageChange={next => changePage(next, query.data?.filter)} label="Phân trang nhóm hợp đồng" />}
       {gallery && (
         <OrderGallery {...gallery} onClose={() => setGallery(null)} />
       )}
@@ -452,6 +448,8 @@ export function MyContracts() {
         <CustomerOrderActionDialog
           key={`${dialog.item.id}:${dialog.intent}`}
           {...dialog}
+          item={metadata.get(dialog.item.id) ?? dialog.item}
+          readBlocked={query.isError || !metadata.has(dialog.item.id)}
           onClose={() => setDialog(null)}
           onSuccess={() =>
             setNotice(
@@ -475,8 +473,8 @@ export function MyContracts() {
           onConfirm={() => void submitVerification()}
           onClose={() => setVerification(null)}
           busy={isConfirming || isRejecting}
-          confirmDisabled={verification.type === "reject" && !reason.trim()}
-          error={actionError}
+          confirmDisabled={verificationBlocked || (verification.type === "reject" && !reason.trim())}
+          error={verificationBlocked ? verificationCaps?.blockedReason || orderReadBlockedMessage : actionError}
           description={
             verification.type === "confirm"
               ? "Chỉ xác nhận sau khi đã kiểm tra giá, cọc, ngày cưới và chính sách hủy. Đây không phải lệnh thanh toán."

@@ -1,17 +1,13 @@
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
   CheckCheck,
   Circle,
-  Compass,
   FileCheck2,
   Heart,
-  LayoutDashboard,
   Mail,
-  CalendarClock,
-  PackageCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -32,35 +28,18 @@ import { WeddingMembers } from "../journey/planner/WeddingMembers";
 import { useMembers } from "../journey/planner/plannerApi";
 import InvitationManage from "../journey/invitations/InvitationManage";
 import { ContinueIntent } from "../journey/planner/ContinueIntent";
-
-const tabs = [
-  { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "checklist", label: "Công việc", icon: CheckCheck },
-  { id: "budget", label: "Ngân sách", icon: Wallet },
-  { id: "combos", label: "Lựa chọn & yêu cầu", icon: PackageCheck },
-  { id: "contracts", label: "Hợp đồng & tư vấn", icon: FileCheck2 },
-  { id: "guests", label: "Khách & xếp bàn", icon: Users, utility: true },
-  { id: "invitations", label: "Thiệp & RSVP", icon: Heart, utility: true },
-  { id: "appointments", label: "Lịch hẹn", icon: CalendarClock, utility: true },
-] as const;
-type CustomerTab = (typeof tabs)[number]["id"];
+import { CustomerToolNavigation } from "./CustomerToolNavigation";
+import CustomerReviewCenter from "./CustomerReviewCenter";
+import { customerTab, customerTabHref, type CustomerTab } from "./customerNavigationModel";
 
 export default function CustomerDashboard() {
   const { user } = useAuthStore();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const requestedTab =
-    params.get("tab") ||
-    (location.pathname.endsWith("/contracts") || location.pathname === "/hop-dong" ? "contracts" : location.pathname === "/lich-hen" ? "appointments" : location.pathname.startsWith("/thiep/") ? "invitations" : "overview");
-  const activeTab = tabs.some((tab) => tab.id === requestedTab)
-    ? (requestedTab as CustomerTab)
-    : "overview";
+  const activeTab = customerTab(location.pathname, params);
   const selectTab = (tab: CustomerTab) => {
-    const next = new URLSearchParams();
-    if (tab !== "overview") next.set("tab", tab);
-    if (params.get("join")) next.set("join", params.get("join")!);
-    navigate({ pathname: '/customer/dashboard', search: next.toString() });
+    navigate(customerTabHref(tab, params));
   };
   const { invitation } = useMyInvitation();
   const [today] = useState(() => Date.now());
@@ -114,23 +93,9 @@ export default function CustomerDashboard() {
           )}
         </button>
       </div>
-      <nav className="planner-tabs" aria-label="Công cụ của cặp đôi">
-        {tabs.filter(tab => !("utility" in tab)).map(({ id, label, icon: Icon }) => (
-          <Fragment key={id}>
-          {id === "combos" && <Link to="/combo"><Compass size={17} />Khám phá combo</Link>}
-          <button
-            className={activeTab === id ? "active" : ""}
-            onClick={() => selectTab(id)}
-            aria-current={activeTab === id ? "page" : undefined}
-          >
-            <Icon size={17} />
-            {label}
-          </button>
-          </Fragment>
-        ))}
-      </nav>
-      <nav className="planner-utility-nav" aria-label="Tiện ích có thể làm song song"><span>Tiện ích song song</span>{tabs.filter(tab => "utility" in tab).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => selectTab(id)} aria-current={activeTab === id ? "page" : undefined}><Icon size={14} className="inline mr-2" />{label}</button>)}<Link to="/browse" className="underline px-2">Tìm dịch vụ lẻ</Link></nav>
-      <div className="feature-content">
+      <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
+      <CustomerToolNavigation pathname={location.pathname} search={location.search} />
+      <div className="feature-content min-w-0">
         <CustomerJourney active={activeTab} data={planner} isLoading={plannerQuery.isPending} isError={plannerQuery.isError} retry={() => void plannerQuery.refetch()} />
         {activeTab === "overview" && (
           <>
@@ -145,16 +110,18 @@ export default function CustomerDashboard() {
         {activeTab === "contracts" && (
           <ContractWorkspace />
         )}
+        {activeTab === "reviews" && <CustomerReviewCenter />}
         {activeTab === "invitations" && (
           <>
             <InvitationManage embedded />
             {invitation && <PremiumUpgrade key={String(invitation.isPremium)} isPremium={invitation.isPremium} />}
-            <fieldset disabled={viewer}><legend className="sr-only">Thiết kế thiệp</legend><InvitationBuilder /></fieldset>
+            <fieldset className="min-w-0" disabled={viewer}><legend className="sr-only">Thiết kế thiệp</legend><InvitationBuilder /></fieldset>
           </>
         )}
         {viewer && ["budget", "checklist", "invitations"].includes(activeTab) && <p role="status" className="p-3 text-sm">Bạn đang xem hồ sơ với quyền chỉ xem.</p>}
-        {activeTab === "budget" && <fieldset disabled={viewer}><legend className="sr-only">Ngân sách</legend><WeddingBudgetPlanner /></fieldset>}
-        {activeTab === "checklist" && <fieldset disabled={viewer}><legend className="sr-only">Công việc</legend><WeddingChecklist /></fieldset>}
+        {activeTab === "budget" && <fieldset className="min-w-0" disabled={viewer}><legend className="sr-only">Ngân sách</legend><WeddingBudgetPlanner /></fieldset>}
+        {activeTab === "checklist" && <fieldset className="min-w-0" disabled={viewer}><legend className="sr-only">Công việc</legend><WeddingChecklist /></fieldset>}
+      </div>
       </div>
     </main>
   );
@@ -301,8 +268,9 @@ function PlannerOverview({
         <aside className="overview-panel overview-milo">
           <span className="wm-eyebrow">Gợi ý dành cho bạn</span>
           <img
-            src="/wedding-match/milo.png"
-            alt="Milo đồng hành cùng hai bạn"
+            src="/wedding-match/be-hy-mascot.png"
+            alt="Bé Hý đồng hành cùng hai bạn"
+            className="wm-mascot-image"
           />
           <h2>
             Từ từ thôi,

@@ -2,6 +2,7 @@
 @import "./styles/wedding-match.css";
 @import "./styles/brand-previews.css";
 @import "./styles/weddy.css";
+@import "./styles/marketplace-experience.css";
 
 @theme {
   --font-sans: "Inter", sans-serif;
@@ -11,8 +12,8 @@
   body {
     @apply antialiased font-sans;
     margin: 0;
-    background: #f2efe4;
-    color: #25334c;
+    background: #fcf6ea;
+    color: #233a42;
   }
   button:not(:disabled),
   summary {
@@ -22,7 +23,7 @@
     cursor: not-allowed;
   }
   :focus-visible {
-    outline: 2px solid #25334c;
+    outline: 2px solid #233a42;
     outline-offset: 4px;
   }
 }

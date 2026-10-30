@@ -40,6 +40,12 @@ public static class ComboBudgetSynchronization
         var bound = await db.ComboOrderItems.Where(i => i.BudgetItemId.HasValue && ids.Contains(i.BudgetItemId.Value) &&
             i.ComboOrder.Status != ComboOrderStatus.Cancelled && i.ComboOrder.Status != ComboOrderStatus.Expired)
             .Select(i => i.BudgetItemId!.Value).ToListAsync(ct);
+        // Several fixed-package services may share a category. Earlier lines in this same
+        // transaction have already claimed a seed even though their inserts are not flushed.
+        // Count those local bindings too, so each line owns a separate managed estimate.
+        bound.AddRange(db.ComboOrderItems.Local.Where(i => i.BudgetItemId.HasValue && ids.Contains(i.BudgetItemId.Value) &&
+            (i.ComboOrder == null || i.ComboOrder.Status != ComboOrderStatus.Cancelled && i.ComboOrder.Status != ComboOrderStatus.Expired))
+            .Select(i => i.BudgetItemId!.Value));
         var slugs = await db.Categories.AsNoTracking().ToDictionaryAsync(c => c.Id, c => c.Slug, ct);
         return (rows, bound.ToHashSet(), slugs);
     }

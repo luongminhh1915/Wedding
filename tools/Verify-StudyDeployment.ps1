@@ -157,7 +157,7 @@ try {
         ConnectionStrings = @{ DefaultConnection = $connection }
         JwtSettings = @{ Secret = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48)); Issuer = 'WeddingPlatform'; Audience = 'WeddingPlatformClient' }
         AllowedHosts = 'localhost;127.0.0.1'
-        Uploads = @{ ListingRoot = $listingRoot; InvitationRoot = (Join-Path $qaRoot 'private/uploads/invitations') }
+        Uploads = @{ ListingRoot = $listingRoot; InvitationRoot = (Join-Path $qaRoot 'private/uploads/invitations'); InvitationAudioRoot = (Join-Path $qaRoot 'private/uploads/invitation-audio') }
         Kestrel = @{ Certificates = @{ Default = @{ Path = $pfxPath; Password = $pfxPassword } } }
         Logging = @{ LogLevel = @{ Default = 'Warning'; 'Microsoft.EntityFrameworkCore.Database.Command' = 'Warning' } }
     }

@@ -8,7 +8,8 @@ public record UserDto(
     string Role, 
     string? AvatarUrl, 
     Guid? VendorId,
-    string? VendorBrandName
+    string? VendorBrandName,
+    string? LoginName = null
 );
 
 public record AuthResponseDto(

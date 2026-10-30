@@ -179,19 +179,13 @@ public class ContractCategorySnapshotTests
 
     [Theory]
     [InlineData("missing-listing")] [InlineData("inactive-category")] [InlineData("inactive-group")]
-    [InlineData("missing-membership")] [InlineData("foreign-membership")] [InlineData("full-service")]
+    [InlineData("full-service")]
     public async Task InvalidCanonicalCategoryCannotConfirmOrWriteFinancialPlannerOrSnapshotData(string condition)
     {
         await using var f = await Fixture.Create(confirmed: false, shopRate: 0m);
         if (condition == "missing-listing") f.Db.Entry(f.Lead).Property(item => item.ListingId).CurrentValue = null;
         if (condition == "inactive-category") f.Db.Entry(f.Category).Property(item => item.IsActive).CurrentValue = false;
         if (condition == "inactive-group") f.Db.Entry(f.Category.BusinessGroup!).Property(item => item.IsActive).CurrentValue = false;
-        if (condition == "missing-membership") f.Db.VendorBusinessGroups.RemoveRange(await f.Db.VendorBusinessGroups.ToListAsync());
-        if (condition == "foreign-membership")
-        {
-            f.Db.VendorBusinessGroups.RemoveRange(await f.Db.VendorBusinessGroups.ToListAsync());
-            f.Db.VendorBusinessGroups.Add(VendorBusinessGroup.Create(f.Vendor.Id, BusinessGroupPolicy.PhotoBridalMakeupId));
-        }
         if (condition == "full-service")
         {
             var category = await f.Db.Categories.SingleAsync(item => item.Slug == "wedding-planner");
@@ -202,6 +196,72 @@ public class ContractCategorySnapshotTests
         await Assert.ThrowsAsync<DomainException>(() => f.Confirm());
         Assert.Equal(before, await State(f.Db));
         Assert.Empty(await f.Db.BudgetItems.ToListAsync()); Assert.Empty(await f.Db.ChecklistTasks.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(false, true)] [InlineData(true, true)]
+    [InlineData(false, false)] [InlineData(true, false)]
+    public async Task MissingOrUnrelatedHistoricalMembershipDoesNotBlockConfirmationOrRewriteOriginalFinancialHistory(bool unrelatedMembership, bool inheritsCategory)
+    {
+        // Confirmed21/10: choosing a service category is independent of shop membership.
+        // The category's policy (or a positive legacy shop rate) remains authoritative.
+        await using var f = await Fixture.Create(confirmed: false, shopRate: inheritsCategory ? 0m : .12m);
+        f.Db.VendorBusinessGroups.RemoveRange(await f.Db.VendorBusinessGroups.ToListAsync());
+        if (unrelatedMembership)
+            f.Db.VendorBusinessGroups.Add(VendorBusinessGroup.Create(f.Vendor.Id, BusinessGroupPolicy.PhotoBridalMakeupId));
+
+        var historicalLead = Lead.Create(f.Customer.Id, f.Vendor.Id, f.Listing.Id, "0901234569", DateTime.UtcNow.AddDays(100), 100, 50000000m, null);
+        historicalLead.Accept(); f.Db.Leads.Add(historicalLead);
+        var historicalContract = BookingContract.Create(historicalLead.Id, null, f.Vendor.Id, f.Customer.Id, 50000000m, 10000000m, null, historicalLead.WeddingDate);
+        historicalContract.ConfirmByCustomer(); historicalContract.SnapshotCommissionRate(.08m);
+        historicalContract.SnapshotCommissionCategory(f.Category, "CategoryDefault");
+        f.Db.BookingContracts.Add(historicalContract);
+        f.Db.Entry(historicalContract).Property(item => item.ContractCode).CurrentValue = $"HD-PRIOR-{Guid.NewGuid():N}";
+        var historicalCommission = Commission.Create(historicalContract.Id, f.Vendor.Id, CommissionPeriod.Period1_Deposit, .08m, 2000000m, DateTime.UtcNow.AddDays(20));
+        historicalCommission.ApplyPayment(500000m, "SYNTHETIC-HISTORICAL-PARTIAL-PAYMENT");
+        f.Db.Commissions.Add(historicalCommission);
+        var historicalBudget = BudgetItem.Create(f.Customer.Id, f.Category.Id, "Existing historical budget", 50000000m, 10000000m, "Keep original planner data");
+        historicalBudget.LinkContract(historicalContract.Id); f.Db.BudgetItems.Add(historicalBudget);
+        var historicalTask = ChecklistTask.Create(f.Customer.Id, "Existing historical task", "Trước 1 tuần", historicalLead.WeddingDate, "Keep original task");
+        historicalTask.LinkContract(historicalContract.Id); f.Db.ChecklistTasks.Add(historicalTask);
+        await f.Db.SaveChangesAsync(); f.Db.ChangeTracker.Clear();
+
+        var membershipsBefore = await MembershipState(f.Db);
+        var policyBefore = await VendorPolicyState(f.Db, f.Vendor.Id);
+        var priorContractBefore = JsonSerializer.Serialize(await new GetContractDetailQueryHandler(f.Db, f.Actor(UserRole.Customer)).Handle(new(historicalContract.Id), default));
+        var priorCommissionBefore = await CommissionState(f.Db, historicalCommission.Id);
+        var priorPlannerBefore = await PlannerState(f.Db, historicalContract.Id);
+        var result = await f.Confirm();
+
+        Assert.Equal("Confirmed", result.Status); Assert.NotNull(result.ConfirmedAt);
+        AssertCategory(result.CategorySnapshot, f.Category, inheritsCategory);
+        var expectedRate = inheritsCategory ? .08m : .12m;
+        Assert.Equal(expectedRate, result.CommissionRateSnapshot);
+        Assert.Equal(100000000m, result.ContractValue); Assert.Equal(30000000m, result.DepositAmount);
+        var newCommissions = await f.Db.Commissions.AsNoTracking().Where(item => item.ContractId == f.Contract.Id).ToListAsync();
+        Assert.Equal(2, newCommissions.Count);
+        Assert.All(newCommissions, item => { Assert.Equal(expectedRate, item.CommissionRate); Assert.Equal(0m, item.PaidAmount); });
+        Assert.Equal(result.ContractValue * expectedRate, newCommissions.Sum(item => item.CommissionAmount));
+        Assert.Equal(CommissionStatus.Unsettled, Assert.Single(newCommissions, item => item.Period == CommissionPeriod.Period1_Deposit).Status);
+        Assert.Equal(CommissionStatus.EscrowLocked, Assert.Single(newCommissions, item => item.Period == CommissionPeriod.Period2_Completion).Status);
+        var newBudget = await f.Db.BudgetItems.AsNoTracking().SingleAsync(item => item.ContractId == f.Contract.Id);
+        Assert.Equal(f.Customer.Id, newBudget.CustomerId); Assert.Equal(f.Category.Id, newBudget.CategoryId);
+        Assert.Equal(result.ContractValue, newBudget.PlannedCost); Assert.Equal(result.DepositAmount, newBudget.ActualCost);
+        var newTask = await f.Db.ChecklistTasks.AsNoTracking().SingleAsync(item => item.ContractId == f.Contract.Id);
+        Assert.Equal(f.Customer.Id, newTask.CustomerId); Assert.False(newTask.IsCompleted);
+        Assert.Equal(2, await f.Db.BudgetItems.CountAsync()); Assert.Equal(2, await f.Db.ChecklistTasks.CountAsync());
+        Assert.Equal(membershipsBefore, await MembershipState(f.Db)); Assert.Equal(policyBefore, await VendorPolicyState(f.Db, f.Vendor.Id));
+        Assert.Equal(priorContractBefore, JsonSerializer.Serialize(await new GetContractDetailQueryHandler(f.Db, f.Actor(UserRole.Customer)).Handle(new(historicalContract.Id), default)));
+        Assert.Equal(priorCommissionBefore, await CommissionState(f.Db, historicalCommission.Id));
+        Assert.Equal(priorPlannerBefore, await PlannerState(f.Db, historicalContract.Id));
+
+        // A repeated confirmation cannot duplicate debt/planner rows or change the original snapshots.
+        f.Db.ChangeTracker.Clear(); var confirmedState = await State(f.Db); var confirmedPlanner = await PlannerState(f.Db, f.Contract.Id);
+        await Assert.ThrowsAsync<DomainException>(() => f.Confirm());
+        f.Db.ChangeTracker.Clear();
+        Assert.Equal(confirmedState, await State(f.Db)); Assert.Equal(confirmedPlanner, await PlannerState(f.Db, f.Contract.Id));
+        var reloaded = await new GetContractDetailQueryHandler(f.Db, f.Actor(UserRole.Customer)).Handle(new(f.Contract.Id), default);
+        Assert.Equal(result.CategorySnapshot, reloaded.CategorySnapshot); Assert.Equal(expectedRate, reloaded.CommissionRateSnapshot);
     }
 
     [Theory]
@@ -297,6 +357,22 @@ public class ContractCategorySnapshotTests
             item.Status, item.PaidAmount, item.PaidAt, item.PaymentReferenceCode, item.VietQrPayload, item.SettlementId,
             item.ReleaseAt, item.DueDate, item.Version, item.CreatedAt, item.UpdatedAt }).ToListAsync());
 
+    private static async Task<string> MembershipState(ApplicationDbContext db) => JsonSerializer.Serialize(await db.VendorBusinessGroups.AsNoTracking()
+        .OrderBy(item => item.VendorId).ThenBy(item => item.BusinessGroupId).Select(item => new { item.VendorId, item.BusinessGroupId, item.CreatedAt }).ToListAsync());
+
+    private static async Task<string> VendorPolicyState(ApplicationDbContext db, Guid vendorId) => JsonSerializer.Serialize(await db.Vendors.AsNoTracking()
+        .Where(item => item.Id == vendorId).Select(item => new { item.CommissionRate, item.PartnershipPolicyAcceptedAt, item.PartnershipPolicyVersion }).SingleAsync());
+
+    private static async Task<string> PlannerState(ApplicationDbContext db, Guid contractId) => JsonSerializer.Serialize(new
+    {
+        Budgets = await db.BudgetItems.AsNoTracking().Where(item => item.ContractId == contractId).OrderBy(item => item.Id)
+            .Select(item => new { item.Id, item.CustomerId, item.WeddingProfileId, item.ContractId, item.CategoryId, item.ItemName,
+                item.PlannedCost, item.ActualCost, item.IsPaid, item.Notes, item.CreatedAt, item.UpdatedAt }).ToListAsync(),
+        Tasks = await db.ChecklistTasks.AsNoTracking().Where(item => item.ContractId == contractId).OrderBy(item => item.Id)
+            .Select(item => new { item.Id, item.CustomerId, item.WeddingProfileId, item.ContractId, item.Title, item.Milestone,
+                item.DueDate, item.IsCompleted, item.CompletedAt, item.Notes, item.CreatedAt, item.UpdatedAt }).ToListAsync()
+    });
+
     private static async Task<string> State(ApplicationDbContext db) => JsonSerializer.Serialize(new
     {
         Contracts = await db.BookingContracts.AsNoTracking().OrderBy(item => item.Id).Select(item => new { item.Id, item.Status,
@@ -349,19 +425,52 @@ public class ContractCategorySnapshotTests
                 f.Customer = User.Create("Synthetic customer", "customer@contract-category.example.invalid", "0901234569", "hash", UserRole.Customer);
                 f.OtherCustomer = User.Create("Other customer", "other@contract-category.example.invalid", "0901234570", "hash", UserRole.Customer);
                 f.OtherOwner = User.Create("Other owner", "other-owner@contract-category.example.invalid", "0901234571", "hash", UserRole.VendorOwner);
-                f.Db.Users.AddRange(f.Owner, f.Customer, f.OtherCustomer, f.OtherOwner);
+                if (!legacySchema) f.Db.Users.AddRange(f.Owner, f.Customer, f.OtherCustomer, f.OtherOwner);
                 foreach (var role in new[] { UserRole.SuperAdmin, UserRole.Moderator, UserRole.Finance, UserRole.CustomerCare })
                 {
                     var actor = User.Create($"Synthetic {role}", $"{role}@contract-category.example.invalid", "0901234572", "hash", role);
-                    f.staff[role] = actor; f.Db.Users.Add(actor);
+                    f.staff[role] = actor;
+                    if (!legacySchema) f.Db.Users.Add(actor);
+                }
+                if (legacySchema)
+                {
+                    // These rows precede Facebook identity migration19. Today's User
+                    // mapping includes FacebookSubject, so seed only columns that exist
+                    // in the historical schema instead of changing that schema early.
+                    foreach (var user in new[] { f.Owner, f.Customer, f.OtherCustomer, f.OtherOwner }.Concat(f.staff.Values))
+                        await f.Db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO Users (Id,FullName,Email,PhoneNumber,PasswordHash,Role,IsActive,CreatedAt) VALUES ({user.Id},{user.FullName},{user.Email},{user.PhoneNumber},{user.PasswordHash},{user.Role.ToString()},{user.IsActive},{user.CreatedAt})");
                 }
                 f.Vendor = shopRate == 0m ? Vendor.CreateWithCategoryDefaults(f.Owner.Id, "Synthetic shop", "contract-category", "Owner", "0901234567", "Hà Nội", BusinessGroupPolicy.InitialVersion)
                     : Vendor.Create(f.Owner.Id, "Synthetic shop", "contract-category", "Owner", "0901234567", "Hà Nội", shopRate);
-                f.Db.Vendors.Add(f.Vendor);
+                if (legacySchema)
+                {
+                    // The historical category-snapshot boundary has no migration21 operating areas.
+                    // Preserve the same seed's rate/consent rather than advancing its schema early.
+                    var vendor = f.Vendor;
+                    await f.Db.Database.ExecuteSqlInterpolatedAsync($"""
+                        INSERT INTO [Vendors] ([Id],[UserId],[BrandName],[Slug],[ContactPerson],[Hotline],[City],
+                            [CommissionRate],[RatingAvg],[TotalReviews],[IsActive],[IsVerified],[IsTopRated],
+                            [AllowInCombos],[MaxComboDiscount],[CreatedAt],[PartnershipPolicyAcceptedAt],[PartnershipPolicyVersion])
+                        VALUES ({vendor.Id},{vendor.UserId},{vendor.BrandName},{vendor.Slug},{vendor.ContactPerson},
+                            {vendor.Hotline},{vendor.City},{vendor.CommissionRate},{vendor.RatingAvg},{vendor.TotalReviews},
+                            {vendor.IsActive},{vendor.IsVerified},{vendor.IsTopRated},{vendor.AllowInCombos},
+                            {vendor.MaxComboDiscount},{vendor.CreatedAt},{vendor.PartnershipPolicyAcceptedAt},{vendor.PartnershipPolicyVersion});
+                        """);
+                }
+                else f.Db.Vendors.Add(f.Vendor);
                 if (shopRate == 0m) f.Db.VendorBusinessGroups.Add(VendorBusinessGroup.Create(f.Vendor.Id, BusinessGroupPolicy.DecorInvitationsId));
                 f.Category = await f.Db.Categories.Include(item => item.BusinessGroup).SingleAsync(item => item.Slug == "trang-tri-decor");
                 f.Listing = Listing.Create(f.Vendor.Id, f.Category.Id, "Synthetic decor service", "contract-category-listing", 1000000m, 100000000m, "Synthetic description", "Hà Nội");
-                f.Db.Listings.Add(f.Listing);
+                if (legacySchema)
+                {
+                    // The upgrade fixture deliberately runs before the canonical-price column
+                    // existed. Seed only the historical schema, rather than asking today's EF
+                    // model to insert its new optional fields into an old database.
+                    await f.Db.SaveChangesAsync();
+                    var listing = f.Listing;
+                    await f.Db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO Listings (Id,VendorId,CategoryId,Title,Slug,MinPrice,MaxPrice,Description,Location,Status,IsActive,ViewCount,FavoriteCount,CancellationPolicy,CreatedAt) VALUES ({listing.Id},{listing.VendorId},{listing.CategoryId},{listing.Title},{listing.Slug},{listing.MinPrice},{listing.MaxPrice},{listing.Description},{listing.Location},{listing.Status.ToString()},{listing.IsActive},{listing.ViewCount},{listing.FavoriteCount},{listing.CancellationPolicy},{listing.CreatedAt})");
+                }
+                else f.Db.Listings.Add(f.Listing);
                 // Yesterday is completable while K2 is unambiguously still locked, including after 17:00 UTC.
                 f.Lead = Lead.Create(f.Customer.Id, f.Vendor.Id, f.Listing.Id, "0901234569", DateTime.UtcNow.Date.AddDays(-1), 100, 100000000m, null);
                 f.Lead.Accept(); f.Db.Leads.Add(f.Lead); await f.Db.SaveChangesAsync();

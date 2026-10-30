@@ -6,13 +6,18 @@ import {
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { shortVnd, vnd, vnDate, vnDateTime } from "../format";
 import { useAuthStore } from "../../../store/authStore";
+import { AdminQueryReadState } from "./AdminQueryReadState";
 
 /** P6 – KPI vận hành (GMV, tỷ lệ chuyển đổi, SLA, tranh chấp...). */
 export function AdminKpiPanel() {
-  const { data: k } = useAdminKpi();
+  const query = useAdminKpi();
+  const k = query.data;
   const role = useAuthStore((s) => s.user?.role);
-  const { data: logs = [] } = useAuditLogs(role === "SuperAdmin" || role === "Finance");
-  if (!k) return <p className="muted text-sm">Đang tải...</p>;
+  const canReadAudit = role === "SuperAdmin" || role === "Finance";
+  const audit = useAuditLogs(canReadAudit);
+  const logs = audit.data ?? [];
+  if (query.isPending || query.isError) return <AdminQueryReadState query={query} label="tổng quan vận hành" />;
+  if (!k) return <Empty>Chưa có dữ liệu tổng quan vận hành.</Empty>;
   const cards = [
     { icon: Receipt, label: "GMV hợp đồng", value: shortVnd(k.gmv), sub: `${k.contractsConfirmed} HĐ hiệu lực` },
     { icon: FileCheck2, label: "Lead tháng này", value: k.leadsThisMonth, sub: `Chuyển đổi ${k.leadToContractRate}% · ${k.leadsSlaBreached} trễ SLA` },
@@ -35,7 +40,10 @@ export function AdminKpiPanel() {
           </div>
         ))}
       </div>
-      {logs.length > 0 && (
+      {canReadAudit && (audit.isPending || audit.isError) && <Panel eyebrow="AuditLog" title="Nhật ký thao tác gần đây">
+        <AdminQueryReadState query={audit} label="nhật ký thao tác" />
+      </Panel>}
+      {canReadAudit && !audit.isPending && !audit.isError && logs.length > 0 && (
         <Panel eyebrow="AuditLog" title="Nhật ký thao tác gần đây">
           <table className="wd-table">
             <thead><tr><th>Thời gian</th><th>Vai trò</th><th>Hành động</th><th>Đối tượng</th></tr></thead>
@@ -50,7 +58,8 @@ export function AdminKpiPanel() {
 /** P4 – Finance: chốt bảng kê tháng, xem QR thu hoa hồng, ghi nhận thanh toán (mock webhook) + hóa đơn điện tử giả lập. */
 export function SettlementsPanel() {
   const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
-  const { data = [] } = useSettlements(period);
+  const query = useSettlements(period);
+  const data = query.data ?? [];
   const run = useRunSettlement();
   const pay = usePaySettlement();
   return (
@@ -58,7 +67,7 @@ export function SettlementsPanel() {
       action={<div className="flex gap-2"><input className="input !w-[150px]" type="month" value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Kỳ đối soát" />
         <button className="btn btn-primary" disabled={run.isPending} onClick={() => run.mutate(period)}>Chốt bảng kê</button></div>}>
       <ErrorText>{run.isError ? apiError(run.error) : pay.isError ? apiError(pay.error) : ""}</ErrorText>
-      {data.length === 0 ? <Empty>Chưa có bảng kê cho kỳ này. Bấm “Chốt bảng kê” để gom hoa hồng đến hạn ngày 25.</Empty> : (
+      {query.isPending || query.isError ? <AdminQueryReadState query={query} label="bảng kê" /> : data.length === 0 ? <Empty>Chưa có bảng kê cho kỳ này. Bấm “Chốt bảng kê” để gom hoa hồng đến hạn ngày 25.</Empty> : (
         <table className="wd-table">
           <thead><tr><th>Nhà cung cấp</th><th>Số khoản</th><th>Phải thu</th><th>Đã thu</th><th>Hạn</th><th>Nội dung CK</th><th>Trạng thái</th><th /></tr></thead>
           <tbody>
@@ -79,12 +88,13 @@ export function SettlementsPanel() {
 
 /** P6 – Moderator duyệt hồ sơ xác minh NCC. */
 export function VerificationQueue() {
-  const { data = [] } = useVerifications();
+  const query = useVerifications();
+  const data = query.data ?? [];
   const review = useReviewVerification();
   return (
     <Panel eyebrow="Xác minh NCC" title="Hồ sơ chờ duyệt">
       <ErrorText>{review.isError ? apiError(review.error) : ""}</ErrorText>
-      {data.length === 0 ? <Empty>Không có hồ sơ.</Empty> : (
+      {query.isPending || query.isError ? <AdminQueryReadState query={query} label="hồ sơ xác minh" /> : data.length === 0 ? <Empty>Không có hồ sơ.</Empty> : (
         <table className="wd-table">
           <thead><tr><th>NCC</th><th>GPKD</th><th>Giấy tờ</th><th>Nộp</th><th>Trạng thái</th><th /></tr></thead>
           <tbody>
@@ -108,13 +118,14 @@ export function VerificationQueue() {
 
 /** P6 – CSKH xử lý tranh chấp (SLA 72h); hủy HĐ sẽ hủy hoa hồng chưa thu. */
 export function DisputeDesk() {
-  const { data = [] } = useDisputes();
+  const query = useDisputes();
+  const data = query.data ?? [];
   const resolve = useResolveDispute();
   const role = useAuthStore((s) => s.user?.role);
   return (
     <Panel eyebrow="CSKH" title="Tranh chấp & sự cố">
       <ErrorText>{resolve.isError ? apiError(resolve.error) : ""}</ErrorText>
-      {data.length === 0 ? <Empty>Không có tranh chấp.</Empty> : (
+      {query.isPending || query.isError ? <AdminQueryReadState query={query} label="tranh chấp" /> : data.length === 0 ? <Empty>Không có tranh chấp.</Empty> : (
         <ul className="grid gap-3">
           {data.map((d) => (
             <li key={d.id} className="rounded-2xl border border-[var(--line)] p-4 bg-[var(--paper)]">

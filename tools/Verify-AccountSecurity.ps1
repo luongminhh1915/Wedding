@@ -53,24 +53,56 @@ if ($customer.user.role -cne 'Customer' -or $otherCustomer.user.role -cne 'Custo
 $vendor = Invoke-QAApi '/api/auth/register-vendor' @{
     fullName = 'QA vendor'; email = "qa-vendor-$suffix@example.invalid"; phoneNumber = '0901234569'; password = $password
     brandName = "QA-only shop $suffix"; city = 'HCM'
-    businessGroupIds = @('22222222-2222-2222-2222-222222222202'); partnershipPolicyAccepted = $true
+    partnershipPolicyAccepted = $true
 }
 if ($vendor.user.role -cne 'VendorOwner') { throw 'Vendor registration did not preserve its actual actor role.' }
+# The generic acknowledgement is not membership, a signed agreement or an active rate.
+# Read its version from the canonical policy constant instead of retaining a stale smoke copy.
+$policySource = Join-Path $PSScriptRoot '../src/Wedding.Domain/Entities/BusinessGroup.cs'
+$versionMatches = [regex]::Matches((Get-Content -LiteralPath $policySource -Raw), 'public const string ServiceCategoryRegistrationVersion = "([^"\r\n]+)";')
+if ($versionMatches.Count -ne 1) { throw 'Cannot determine the canonical service-category signup acknowledgement version.' }
+$registrationVersion = $versionMatches[0].Groups[1].Value
 $policyResponse = Invoke-WebRequest ($BaseUrl + '/api/business-groups/my') -Headers @{ Authorization = "Bearer $($vendor.token)" } -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 20
 if ($policyResponse.StatusCode -ne 200) { throw 'Vendor cannot read its persisted business-group policy.' }
 $policy = $policyResponse.Content | ConvertFrom-Json
 if ($policy.usesLegacyCommissionRate -or $null -ne $policy.legacyCommissionRate -or
-    @($policy.groups).Count -ne 1 -or $policy.groups[0].id -ne '22222222-2222-2222-2222-222222222202' -or
-    $policy.groups[0].defaultCommissionRate -ne .08 -or -not $policy.policyAcceptedAt -or -not $policy.policyVersion) {
-    throw 'New vendor membership/default/acceptance was not persisted correctly; it must not inherit a shop-wide legacy rate.'
+    $policy.groups -isnot [Array] -or @($policy.groups).Count -ne 0 -or
+    -not $policy.policyAcceptedAt -or $policy.policyVersion -cne $registrationVersion) {
+    throw 'New vendor must retain only its generic acknowledgement, without fabricated memberships or a shop-wide legacy rate.'
+}
+$categoriesResponse = Invoke-WebRequest ($BaseUrl + '/api/categories/my') -Headers @{ Authorization = "Bearer $($vendor.token)" } -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 20
+if ($categoriesResponse.StatusCode -ne 200) { throw 'New vendor cannot read open service categories without signup memberships.' }
+$eligibility = $categoriesResponse.Content | ConvertFrom-Json
+$publicResponse = Invoke-WebRequest ($BaseUrl + '/api/categories') -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 20
+if ($publicResponse.StatusCode -ne 200) { throw 'Cannot compare vendor categories with the configured public catalog.' }
+$configured = @(($publicResponse.Content | ConvertFrom-Json) | Where-Object { $null -ne $_.businessGroupId })
+if ($eligibility.requiresMembershipReview -or $null -ne $eligibility.guidance -or
+    $eligibility.categories -isnot [Array] -or @($eligibility.categories).Count -ne 8 -or
+    $eligibility.existingCategories -isnot [Array] -or @($eligibility.existingCategories).Count -ne 0 -or
+    $eligibility.businessGroupIds -isnot [Array] -or @($eligibility.businessGroupIds).Count -ne 0 -or
+    $configured.Count -ne 8 -or @($eligibility.categories.id | Sort-Object -Unique).Count -ne 8 -or
+    @($eligibility.categories.businessGroupId | Sort-Object -Unique).Count -ne 5) {
+    throw 'New vendor category eligibility must include all eight configured types across five groups, without creating historical memberships or requiring Admin membership review.'
+}
+foreach ($category in $eligibility.categories) {
+    $canonical = @($configured | Where-Object { $_.id -eq $category.id })
+    if ($canonical.Count -ne 1 -or -not $category.businessGroupName -or
+        $category.businessGroupId -ne $canonical[0].businessGroupId -or
+        $category.businessGroupName -cne $canonical[0].businessGroupName -or
+        $category.defaultCommissionRate -ne $canonical[0].defaultCommissionRate -or
+        $category.requiresCommissionBasisApproval -ne $canonical[0].requiresCommissionBasisApproval) {
+        throw 'Vendor service categories must preserve canonical group, rate and basis requirements; signup does not choose them.'
+    }
 }
 foreach ($deniedToken in @('', $customer.token)) {
     $headers = @{}; if ($deniedToken) { $headers.Authorization = "Bearer $deniedToken" }
     $denied = Invoke-WebRequest ($BaseUrl + '/api/business-groups/my') -Headers $headers -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 20
     $expected = if ($deniedToken) { 403 } else { 401 }
     if ($denied.StatusCode -ne $expected) { throw 'Vendor policy endpoint did not enforce its actor boundary.' }
+    $deniedCategories = Invoke-WebRequest ($BaseUrl + '/api/categories/my') -Headers $headers -SkipCertificateCheck -SkipHttpErrorCheck -TimeoutSec 20
+    if ($deniedCategories.StatusCode -ne $expected) { throw 'Vendor category eligibility endpoint did not enforce its actor boundary.' }
 }
-Write-Host 'Real HTTPS vendor category-policy persistence and actor boundary passed.'
+Write-Host 'Real HTTPS generic vendor acknowledgement, open canonical categories without memberships, and actor boundaries passed.'
 foreach ($id in @($customer.user.id, $otherCustomer.user.id, $vendor.user.id, $vendor.user.vendorId)) {
     if (-not [Guid]::TryParse($id, [ref]([Guid]::Empty))) { throw 'QA API returned an invalid ID.' }
 }
@@ -152,7 +184,7 @@ function Invoke-QAListingSmoke([string]$Path, [string]$Token, [int]$ExpectedStat
 $otherVendor = Invoke-QAApi '/api/auth/register-vendor' @{
     fullName = 'QA separate vendor'; email = "qa-vendor-other-$suffix@example.invalid"; phoneNumber = '0901234571'; password = $password
     brandName = "QA-only separate shop $suffix"; city = 'HCM'
-    businessGroupIds = @('22222222-2222-2222-2222-222222222202'); partnershipPolicyAccepted = $true
+    partnershipPolicyAccepted = $true
 }
 if ($otherVendor.user.role -cne 'VendorOwner' -or $otherVendor.user.vendorId -eq $vendor.user.vendorId) {
     throw 'Vendor listing smoke needs a separate synthetic shop with its actual VendorOwner role.'

@@ -56,15 +56,16 @@ public class VendorCategoryEligibilityTests
     }
 
     [Fact]
-    public async Task OwnCategoryPickerUsesOnlyExplicitOwnActiveMembershipAndExistingCategoriesAreReadOnlyFallback()
+    public async Task OwnCategoryPickerOffersEveryActiveConfiguredCategoryWithoutChangingHistoricalMembershipOrRate()
     {
         await using var f = await Fixture.Create();
         var result = await f.My();
         Assert.False(result.RequiresMembershipReview); Assert.Null(result.Guidance);
         Assert.Equal(new[] { BusinessGroupPolicy.PhotoBridalMakeupId }, result.BusinessGroupIds);
-        Assert.Equal(3, result.Categories.Count);
-        Assert.All(result.Categories, category => Assert.Equal(BusinessGroupPolicy.PhotoBridalMakeupId, category.BusinessGroupId));
-        Assert.DoesNotContain(result.Categories, category => category.Id == f.Venue.Id);
+        Assert.Equal(8, result.Categories.Count);
+        Assert.All(result.Categories, category => Assert.NotNull(category.BusinessGroupId));
+        Assert.Contains(result.Categories, category => category.Id == f.Venue.Id && category.DefaultCommissionRate == .03m);
+        Assert.Contains(result.Categories, category => category.Id == f.Photo.Id && category.DefaultCommissionRate == .10m);
         Assert.Equal(f.Photo.Id, Assert.Single(result.ExistingCategories).Id);
         Assert.DoesNotContain(result.ExistingCategories, category => category.Id == f.Venue.Id);
         Assert.Equal(f.InitialAuditCount, await f.Db.AuditLogs.CountAsync());
@@ -76,33 +77,76 @@ public class VendorCategoryEligibilityTests
     [InlineData("Customer")] [InlineData("Moderator")] [InlineData("SuperAdmin")]
     [InlineData("Finance")] [InlineData("CustomerCare")]
     [InlineData("forged-vendor")] [InlineData("inactive-vendor")] [InlineData("inactive-owner")]
+    [InlineData("owner-role-changed")]
     public async Task PrivatePickerRequiresTheActivePersistedVendorIdentity(string identity)
     {
         await using var f = await Fixture.Create();
-        if (identity is "inactive-vendor" or "inactive-owner") await f.Disable(identity);
+        if (identity is "inactive-vendor" or "inactive-owner" or "owner-role-changed") await f.Disable(identity);
         var actor = identity switch
         {
             "anonymous" => new Current(null, null), "unknown" => new Current(Guid.NewGuid(), "VendorOwner"),
             "forged-vendor" => new Current(f.Users.Single(user => user.Role == UserRole.Customer).Id, "VendorOwner"),
-            "inactive-vendor" or "inactive-owner" => f.OwnerActor,
+            "inactive-vendor" or "inactive-owner" or "owner-role-changed" => f.OwnerActor,
             _ => new Current(f.Users.Single(user => user.Role.ToString() == identity).Id, identity)
         };
         await Assert.ThrowsAsync<DomainException>(() => new GetMyCategoriesQueryHandler(f.Db, actor).Handle(new(), default));
         Assert.Equal(f.InitialAuditCount, await f.Db.AuditLogs.CountAsync());
     }
 
+    [Theory]
+    [InlineData("inactive-category", 7)] [InlineData("inactive-group", 5)] [InlineData("unmapped-category", 7)]
+    public async Task CategoryPickerExcludesInvalidConfigurationWithoutMembershipOrFinancialWrites(string condition, int expectedCount)
+    {
+        await using var f = await Fixture.Create(membership: false);
+        if (condition == "unmapped-category") { f.Db.Entry(f.Photo).Property(category => category.BusinessGroupId).CurrentValue = null; await f.Db.SaveChangesAsync(); }
+        else await f.Disable(condition);
+        var before = await f.FinancialSnapshot();
+        var picker = await f.My();
+        Assert.False(picker.RequiresMembershipReview); Assert.Null(picker.Guidance);
+        Assert.Equal(expectedCount, picker.Categories.Count);
+        Assert.DoesNotContain(picker.Categories, category => category.Id == f.Photo.Id);
+        Assert.Contains(picker.ExistingCategories, category => category.Id == f.Photo.Id);
+        Assert.Empty(picker.BusinessGroupIds);
+        Assert.Equal(before, await f.FinancialSnapshot());
+    }
+
+    [Theory]
+    [InlineData(.08)] [InlineData(0)]
+    public async Task InactiveParentCannotBeBypassedByExistingListingOrRateMode(decimal rate)
+    {
+        await using var f = await Fixture.Create(membership: false);
+        f.Db.Entry(f.Vendor).Property(vendor => vendor.CommissionRate).CurrentValue = rate;
+        await f.Disable("inactive-group");
+        var before = await f.FinancialSnapshot();
+        await Assert.ThrowsAsync<DomainException>(() => ListingCategoryAccess.RequireForExistingAsync(f.Db, f.Vendor.Id, f.Photo.Id, default));
+        await Assert.ThrowsAsync<DomainException>(() => f.CreateListing(f.Photo.Id));
+        Assert.Equal(before, await f.FinancialSnapshot());
+    }
+
     [Fact]
-    public async Task LegacyShopCannotCreateUntilAdminAddsScopeButOldListingRemainsReadableEditableAndReviewable()
+    public async Task HistoricalUnmappedListingRetainsLegacyReadReviewCompatibilityButCannotCreateNewUnconfiguredServices()
+    {
+        await using var f = await Fixture.Create(membership: false);
+        f.Db.Entry(f.Photo).Property(category => category.BusinessGroupId).CurrentValue = null;
+        await f.Db.SaveChangesAsync(); var before = await f.FinancialSnapshot();
+        Assert.Equal(f.Photo.Id, (await ListingCategoryAccess.RequireForExistingAsync(f.Db, f.Vendor.Id, f.Photo.Id, default)).Id);
+        await Assert.ThrowsAsync<DomainException>(() => f.CreateListing(f.Photo.Id));
+        Assert.Equal(before, await f.FinancialSnapshot());
+        Assert.Equal(2, await f.Db.Listings.CountAsync());
+    }
+
+    [Fact]
+    public async Task LegacyShopWithoutMembershipCanCreateAnyActiveCategoryAndOldListingRemainsEditableReviewable()
     {
         await using var f = await Fixture.Create(membership: false);
         var before = await f.FinancialSnapshot();
         var picker = await f.My();
-        Assert.True(picker.RequiresMembershipReview); Assert.Empty(picker.Categories);
-        Assert.Equal(ListingCategoryAccess.LegacyGuidance, picker.Guidance);
+        Assert.False(picker.RequiresMembershipReview); Assert.Equal(8, picker.Categories.Count);
+        Assert.Null(picker.Guidance); Assert.Empty(picker.BusinessGroupIds);
         Assert.Equal(f.Photo.Id, Assert.Single(picker.ExistingCategories).Id);
-        var denied = await Assert.ThrowsAsync<DomainException>(() => f.CreateListing(f.Photo.Id));
-        Assert.Equal(ListingCategoryAccess.LegacyGuidance, denied.Message);
-        Assert.Equal(2, await f.Db.Listings.CountAsync()); Assert.Equal(0, await f.Db.ListingMedias.CountAsync());
+        var created = await f.CreateListing(f.Venue.Id);
+        Assert.Equal(f.Venue.Id, (await f.Db.Listings.SingleAsync(listing => listing.Id == created)).CategoryId);
+        Assert.Equal(3, await f.Db.Listings.CountAsync());
         Assert.True(await f.Db.Listings.PubliclyVisible().AnyAsync(listing => listing.Id == f.Listing.Id));
         await new UpdateListingCommandHandler(f.Db, f.OwnerActor).Handle(new(f.Listing.Id, "Legacy revised safely", 1000, 2000, "Existing description", "HCM"), default);
         await new SubmitForApprovalCommandHandler(f.Db, f.OwnerActor).Handle(new(f.Listing.Id), default);
@@ -113,18 +157,22 @@ public class VendorCategoryEligibilityTests
     }
 
     [Fact]
-    public async Task NewCategoryInheritingShopMissingMembershipCannotUseLegacyExceptionForExistingRecords()
+    public async Task CategoryInheritingShopWithoutMembershipCanCreateAndReviewMappedCategoriesWithoutPolicyWrites()
     {
         await using var f = await Fixture.Create(membership: false);
         f.Db.Entry(f.Vendor).Property(vendor => vendor.CommissionRate).CurrentValue = 0;
         await f.Db.SaveChangesAsync();
-        await Assert.ThrowsAsync<DomainException>(() => ListingCategoryAccess.RequireForExistingAsync(f.Db, f.Vendor.Id, f.Photo.Id, default));
-        await Assert.ThrowsAsync<DomainException>(() => f.CreateListing(f.Photo.Id));
+        var before = await f.FinancialSnapshot();
+        Assert.Equal(f.Photo.Id, (await ListingCategoryAccess.RequireForExistingAsync(f.Db, f.Vendor.Id, f.Photo.Id, default)).Id);
+        var created = await f.CreateListing(f.Venue.Id);
+        Assert.Equal(f.Venue.Id, (await f.Db.Listings.SingleAsync(listing => listing.Id == created)).CategoryId);
+        Assert.Empty(await f.Db.VendorBusinessGroups.Where(membership => membership.VendorId == f.Vendor.Id).ToListAsync());
+        Assert.Equal(before, await f.FinancialSnapshot());
         Assert.Empty(await f.Db.ListingRevisions.ToListAsync());
     }
 
     [Fact]
-    public async Task AddingOneScopeDoesNotWithdrawOtherLegacyListingCategoriesOrGrantThemForNewPosts()
+    public async Task HistoricalMembershipChangesDoNotRestrictOtherCategoriesForNewOrExistingServices()
     {
         await using var f = await Fixture.Create(membership: false);
         var oldVenue = Listing.Create(f.Vendor.Id, f.Venue.Id, "Existing legacy venue", "existing-legacy-venue", 1000, 2000, "Legacy venue description", "HCM");
@@ -132,7 +180,8 @@ public class VendorCategoryEligibilityTests
         var before = await f.FinancialSnapshot();
         await f.Assign([BusinessGroupPolicy.PhotoBridalMakeupId], "Confirm photo group without withdrawing older venue");
         Assert.Equal(f.Venue.Id, (await ListingCategoryAccess.RequireForExistingAsync(f.Db, f.Vendor.Id, f.Venue.Id, default)).Id);
-        await Assert.ThrowsAsync<DomainException>(() => f.CreateListing(f.Venue.Id));
+        var created = await f.CreateListing(f.Venue.Id);
+        Assert.Equal(f.Venue.Id, (await f.Db.Listings.SingleAsync(listing => listing.Id == created)).CategoryId);
         await new UpdateListingCommandHandler(f.Db, f.OwnerActor).Handle(new(oldVenue.Id, "Revised legacy venue", 1000, 2000, "Legacy venue description", "HCM"), default);
         await new SubmitForApprovalCommandHandler(f.Db, f.OwnerActor).Handle(new(oldVenue.Id), default);
         var revision = await f.Db.ListingRevisions.SingleAsync(row => row.ListingId == oldVenue.Id && row.Status == "Pending");
@@ -163,23 +212,22 @@ public class VendorCategoryEligibilityTests
         var read = await new GetVendorBusinessGroupsQueryHandler(f.Db, f.AdminActor).Handle(new(f.Vendor.Id), default);
         Assert.Equal(2, read.Groups.Count); Assert.Equal(f.InitialAuditCount + 2, await f.Db.AuditLogs.CountAsync());
         Assert.Equal(before, await f.FinancialSnapshot());
-        var my = await f.My(); Assert.False(my.RequiresMembershipReview); Assert.Equal(5, my.Categories.Count);
+        var my = await f.My(); Assert.False(my.RequiresMembershipReview); Assert.Equal(8, my.Categories.Count);
         var created = await f.CreateListing(f.Photo.Id);
         Assert.Equal(f.Photo.Id, (await f.Db.Listings.AsNoTracking().SingleAsync(listing => listing.Id == created)).CategoryId);
         Assert.Equal(before, await f.FinancialSnapshot());
     }
 
     [Theory]
-    [InlineData("foreign-category")] [InlineData("unknown-category")] [InlineData("inactive-category")]
+    [InlineData("unknown-category")] [InlineData("inactive-category")]
     [InlineData("inactive-group")] [InlineData("unmapped-category")]
-    public async Task CreationAndSubmissionRejectUnapprovedScopeWithoutCreatingPartialData(string condition)
+    public async Task CreationAndSubmissionRejectInvalidCategoryConfigurationWithoutCreatingPartialData(string condition)
     {
         await using var f = await Fixture.Create();
-        // This matrix exercises strict membership scope, not the separate positive-rate grandfather exception.
+        // A new policy still needs configured, active category metadata; no membership is required.
         f.Db.Entry(f.Vendor).Property(vendor => vendor.CommissionRate).CurrentValue = 0; await f.Db.SaveChangesAsync();
         var categoryId = f.Photo.Id;
-        if (condition == "foreign-category") categoryId = f.Venue.Id;
-        else if (condition == "unknown-category") categoryId = Guid.NewGuid();
+        if (condition == "unknown-category") categoryId = Guid.NewGuid();
         else if (condition == "unmapped-category") { f.Db.Entry(f.Photo).Property(category => category.BusinessGroupId).CurrentValue = null; await f.Db.SaveChangesAsync(); }
         else await f.Disable(condition);
         var before = await f.FinancialSnapshot();
@@ -269,38 +317,58 @@ public class VendorCategoryEligibilityTests
     }
 
     [SqlServerFact]
-    public async Task SqlCategoryOwnershipAssignmentCreationAndFinancialPreservationSurviveReload()
+    public async Task SqlUnrestrictedCategoryCreationWithoutMembershipAndFinancialPreservationSurviveReload()
     {
-        var database = $"WeddingPlanTest_CategoryEligibility_{Guid.NewGuid():N}";
-        var source = Environment.GetEnvironmentVariable("WEDDING_TEST_SQLSERVER");
-        var builder = new SqlConnectionStringBuilder(string.IsNullOrWhiteSpace(source) || source == "1"
-            ? "Server=localhost;Integrated Security=true;TrustServerCertificate=true;Connection Timeout=5" : source) { InitialCatalog = database };
+        const string prefix = "WeddingPlanTest_CategoryEligibility_";
+        var database = prefix + Guid.NewGuid().ToString("N");
+        Assert.Equal("1", Environment.GetEnvironmentVariable("WEDDING_TEST_SQLSERVER"));
+        var builder = new SqlConnectionStringBuilder { DataSource = "localhost", InitialCatalog = database, IntegratedSecurity = true, TrustServerCertificate = true, ConnectTimeout = 5 };
         var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer(builder.ConnectionString).Options;
         await using var db = new ApplicationDbContext(options);
+        var ownsDatabase = false;
+        void AssertTarget(ApplicationDbContext targetContext)
+        {
+            Assert.StartsWith(prefix, database); Assert.True(Guid.TryParseExact(database[prefix.Length..], "N", out _));
+            var target = new SqlConnectionStringBuilder(targetContext.Database.GetConnectionString());
+            Assert.Equal("localhost", target.DataSource); Assert.Equal(database, target.InitialCatalog);
+            Assert.True(target.IntegratedSecurity); Assert.Empty(target.AttachDBFilename);
+        }
         try
         {
+            AssertTarget(db);
+            await using (var master = new SqlConnection(new SqlConnectionStringBuilder(builder.ConnectionString) { InitialCatalog = "master" }.ConnectionString))
+            {
+                await master.OpenAsync(); await using var check = master.CreateCommand();
+                check.CommandText = "SELECT DB_ID(@database)"; check.Parameters.AddWithValue("@database", database);
+                Assert.Equal(DBNull.Value, await check.ExecuteScalarAsync());
+            }
+            ownsDatabase = true;
             await db.Database.MigrateAsync();
             await using var f = await Fixture.Seed(db, options, null, membership: false);
             var before = await f.FinancialSnapshot();
-            await Assert.ThrowsAsync<DomainException>(() => f.CreateListing(f.Photo.Id));
-            await f.Assign([BusinessGroupPolicy.PhotoBridalMakeupId], "Admin confirmed SQL scope");
             db.ChangeTracker.Clear();
             await using var reload = new ApplicationDbContext(options);
             var picker = await new GetMyCategoriesQueryHandler(reload, f.OwnerActor).Handle(new(), default);
-            Assert.False(picker.RequiresMembershipReview); Assert.Equal(3, picker.Categories.Count);
-            Assert.DoesNotContain(picker.Categories, category => category.Id == f.Venue.Id);
+            Assert.False(picker.RequiresMembershipReview); Assert.Null(picker.Guidance); Assert.Empty(picker.BusinessGroupIds);
+            Assert.Equal(8, picker.Categories.Count);
+            Assert.Contains(picker.Categories, category => category.Id == f.Venue.Id && category.DefaultCommissionRate == .03m);
             var id = await new CreateListingCommandHandler(reload, f.OwnerActor).Handle(f.Command(f.Photo.Id), default);
             Assert.Equal(f.Photo.Id, (await reload.Listings.AsNoTracking().SingleAsync(listing => listing.Id == id)).CategoryId);
-            await Assert.ThrowsAsync<DomainException>(() => new CreateListingCommandHandler(reload, f.OwnerActor).Handle(f.Command(f.Venue.Id), default));
+            var venueId = await new CreateListingCommandHandler(reload, f.OwnerActor).Handle(f.Command(f.Venue.Id), default);
+            Assert.Equal(f.Venue.Id, (await reload.Listings.AsNoTracking().SingleAsync(listing => listing.Id == venueId)).CategoryId);
             Assert.Equal(before, await f.FinancialSnapshot());
-            Assert.Equal(1, await reload.AuditLogs.CountAsync(log => log.Action == "Vendor.BusinessGroupsAssigned"));
+            Assert.Empty(await reload.VendorBusinessGroups.Where(membership => membership.VendorId == f.Vendor.Id).ToListAsync());
+            Assert.Equal(0, await reload.AuditLogs.CountAsync(log => log.Action == "Vendor.BusinessGroupsAssigned"));
             Assert.Empty(await reload.Database.GetPendingMigrationsAsync()); Assert.False(reload.Database.HasPendingModelChanges());
         }
         finally
         {
-            Assert.StartsWith("WeddingPlanTest_CategoryEligibility_", database);
-            await using var cleanup = new ApplicationDbContext(options);
-            await cleanup.Database.EnsureDeletedAsync();
+            if (ownsDatabase)
+            {
+                await using var cleanup = new ApplicationDbContext(options);
+                AssertTarget(cleanup);
+                await cleanup.Database.EnsureDeletedAsync();
+            }
         }
     }
 

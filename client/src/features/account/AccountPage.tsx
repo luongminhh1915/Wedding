@@ -6,6 +6,8 @@ import axiosClient from '../../services/axiosClient';
 import type { User } from '../../types/auth';
 import { dashboardPath } from '../../utils/navigation';
 import { ChangePasswordForm } from '../auth/components/ChangePasswordDialog';
+import GoogleAccountLink from './GoogleAccountLink';
+import FacebookAccountLink from './FacebookAccountLink';
 import ContactPhoneForm from '../auth/components/ContactPhoneForm';
 import { accountTab, validateDisplayName } from './accountPolicy';
 import { apiError } from '../journey/api';
@@ -33,7 +35,7 @@ export default function AccountPage() {
       <div className="account-panel" key={active}>
         {active === 'personal' && <section aria-labelledby="personal-title"><h2 id="personal-title">Thông tin cá nhân</h2><p>Thông tin dùng để nhận diện và liên hệ trên Wedding Match.</p><dl className="account-details"><div><dt>Họ và tên</dt><dd>{user.fullName}</dd></div><div><dt>Email đăng nhập</dt><dd>{user.email}</dd></div><div><dt>Số điện thoại</dt><dd>{/^0\d{9}$/.test(user.phoneNumber) ? user.phoneNumber : 'Chưa cập nhật'}</dd></div><div><dt>Loại tài khoản</dt><dd>{roleNames[user.role]}</dd></div>{user.vendorBrandName && <div><dt>Thương hiệu</dt><dd>{user.vendorBrandName}</dd></div>}</dl><Link to="/account?tab=edit" className="wm-button small"><PencilLine size={15} />Chỉnh sửa thông tin</Link><p className="account-note">Đây là hồ sơ tài khoản, không phải biểu mẫu thiết lập đám cưới. Cập nhật tại đây không làm tạo lại checklist hoặc ngân sách.</p></section>}
         {active === 'edit' && <EditAccount key={user.id} />}
-        {active === 'security' && <ChangePasswordForm />}
+        {active === 'security' && <><ChangePasswordForm />{user.role === 'Customer' && <><GoogleAccountLink /><FacebookAccountLink /></>}</>}
         {active === 'settings' && <section><h2>Cài đặt tài khoản</h2><p>Các tùy chọn đang hoạt động cho tài khoản của bạn.</p><div className="account-settings"><Link to="/notifications"><Bell size={20} /><span><strong>Thông báo trong ứng dụng</strong><small>Xem tất cả, mở nội dung và đánh dấu đã đọc.</small></span><ChevronRight size={18} /></Link><Link to="/account?tab=security"><ShieldCheck size={20} /><span><strong>Bảo vệ tài khoản</strong><small>Đổi mật khẩu sẽ thu hồi các phiên đăng nhập cũ.</small></span><ChevronRight size={18} /></Link><button type="button" onClick={() => { useAuthStore.getState().logout(); navigate('/login', { replace: true }); }}><LogOut size={20} /><span><strong>Đăng xuất khỏi trình duyệt</strong><small>Không xóa tài khoản hoặc dữ liệu đã lưu trong SQL Server.</small></span></button></div><p className="account-note">Email đăng nhập và quyền tài khoản không thay đổi tại đây. Chưa có chức năng xóa tài khoản hoặc tùy chọn gửi email/SMS tự phục vụ.</p></section>}
       </div>
     </div>

@@ -10,6 +10,7 @@ using Wedding.Infrastructure;
 using Wedding.Infrastructure.Persistence;
 using Wedding.Infrastructure.Services;
 using Wedding.WebApi.Hubs;
+using Wedding.WebApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -182,11 +183,26 @@ app.Use(async (context, next) =>
     }
 });
 
+// Keep the app shell indexable at the public landing routes, but prevent account,
+// dashboard, API, unknown and private invitation paths from appearing in Search.
+app.Use(async (context, next) =>
+{
+    SearchRobotsPolicy.ApplyResponseHeader(context);
+    await next();
+});
+
 if (!app.Environment.IsDevelopment())
 {
     // IIS integration supplies the original HTTPS scheme. Never trust arbitrary proxy headers.
     app.UseHsts();
-    app.UseHttpsRedirection();
+    // SmarterASP validates free SSL certificates over HTTP-01. Let the challenge file
+    // pass through the static-file pipeline over HTTP while redirecting every other
+    // production request to HTTPS.
+    app.UseWhen(
+        context => !context.Request.Path.StartsWithSegments(
+            "/.well-known/acme-challenge",
+            StringComparison.OrdinalIgnoreCase),
+        branch => branch.UseHttpsRedirection());
 }
 
 app.UseCors("AllowClient");

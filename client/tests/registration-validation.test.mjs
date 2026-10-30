@@ -2,8 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration, vendorRegistrationRequest } from "../src/features/auth/components/registrationValidation.ts";
 
-const groupIds = ["server-group-a", "server-group-b", "server-group-c"];
-const valid = { ...EMPTY_REGISTRATION, fullName: "Nguyễn Văn A", email: "customer@example.com", phoneNumber: "0912345678", password: "A long passphrase", confirmPassword: "A long passphrase", brandName: "Wedding QA", city: "Hồ Chí Minh", businessGroupIds: [groupIds[0]], partnershipPolicyAccepted: true };
+const valid = { ...EMPTY_REGISTRATION, fullName: "Nguyễn Văn A", email: "customer@example.com", phoneNumber: "0912345678", password: "A long passphrase", confirmPassword: "A long passphrase", brandName: "Wedding QA", city: "Hồ Chí Minh", partnershipPolicyAccepted: true };
 
 test("registration trims identity fields without altering passwords", () => {
   const result = normalizeRegistration({ ...valid, fullName: " Nguyễn Văn A ", email: " Customer@Example.COM ", phoneNumber: " 0912345678 ", brandName: " Wedding QA ", city: " Hà Nội ", password: " pass phrase ", confirmPassword: " pass phrase " });
@@ -18,14 +17,14 @@ test("registration trims identity fields without altering passwords", () => {
 
 test("customer and vendor registration validate only their required fields", () => {
   assert.deepEqual(validateRegistration(valid, "customer"), {});
-  assert.deepEqual(validateRegistration(valid, "vendor", groupIds), {});
+  assert.deepEqual(validateRegistration(valid, "vendor"), {});
   const missingVendor = { ...valid, brandName: " ", city: " " };
   assert.deepEqual(validateRegistration(missingVendor, "customer"), {});
-  assert.deepEqual(Object.keys(validateRegistration(missingVendor, "vendor", groupIds)), ["brandName", "city"]);
+  assert.deepEqual(Object.keys(validateRegistration(missingVendor, "vendor")), ["brandName", "city"]);
 });
 
 test("registration rejects blank or overlong identities and malformed email or phone", () => {
-  const errors = validateRegistration({ ...valid, fullName: " ", email: "a@@example.com", phoneNumber: "+84912345678", brandName: "x".repeat(201), city: "x".repeat(101) }, "vendor", groupIds);
+  const errors = validateRegistration({ ...valid, fullName: " ", email: "a@@example.com", phoneNumber: "+84912345678", brandName: "x".repeat(201), city: "x".repeat(101) }, "vendor");
   assert.deepEqual(Object.keys(errors), ["fullName", "email", "phoneNumber", "brandName", "city"]);
   assert.ok(validateRegistration({ ...valid, fullName: "x".repeat(151) }, "customer").fullName);
   assert.ok(validateRegistration({ ...valid, email: `${"x".repeat(140)}@example.com` }, "customer").email);
@@ -46,30 +45,31 @@ test("new password minimum, UTF8 BCrypt limit and matching confirmation are enfo
     assert.ok(validateRegistration({ ...valid, password, confirmPassword: password }, "customer").password);
 });
 
-test("vendor registration accepts multiple server groups but no unavailable, empty, duplicate or foreign selection", () => {
-  assert.deepEqual(validateRegistration({ ...valid, businessGroupIds: groupIds.slice(0, 2) }, "vendor", groupIds), {});
-  assert.ok(validateRegistration(valid, "vendor").businessGroupIds);
-  for (const businessGroupIds of [[], ["unknown-group"], [groupIds[0], groupIds[0]], [groupIds[0], "stale-group"]])
-    assert.ok(validateRegistration({ ...valid, businessGroupIds }, "vendor", groupIds).businessGroupIds);
-  assert.equal(EMPTY_REGISTRATION.businessGroupIds.length, 0);
+test("vendor registration succeeds without selecting groups or loading a group catalog", () => {
+  assert.deepEqual(validateRegistration(valid, "vendor"), {});
+  assert.equal("businessGroupIds" in EMPTY_REGISTRATION, false);
+  for (const businessGroupIds of [[], ["unknown-group"], ["duplicate", "duplicate"]]) {
+    const input = { ...valid, businessGroupIds };
+    assert.deepEqual(validateRegistration(input, "vendor"), {});
+    assert.equal("businessGroupIds" in vendorRegistrationRequest(input), false);
+  }
   assert.equal(EMPTY_REGISTRATION.partnershipPolicyAccepted, false);
 });
 
 test("vendor policy acknowledgment is required without changing customer signup fields", () => {
-  const unconfirmed = { ...valid, businessGroupIds: [], partnershipPolicyAccepted: false };
-  assert.ok(validateRegistration(unconfirmed, "vendor", groupIds).partnershipPolicyAccepted);
+  const unconfirmed = { ...valid, partnershipPolicyAccepted: false };
+  assert.ok(validateRegistration(unconfirmed, "vendor").partnershipPolicyAccepted);
   assert.deepEqual(validateRegistration(unconfirmed, "customer"), {});
   assert.throws(() => vendorRegistrationRequest(unconfirmed), /xác nhận/);
 });
 
 test("vendor payload is allowlisted and never sends editable financial rates or policy version", () => {
-  const input = { ...valid, email: " CUSTOMER@Example.com ", city: "TP. HCM", businessGroupIds: groupIds.slice(0, 2), commissionRate: .01, policyVersion: "forged", role: "SuperAdmin" };
+  const input = { ...valid, email: " CUSTOMER@Example.com ", city: "TP. HCM", businessGroupIds: ["old-group"], commissionRate: .01, policyVersion: "forged", role: "SuperAdmin" };
   const request = vendorRegistrationRequest(input);
-  assert.deepEqual(Object.keys(request).sort(), ["fullName", "email", "phoneNumber", "password", "brandName", "city", "businessGroupIds", "partnershipPolicyAccepted"].sort());
+  assert.deepEqual(Object.keys(request).sort(), ["fullName", "email", "phoneNumber", "password", "brandName", "city", "partnershipPolicyAccepted"].sort());
   assert.equal(request.email, "customer@example.com");
   assert.equal(request.city, "Hồ Chí Minh");
-  assert.deepEqual(request.businessGroupIds, groupIds.slice(0, 2));
-  assert.notEqual(request.businessGroupIds, input.businessGroupIds);
+  assert.equal("businessGroupIds" in request, false);
   assert.equal(request.partnershipPolicyAccepted, true);
   assert.equal("commissionRate" in request, false);
   assert.equal("role" in request, false);
@@ -78,9 +78,9 @@ test("vendor payload is allowlisted and never sends editable financial rates or 
 test("vendor registration requires a current province while customer onboarding remains separate", () => {
   assert.equal(EMPTY_REGISTRATION.city, "", "new partners must choose rather than silently default to another city");
   for (const city of ["Huế", "Bắc Ninh", "Đồng Nai", "Hồ Chí Minh", "Tỉnh Đắk Lắk", "TP. HCM"])
-    assert.equal(validateRegistration({ ...valid, city }, "vendor", groupIds).city, undefined, city);
+    assert.equal(validateRegistration({ ...valid, city }, "vendor").city, undefined, city);
   for (const city of ["", "Ho Chi Minh arbitrary", "Bình Dương", "Nước ngoài"])
-    assert.ok(validateRegistration({ ...valid, city }, "vendor", groupIds).city, city);
+    assert.ok(validateRegistration({ ...valid, city }, "vendor").city, city);
   assert.equal(normalizeRegistration({ ...valid, city: " TP. HCM " }).city, "Hồ Chí Minh");
   assert.equal(validateRegistration({ ...valid, city: "" }, "customer").city, undefined);
 });

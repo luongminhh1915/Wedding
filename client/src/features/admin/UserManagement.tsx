@@ -1,104 +1,183 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Search, Shield, Lock, Unlock, Phone, Mail,
   Calendar, XCircle, AlertCircle, Building2,
-  UserCheck, UserX, Loader2, UserPlus, Eye, EyeOff
+  UserCheck, UserX, Loader2, UserPlus, Eye, EyeOff, Copy
 } from 'lucide-react';
 import { useUsers, useUpdateUserStatus, userKeys } from './hooks/useUsers';
 import type { UserManagementDto } from '../../types/auth';
 import axiosClient from '../../services/axiosClient';
 import { useAuthStore } from '../../store/authStore';
-import { EMPTY_REGISTRATION, normalizeRegistration, registrationApiError, validateRegistration } from '../auth/components/registrationValidation';
-import type { RegistrationErrors, RegistrationValues } from '../auth/components/registrationValidation';
+import { EMPTY_REGISTRATION, registrationApiError } from '../auth/components/registrationValidation';
+import type { RegistrationValues } from '../auth/components/registrationValidation';
 import { VendorBusinessGroupsEditor } from './VendorBusinessGroupsEditor';
+import OperatingAreasSelect from '../auth/components/OperatingAreasSelect';
+import { normalizeOperatingAreas } from '../auth/components/operatingAreasModel';
+import type { OperatingAreas } from '../auth/components/operatingAreasModel';
+import { ComboDialog } from '../journey/combo/ComboDialog';
+import { ADMIN_CREATABLE_ROLES, adminRoleNames, adminCreateUserRequest, administrativeActorIsCurrent, validateAdminUserCreation } from './adminCreateUserModel';
+import type { AdminCreatableRole, AdminCreateUserRequest, AdminCreationErrors } from './adminCreateUserModel';
 
-type StaffRole = 'Moderator' | 'Finance' | 'CustomerCare';
-const staffRoleNames: Record<StaffRole, string> = { Moderator: 'Kiểm duyệt', Finance: 'Tài chính', CustomerCare: 'Chăm sóc khách hàng' };
+function CopyLoginName({ value }: { value: string }) {
+  const [message, setMessage] = useState('');
+  return <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#233a42]"><span>Tên đăng nhập:</span><code className="select-all rounded-md border border-[#eadbd4] bg-[#fcf6ea] px-2 py-1 font-semibold [overflow-wrap:anywhere]">{value}</code><button type="button" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" onClick={() => { void navigator.clipboard.writeText(value).then(() => setMessage('Đã sao chép')).catch(() => setMessage('Bạn có thể chọn và sao chép tên đăng nhập ở bên cạnh.')); }}><Copy size={12} aria-hidden="true" />Sao chép</button>{message && <span role="status">{message}</span>}</div>;
+}
 
-function StaffCreationForm({ onCreated, onCancel }: { onCreated: (user: UserManagementDto) => void; onCancel: () => void }) {
+export function UserCreationForm({ onCreated, onCancel }: { onCreated: (user: UserManagementDto) => void; onCancel: () => void }) {
   const queryClient = useQueryClient();
   const formRef = useRef<HTMLFormElement>(null);
   const inFlight = useRef(false);
+  const mounted = useRef(true);
+  const draftRevision = useRef(0);
+  const [actor] = useState(() => {
+    const session = useAuthStore.getState();
+    return { id: session.user?.id, token: session.token, revision: session.sessionRevision };
+  });
   const [values, setValues] = useState<RegistrationValues>({ ...EMPTY_REGISTRATION });
-  const [role, setRole] = useState<StaffRole>('Moderator');
-  const [errors, setErrors] = useState<RegistrationErrors>({});
+  const [role, setRole] = useState<AdminCreatableRole>('Customer');
+  const [confirmSuperAdminCreation, setConfirmSuperAdminCreation] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ request: AdminCreateUserRequest; revision: number } | null>(null);
+  const [errors, setErrors] = useState<AdminCreationErrors>({});
   const [failure, setFailure] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const createStaff = useMutation({
-    mutationFn: async (body: { fullName: string; email: string; phoneNumber: string; password: string; role: StaffRole }) => {
-      const response = await axiosClient.post<UserManagementDto>('/api/users/staff', body);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const isCurrentActor = () => administrativeActorIsCurrent(actor, useAuthStore.getState());
+  const createUser = useMutation({
+    gcTime: 0,
+    mutationFn: async (body: AdminCreateUserRequest) => {
+      if (!mounted.current || !isCurrentActor()) throw new Error('Phiên quản trị đã thay đổi. Vui lòng mở lại biểu mẫu.');
+      const response = await axiosClient.post<UserManagementDto>('/api/users', body, { headers: { Authorization: `Bearer ${actor.token}` } });
       return response.data;
     },
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: userKeys.all }); },
+    onSuccess: () => { if (mounted.current && isCurrentActor()) void queryClient.invalidateQueries({ queryKey: userKeys.all }); },
   });
+  const changeDraft = () => { draftRevision.current++; setConfirmation(null); setFailure(''); };
   const update = (field: keyof RegistrationValues, value: string) => {
+    if (inFlight.current) return;
+    changeDraft();
     setValues(current => ({ ...current, [field]: value }));
     setErrors(current => ({ ...current, [field]: undefined }));
-    setFailure('');
   };
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (inFlight.current || createStaff.isPending) return;
-    setFailure('');
-    const nextErrors = validateRegistration(values, 'customer');
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) {
-      requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>("[aria-invalid='true']")?.focus());
+  const changeOperatingAreas = (selection: OperatingAreas) => {
+    if (inFlight.current) return;
+    changeDraft();
+    setValues(current => ({ ...current, ...selection, city: selection.operatingRegions[0] ?? '' }));
+    setErrors(current => ({ ...current, city: undefined }));
+  };
+  const provision = async (request: AdminCreateUserRequest, revision: number) => {
+    if (inFlight.current || createUser.isPending || !mounted.current) return;
+    if (!isCurrentActor()) { setFailure('Phiên quản trị đã thay đổi. Vui lòng mở lại biểu mẫu.'); return; }
+    if (revision !== draftRevision.current) {
+      setConfirmation(null); setFailure('Thông tin đã thay đổi. Vui lòng kiểm tra lại trước khi tạo tài khoản.');
       return;
     }
     inFlight.current = true;
+    setFailure('');
     try {
-      const fields = normalizeRegistration(values);
-      const user = await createStaff.mutateAsync({ fullName: fields.fullName, email: fields.email, phoneNumber: fields.phoneNumber, password: fields.password, role });
+      const user = await createUser.mutateAsync(request);
+      if (!mounted.current || !isCurrentActor()) return;
+      setValues({ ...EMPTY_REGISTRATION }); setShowPassword(false); setConfirmSuperAdminCreation(false); setConfirmation(null);
       onCreated(user);
     } catch (error: unknown) {
-      setFailure(registrationApiError(error));
-    } finally { inFlight.current = false; }
+      if (mounted.current && isCurrentActor()) setFailure(registrationApiError(error));
+    } finally { inFlight.current = false; createUser.reset(); }
   };
-  const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#c9a740]';
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inFlight.current || createUser.isPending) return;
+    if (!isCurrentActor()) { setFailure('Phiên quản trị đã thay đổi. Vui lòng mở lại biểu mẫu.'); return; }
+    setFailure('');
+    const nextErrors = validateAdminUserCreation(values, role, confirmSuperAdminCreation);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
+      return;
+    }
+    const request = adminCreateUserRequest(values, role, confirmSuperAdminCreation);
+    if (role === 'SuperAdmin') setConfirmation({ request, revision: draftRevision.current });
+    else await provision(request, draftRevision.current);
+  };
+  const closeConfirmation = () => { if (!inFlight.current && !createUser.isPending) { setConfirmation(null); setFailure(''); } };
+  const closeForm = () => {
+    if (inFlight.current || createUser.isPending) return;
+    setValues({ ...EMPTY_REGISTRATION }); setConfirmation(null); setShowPassword(false); onCancel();
+  };
+  const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#e38c82]';
   const fields: { key: 'fullName' | 'email' | 'phoneNumber' | 'password' | 'confirmPassword'; label: string; type: string; autoComplete: string; maxLength: number }[] = [
-    { key: 'fullName', label: 'Họ và tên', type: 'text', autoComplete: 'name', maxLength: 150 },
-    { key: 'email', label: 'Email đăng nhập', type: 'email', autoComplete: 'email', maxLength: 150 },
-    { key: 'phoneNumber', label: 'Số điện thoại', type: 'tel', autoComplete: 'tel-national', maxLength: 20 },
+    { key: 'fullName', label: role === 'VendorOwner' ? 'Tên nhà cung cấp' : 'Họ và tên', type: 'text', autoComplete: 'name', maxLength: 150 },
+    { key: 'email', label: role === 'VendorOwner' ? 'Email liên hệ (tùy chọn)' : 'Email đăng nhập', type: 'email', autoComplete: 'email', maxLength: 150 },
+    { key: 'phoneNumber', label: role === 'VendorOwner' ? 'Số điện thoại (tùy chọn)' : 'Số điện thoại', type: 'tel', autoComplete: 'tel-national', maxLength: 20 },
     { key: 'password', label: 'Mật khẩu ban đầu', type: showPassword ? 'text' : 'password', autoComplete: 'new-password', maxLength: 72 },
     { key: 'confirmPassword', label: 'Nhập lại mật khẩu', type: showPassword ? 'text' : 'password', autoComplete: 'new-password', maxLength: 72 },
   ];
-  return <section className="rounded-2xl border border-[#ded8c6] bg-[#faf8f0] p-5 sm:p-6" aria-labelledby="create-staff-title">
-    <h3 id="create-staff-title" className="text-base font-semibold text-[#25334c]">Cấp tài khoản nhân sự</h3>
-    <p className="mt-2 text-sm leading-relaxed text-slate-600">Chỉ SuperAdmin được cấp tài khoản kiểm duyệt, tài chính và CSKH. Không tạo thêm SuperAdmin hoặc thay đổi tài khoản đang đăng nhập tại đây.</p>
+  return <section className="rounded-2xl border border-[#ded8c6] bg-[#fcf6ea] p-5 sm:p-6" aria-labelledby="create-user-title">
+    <h3 id="create-user-title" className="text-base font-semibold text-[#233a42]">Tạo tài khoản người dùng</h3>
+    <p className="mt-2 text-sm leading-relaxed text-slate-600">SuperAdmin có thể tạo khách hàng, nhà cung cấp và nhân sự. Hãy kiểm tra vai trò trước khi cấp tài khoản.</p>
     {failure && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{failure}</p>}
-    <form ref={formRef} onSubmit={submit} noValidate aria-busy={createStaff.isPending} className="mt-5">
-      <fieldset disabled={createStaff.isPending} className="min-w-0">
-        <legend className="sr-only">Thông tin tài khoản nhân sự mới</legend>
+    <form ref={formRef} onSubmit={submit} noValidate aria-busy={createUser.isPending} className="mt-5">
+      <fieldset disabled={createUser.isPending} className="min-w-0">
+        <legend className="sr-only">Thông tin tài khoản người dùng mới</legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map(field => <div key={field.key}>
-            <label htmlFor={`staff-${field.key}`} className="mb-1.5 block text-xs font-semibold text-slate-700">{field.label}</label>
-            <input id={`staff-${field.key}`} name={field.key} type={field.type} autoComplete={field.autoComplete} autoCapitalize={field.key === 'email' ? 'none' : undefined} spellCheck={field.key === 'email' ? false : undefined} maxLength={field.maxLength} required value={values[field.key]} onChange={event => update(field.key, event.target.value)} aria-invalid={errors[field.key] ? true : undefined} aria-describedby={errors[field.key] ? `staff-${field.key}-error` : field.key === 'password' ? 'staff-password-hint' : undefined} className={inputClass} />
-            {errors[field.key] && <p id={`staff-${field.key}-error`} className="mt-1.5 text-xs text-red-700">{errors[field.key]}</p>}
+            <label htmlFor={`create-user-${field.key}`} className="mb-1.5 block text-xs font-semibold text-slate-700">{field.label}</label>
+            <input id={`create-user-${field.key}`} name={field.key} type={field.type} autoComplete={field.autoComplete} autoCapitalize={field.key === 'email' ? 'none' : undefined} spellCheck={field.key === 'email' ? false : undefined} maxLength={field.maxLength} required={role !== 'VendorOwner' || field.key !== 'email' && field.key !== 'phoneNumber'} value={values[field.key]} onChange={event => update(field.key, event.target.value)} aria-invalid={errors[field.key] ? true : undefined} aria-describedby={errors[field.key] ? `create-user-${field.key}-error` : field.key === 'password' ? 'create-user-password-hint' : undefined} className={inputClass} />
+            {errors[field.key] && <p id={`create-user-${field.key}-error`} className="mt-1.5 text-xs text-red-700">{errors[field.key]}</p>}
           </div>)}
           <div>
-            <label htmlFor="staff-role" className="mb-1.5 block text-xs font-semibold text-slate-700">Vai trò được cấp</label>
-            <select id="staff-role" value={role} onChange={event => setRole(event.target.value as StaffRole)} className={inputClass}>
-              {(Object.entries(staffRoleNames) as [StaffRole, string][]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            <label htmlFor="create-user-role" className="mb-1.5 block text-xs font-semibold text-slate-700">Vai trò được cấp</label>
+            <select id="create-user-role" value={role} onChange={event => { if (inFlight.current) return; changeDraft(); setRole(event.target.value as AdminCreatableRole); setConfirmSuperAdminCreation(false); setErrors({}); }} aria-invalid={errors.role ? true : undefined} className={inputClass}>
+              {ADMIN_CREATABLE_ROLES.map(value => <option key={value} value={value}>{adminRoleNames[value]}</option>)}
             </select>
+            {errors.role && <p className="mt-1.5 text-xs text-red-700">{errors.role}</p>}
           </div>
+          {role === 'VendorOwner' && <>
+            <div>
+              <label htmlFor="create-user-brandName" className="mb-1.5 block text-xs font-semibold text-slate-700">Tên thương hiệu (tùy chọn)</label>
+              <input id="create-user-brandName" name="brandName" className={inputClass} maxLength={200} placeholder="Để trống để dùng tên nhà cung cấp" value={values.brandName} onChange={event => update('brandName', event.target.value)} aria-invalid={errors.brandName ? true : undefined} aria-describedby={errors.brandName ? 'create-user-brandName-error' : undefined} />
+              {errors.brandName && <p id="create-user-brandName-error" className="mt-1.5 text-xs text-red-700">{errors.brandName}</p>}
+            </div>
+            <OperatingAreasSelect key={`admin-vendor-${actor.id}`} id="create-user-city" {...normalizeOperatingAreas(values.city, values.operatingRegions, values.nationwide)} onChange={changeOperatingAreas} error={errors.city} disabled={createUser.isPending} />
+          </>}
         </div>
+        {role === 'VendorOwner' && <div className="mt-4 space-y-2 rounded-xl border border-[#eadbd4] bg-white p-3 text-xs leading-relaxed text-slate-600"><p>Chỉ cần tên và mật khẩu. Hệ thống sẽ tạo tên đăng nhập riêng và hiển thị sau khi tạo; NCC dùng tên đó cùng mật khẩu để đăng nhập. Email, số điện thoại, thương hiệu và khu vực có thể bổ sung sau.</p><p>Hồ sơ shop chưa xác minh. Thao tác này không ghi nhận NCC chấp thuận điều khoản, không tự duyệt shop hoặc kích hoạt thỏa thuận hoa hồng riêng.</p></div>}
+        {role === 'SuperAdmin' && <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4">
+          <p className="text-sm font-semibold text-rose-900">SuperAdmin có toàn quyền quản trị hệ thống và cấp tài khoản khác.</p>
+          <label className="mt-3 flex items-start gap-2 text-sm text-rose-900"><input id="create-user-confirm-admin" type="checkbox" className="mt-0.5" checked={confirmSuperAdminCreation} onChange={event => { if (inFlight.current) return; changeDraft(); setConfirmSuperAdminCreation(event.target.checked); setErrors(current => ({ ...current, confirmSuperAdminCreation: undefined })); }} aria-invalid={errors.confirmSuperAdminCreation ? true : undefined} aria-describedby={errors.confirmSuperAdminCreation ? 'create-user-confirm-admin-error' : undefined} />Tôi xác nhận cấp toàn quyền SuperAdmin cho tài khoản mới.</label>
+          {errors.confirmSuperAdminCreation && <p id="create-user-confirm-admin-error" className="mt-2 text-xs text-red-700">{errors.confirmSuperAdminCreation}</p>}
+        </div>}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <p id="staff-password-hint" className="text-xs leading-relaxed text-slate-500">Mật khẩu ít nhất 8 ký tự, tối đa 72 byte. Hệ thống chưa tự gửi email cấp tài khoản; hãy bàn giao thông tin qua kênh riêng an toàn.</p>
-          <button type="button" onClick={() => setShowPassword(value => !value)} aria-pressed={showPassword} className="flex items-center gap-1.5 text-xs text-[#25334c]">{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}{showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}</button>
+          <p id="create-user-password-hint" className="text-xs leading-relaxed text-slate-500">Mật khẩu ít nhất {role === 'SuperAdmin' ? 12 : 8} ký tự, tối đa 72 byte. Hệ thống không tự gửi mật khẩu qua email; hãy bàn giao qua kênh riêng an toàn.</p>
+          <button type="button" onClick={() => setShowPassword(value => !value)} aria-pressed={showPassword} className="flex items-center gap-1.5 text-xs text-[#233a42]">{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}{showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}</button>
         </div>
         <div className="mt-5 flex flex-wrap justify-end gap-3">
-          <button type="button" onClick={onCancel} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600">Đóng biểu mẫu</button>
-          <button type="submit" disabled={createStaff.isPending} className="flex items-center gap-2 rounded-xl bg-[#25334c] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{createStaff.isPending && <Loader2 size={16} className="animate-spin" />}{createStaff.isPending ? 'Đang cấp tài khoản...' : 'Xác nhận cấp tài khoản'}</button>
+          <button type="button" onClick={closeForm} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600">Đóng biểu mẫu</button>
+          <button type="submit" disabled={createUser.isPending} className="flex items-center gap-2 rounded-xl bg-[#e38c82] px-4 py-2.5 text-sm font-semibold text-[#233a42] disabled:opacity-60">{createUser.isPending && <Loader2 size={16} className="animate-spin" />}{createUser.isPending ? 'Đang tạo tài khoản...' : role === 'SuperAdmin' ? 'Kiểm tra và cấp SuperAdmin' : 'Tạo tài khoản'}</button>
         </div>
       </fieldset>
     </form>
+    {confirmation && <ComboDialog title="Xác nhận tạo SuperAdmin" onClose={closeConfirmation}>
+      <div className="space-y-4 text-sm text-[#233a42] [overflow-wrap:anywhere]">
+        <p>Tài khoản này sẽ có toàn quyền quản trị, bao gồm khả năng cấp thêm tài khoản khác. Kiểm tra kỹ người được cấp quyền.</p>
+        <dl className="space-y-3 rounded-xl border border-[#eadbd4] bg-[#fcf6ea] p-4">
+          <div><dt className="text-xs text-slate-500">Họ và tên</dt><dd className="font-semibold">{confirmation.request.fullName}</dd></div>
+          <div><dt className="text-xs text-slate-500">Email đăng nhập</dt><dd>{confirmation.request.email}</dd></div>
+          <div><dt className="text-xs text-slate-500">Vai trò</dt><dd className="font-semibold">{adminRoleNames[confirmation.request.role]}</dd></div>
+        </dl>
+        {failure && <p role="alert" className="rounded-xl bg-red-50 p-3 text-red-700">{failure}</p>}
+        <div className="flex flex-wrap justify-end gap-3 border-t border-[#eadbd4] pt-4">
+          <button type="button" autoFocus disabled={createUser.isPending} onClick={closeConfirmation} className="btn btn-outline">Hủy</button>
+          <button type="button" disabled={createUser.isPending} onClick={() => void provision(confirmation.request, confirmation.revision)} className="btn btn-primary">{createUser.isPending ? 'Đang tạo tài khoản...' : 'Xác nhận tạo SuperAdmin'}</button>
+        </div>
+      </div>
+    </ComboDialog>}
   </section>;
 }
 
 export default function UserManagement() {
   const isSuperAdmin = useAuthStore(state => state.user?.role === 'SuperAdmin');
+  const actorId = useAuthStore(state => state.user?.id);
+  const sessionRevision = useAuthStore(state => state.sessionRevision);
   const { data: users = [], isLoading, error } = useUsers();
   const updateStatusMutation = useUpdateUserStatus();
 
@@ -109,6 +188,7 @@ export default function UserManagement() {
   const [confirmLockModal, setConfirmLockModal] = useState<{ user: UserManagementDto; targetStatus: boolean } | null>(null);
   const [showStaffForm, setShowStaffForm] = useState(false);
   const [staffSuccess, setStaffSuccess] = useState('');
+  const [createdLoginName, setCreatedLoginName] = useState('');
 
   // Thống kê nhanh
   const stats = useMemo(() => {
@@ -126,6 +206,7 @@ export default function UserManagement() {
     return users.filter(user => {
       const matchSearch =
         user.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        (user.loginName ?? '').toLowerCase().includes(search.toLowerCase()) ||
         user.email.toLowerCase().includes(search.toLowerCase()) ||
         user.phoneNumber.includes(search) ||
         (user.vendorBrandName && user.vendorBrandName.toLowerCase().includes(search.toLowerCase()));
@@ -195,11 +276,11 @@ export default function UserManagement() {
   return (
     <div className="space-y-6">
       {isSuperAdmin && <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-lg font-semibold text-[#25334c]">Tài khoản & phân quyền</h2><p className="mt-1 text-sm text-slate-500">Khách hàng và NCC tự đăng ký; nhân sự nội bộ do quản trị viên cấp.</p></div>
-        {!showStaffForm && <button type="button" onClick={() => { setShowStaffForm(true); setStaffSuccess(''); }} className="flex items-center gap-2 rounded-xl bg-[#25334c] px-4 py-2.5 text-sm font-semibold text-white"><UserPlus size={17} />Cấp tài khoản nhân sự</button>}
+        <div><h2 className="text-lg font-semibold text-[#233a42]">Tài khoản & phân quyền</h2><p className="mt-1 text-sm text-slate-500">SuperAdmin có thể tạo tài khoản cho tất cả vai trò. Khách hàng và NCC vẫn có thể tự đăng ký.</p></div>
+        {!showStaffForm && <button type="button" onClick={() => { setShowStaffForm(true); setStaffSuccess(''); }} className="flex items-center gap-2 rounded-xl bg-[#e38c82] px-4 py-2.5 text-sm font-semibold text-[#233a42]"><UserPlus size={17} />Tạo tài khoản người dùng</button>}
       </div>}
-      {isSuperAdmin && showStaffForm && <StaffCreationForm onCancel={() => setShowStaffForm(false)} onCreated={user => { setShowStaffForm(false); setStaffSuccess(`Đã cấp tài khoản ${user.email} với vai trò ${staffRoleNames[user.role as StaffRole] ?? user.role}. Phiên quản trị hiện tại được giữ nguyên.`); }} />}
-      {staffSuccess && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{staffSuccess}</p>}
+      {isSuperAdmin && showStaffForm && <UserCreationForm key={`${actorId}:${sessionRevision}`} onCancel={() => setShowStaffForm(false)} onCreated={user => { setShowStaffForm(false); setCreatedLoginName(user.loginName ?? ''); setStaffSuccess(`Đã tạo tài khoản ${user.fullName} với vai trò ${adminRoleNames[user.role as AdminCreatableRole] ?? user.role}. Phiên quản trị hiện tại được giữ nguyên.`); }} />}
+      {staffSuccess && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><p role="status">{staffSuccess}</p>{createdLoginName && <><CopyLoginName value={createdLoginName} /><p className="mt-2 text-xs">Bàn giao tên đăng nhập này cùng mật khẩu đã đặt cho NCC.</p></>}</div>}
       {/* Top Banner & Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -325,7 +406,7 @@ export default function UserManagement() {
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">{user.fullName}</p>
-                          <p className="text-xs text-slate-500">{user.email}</p>
+                          <p className="select-all text-xs text-slate-500">{user.loginName ? `Đăng nhập: ${user.loginName}` : user.email || 'Chưa có email liên hệ'}</p>
                           {user.vendorBrandName && (
                             <span className="inline-flex items-center gap-1 text-[11px] text-purple-700 font-medium mt-0.5">
                               <Building2 className="w-3 h-3" />
@@ -342,11 +423,11 @@ export default function UserManagement() {
                       <div className="text-xs text-slate-600 space-y-1">
                         <div className="flex items-center gap-1.5">
                           <Phone className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{user.phoneNumber}</span>
+                          <span>{user.phoneNumber || 'Chưa có số điện thoại'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Mail className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="truncate max-w-[150px]">{user.email}</span>
+                          <span className="truncate max-w-[150px]">{user.email || 'Chưa có email liên hệ'}</span>
                         </div>
                       </div>
                     </td>
@@ -483,11 +564,12 @@ export default function UserManagement() {
               <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <div>
                   <p className="text-xs text-slate-500 font-medium">Email</p>
-                  <p className="font-semibold text-slate-800 break-all">{selectedUser.email}</p>
+                  <p className="font-semibold text-slate-800 break-all">{selectedUser.email || 'Chưa có email liên hệ'}</p>
+                  {selectedUser.loginName && <CopyLoginName value={selectedUser.loginName} />}
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-medium">Số điện thoại</p>
-                  <p className="font-semibold text-slate-800">{selectedUser.phoneNumber}</p>
+                  <p className="font-semibold text-slate-800">{selectedUser.phoneNumber || 'Chưa có số điện thoại'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-medium">Trạng thái</p>

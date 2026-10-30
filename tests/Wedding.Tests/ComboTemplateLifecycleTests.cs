@@ -395,6 +395,10 @@ public class ComboTemplateLifecycleTests
         await using var f = await Fixture.Create(); var published = await f.Publish();
         var order = await new SubmitComboOrderCommandHandler(f.Db, f.CustomerActor, new Notify()).Handle(new(published.Id, new(),
             f.Date, 100, f.Customer.PhoneNumber, "Synthetic RFQ", "HCM", f.Selections), default);
+        var storedOrder = await f.Db.ComboOrders.SingleAsync();
+        Assert.Equal(published.LatestRevision!.Id, storedOrder.ComboTemplateRevisionId);
+        Assert.Contains(published.LatestRevision.Id.ToString(), storedOrder.ComboTemplateSnapshotJson);
+        var frozenTemplateSnapshot = storedOrder.ComboTemplateSnapshotJson;
         var line = order.Items.Single(item => item.ServiceItemId == f.Venue.Id);
         var lead = await f.Db.Leads.SingleAsync(item => item.Id == line.LeadId);
         var contract = BookingContract.Create(lead.Id, null, f.Vendor.Id, f.Customer.Id, line.Price - line.DiscountShare,
@@ -407,8 +411,35 @@ public class ComboTemplateLifecycleTests
             SingleVendorDiscount = .05m, Items = [f.Slot(f.Venue), f.Slot(f.PhotoAlternative)], Content = new(Terms: "New future terms") });
         Assert.Equal(before, await f.FinancialSnapshot());
         await f.Review(published.Id, true, RevisionId: revised.LatestRevision!.Id);
+        Assert.Equal(published.LatestRevision.Id, storedOrder.ComboTemplateRevisionId);
+        Assert.Equal(frozenTemplateSnapshot, storedOrder.ComboTemplateSnapshotJson);
         Assert.Equal(before, await f.FinancialSnapshot());
         Assert.Equal(.08m, (await f.Db.BookingContracts.AsNoTracking().SingleAsync()).CommissionRateSnapshot);
+    }
+
+    [Fact]
+    public async Task NewOrdersRequireAnApprovedRevisionForAnExactComboSnapshot()
+    {
+        await using var f = await Fixture.Create();
+        var published = await f.Publish();
+        var unversioned = ComboTemplate.Create("Synthetic legacy public combo", "Popular", "Modern",
+            "Published without revision history", null, 0);
+        unversioned.SetScope(f.Vendor.Id, "HCM", .03m, true);
+        unversioned.Publish(f.Vendor.Id, "HCM", .03m, "{}", null, null, true, null);
+        foreach (var item in published.Items)
+        {
+            var slot = ComboTemplateItem.Create(unversioned.Id, item.CategoryId, item.ListingId, item.IsOptional);
+            if (item.ServiceItemId.HasValue)
+                slot.ConfigureItems(item.ServiceItemId.Value, JsonSerializer.Serialize(item.AllowedItemIds ?? []));
+            unversioned.Items.Add(slot);
+        }
+        f.Db.ComboTemplates.Add(unversioned);
+        await f.Db.SaveChangesAsync();
+
+        var handler = new SubmitComboOrderCommandHandler(f.Db, f.CustomerActor, new Notify());
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new(unversioned.Id, new(),
+            f.Date, 100, f.Customer.PhoneNumber, "Synthetic RFQ", "HCM", f.Selections), default));
+        Assert.Empty(await f.Db.ComboOrders.ToListAsync());
     }
 
     [SqlServerFact]

@@ -5,8 +5,8 @@ using Wedding.Domain.Exceptions;
 
 namespace Wedding.Application.Features.Listings;
 
-/// <summary>Business membership is a permitted service scope, not a commission-policy transition.
-/// An unmigrated shop keeps existing records; only creating a new listing requires explicit scope.</summary>
+/// <summary>Services choose an active category independently of historical shop memberships.
+/// A category selection never changes the shop's rate or a confirmed financial snapshot.</summary>
 public static class ListingCategoryAccess
 {
     public const string LegacyGuidance = "Shop chưa được xác nhận nhóm kinh doanh. Vui lòng liên hệ Admin để bổ sung nhóm trước khi tạo dịch vụ mới; dịch vụ và hoa hồng cũ vẫn được giữ nguyên.";
@@ -24,18 +24,13 @@ public static class ListingCategoryAccess
             ?? throw new DomainException("Ngành hàng được chọn không tồn tại hoặc đã ngừng hoạt động.");
         if (category.BusinessGroupId.HasValue && category.BusinessGroup?.IsActive != true)
             throw new DomainException("Nhóm kinh doanh của ngành dịch vụ đã ngừng hoạt động. Liên hệ Admin để rà soát.");
-        // Adding a scope must not withdraw a different immutable category on a legacy shop's existing listing.
-        // This exception is read/review only: creation never calls this branch and no membership is inferred.
-        if (allowUnmappedLegacy && await db.Vendors.AnyAsync(vendor => vendor.Id == vendorId && vendor.CommissionRate > 0, ct) &&
-            await db.Listings.AnyAsync(listing => listing.VendorId == vendorId && listing.CategoryId == categoryId, ct)) return category;
-        var memberships = db.VendorBusinessGroups.AsNoTracking().Where(membership => membership.VendorId == vendorId);
-        if (!await memberships.AnyAsync(ct))
-        {
-            throw new DomainException(LegacyGuidance);
-        }
-        if (!category.BusinessGroupId.HasValue || category.BusinessGroup?.IsActive != true ||
-            !await memberships.AnyAsync(membership => membership.BusinessGroupId == category.BusinessGroupId, ct))
-            throw new DomainException("Ngành dịch vụ không thuộc nhóm kinh doanh đang hoạt động của shop. Liên hệ Admin nếu cần bổ sung nhóm; việc bổ sung không tự thay đổi hoa hồng hiện hành.");
+        // New services need a canonical active group so their category policy can be displayed.
+        // Keep historical unmapped listings readable/reviewable for positive-rate legacy shops,
+        // but never bypass an inactive group or infer a membership/rate from an old listing.
+        if (!category.BusinessGroupId.HasValue && !(allowUnmappedLegacy &&
+            await db.Vendors.AnyAsync(vendor => vendor.Id == vendorId && vendor.CommissionRate > 0, ct) &&
+            await db.Listings.AnyAsync(listing => listing.VendorId == vendorId && listing.CategoryId == categoryId, ct)))
+            throw new DomainException("Danh mục dịch vụ chưa có nhóm hoa hồng hợp lệ. Liên hệ Admin để rà soát danh mục; hệ thống không tự chọn nhóm hoặc tỷ lệ thay bạn.");
         return category;
     }
 }

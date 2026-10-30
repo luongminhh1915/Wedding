@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import axiosClient from "../../../services/axiosClient";
+import { operatingAreaLabel } from "../../auth/components/operatingAreasModel";
 import { useAuthStore } from "../../../store/authStore";
 import { useComboCartStore } from "../../../store/comboCartStore";
 import { apiError, type ComboOrder, type PlannerOverview } from "../api";
@@ -44,7 +45,9 @@ import { ServiceConfigurator } from "./ServiceConfigurator";
 import { ComboNextSteps } from "./ComboNextSteps";
 import { ComboPhoto } from "./ComboPhoto";
 import { editableComboCart } from "./comboEditing";
-import { fixedComboOptions } from "./fixedComboModel";
+import { fixedComboOptions, fixedComboSummary } from "./fixedComboModel";
+import { ComboServiceCards } from "./ComboServiceCards";
+import { comboServicePreviewInput } from "./comboServiceDiscoveryModel";
 import { catalogErrorMessage } from "./catalogError";
 import { useCustomerOrderJourney } from "../customerOrders/customerOrderApi";
 import { Pagination, scrollToList, useResponsivePageSize } from "../../../components/Pagination";
@@ -118,6 +121,14 @@ function ComboBuilder() {
   });
   const { isPending, isError, refetch } = catalog;
   const data = catalog.data?.builder;
+  const servicePreviewInput = comboServicePreviewInput(catalog.data, filters,
+    cart.vendorId ?? cart.templateVendorId, cart.guestCount || 200);
+  const servicePreview = useCatalogPage(servicePreviewInput ?? {
+    page: 1, pageSize: 4, selectedItemIds: [],
+  }, !!servicePreviewInput);
+  const previewCategory = servicePreviewInput ? servicePreview.data?.builder.categories.find(
+    category => category.categoryId === servicePreviewInput.categoryId,
+  ) : undefined;
   const listRef = useRef<HTMLElement>(null);
   const changePage = (next: number) => {
     changeFilters({ page: next });
@@ -248,9 +259,10 @@ function ComboBuilder() {
         [...(data?.categories.flatMap((category) =>
           category.options.map((item) => [item.serviceItemId, item] as const),
         ) ?? []), ...(catalog.data?.selectedOptions.map(item => [item.serviceItemId, item] as const) ?? []),
+        ...(previewCategory?.options.map(item => [item.serviceItemId, item] as const) ?? []),
         ...(currentTemplate ? fixedComboOptions(currentTemplate).map(item => [item.serviceItemId, item] as const) : [])],
       ),
-    [data, catalog.data?.selectedOptions, currentTemplate],
+    [data, catalog.data?.selectedOptions, previewCategory, currentTemplate],
   );
   const categories = data?.categories ?? [];
   const vendorProfiles = new Map(
@@ -362,7 +374,9 @@ function ComboBuilder() {
   };
   const addService = (selection: CartSelection) => {
     if (fixedCart) { setConfigItem(null); setNotice("Không thể thêm/bớt riêng trong gói cố định. Bạn có thể trao đổi và xác nhận đề xuất riêng với NCC sau khi gửi yêu cầu."); return; }
-    const item = options.get(selection.serviceItemId)!;
+    const item = options.get(selection.serviceItemId) ??
+      (configItem?.item.serviceItemId === selection.serviceItemId ? configItem.item : undefined);
+    if (!item) { setConfigItem(null); setNotice("Dịch vụ vừa chọn không còn trong danh sách. Hãy tải lại trước khi chọn tiếp."); return; }
     if (mixedCart || (selectedVendorId && item.vendorId !== selectedVendorId)) {
       setConfigItem(null);
       setNotice(
@@ -630,8 +644,8 @@ function ComboBuilder() {
               Tự chọn một ngày <em>thật trọn vẹn.</em>
             </h1>
             <p>
-              Chọn combo do một nhà cung cấp tạo, rồi tùy chỉnh các dịch vụ của
-              chính NCC đó. Không ghép dịch vụ từ nhiều NCC vào cùng combo.
+              Chọn gói combo có sẵn hoặc tự chọn dịch vụ theo từng danh mục.
+              Một giỏ chỉ gồm dịch vụ của cùng NCC; gói cố định giữ nguyên thành phần đã duyệt.
             </p>
           </div>
           <Link to="/planner" className="combo-back">
@@ -654,10 +668,10 @@ function ComboBuilder() {
         )}
         <ol className="combo-journey" aria-label="Các bước tạo combo">
           <li className="active">
-            <span>1</span> Chọn combo NCC
+            <span>1</span> Chọn combo hoặc dịch vụ
           </li>
           <li className={lines.length ? "active" : ""}>
-            <span>2</span> Tùy chỉnh dịch vụ
+            <span>2</span> Xem lại lựa chọn
           </li>
           <li>
             <span>3</span> Kiểm tra & gửi yêu cầu
@@ -737,7 +751,7 @@ function ComboBuilder() {
                 <div>
                   <span>
                     <MapPin size={12} />{" "}
-                    {selectedVendorProfile.city || "Chưa cập nhật khu vực"}
+                    {operatingAreaLabel(selectedVendorProfile.operatingRegions, selectedVendorProfile.nationwide, selectedVendorProfile.city)}
                   </span>
                   {selectedVendorProfile.isVerified && (
                     <span>
@@ -777,7 +791,7 @@ function ComboBuilder() {
               }}
             >
               <option value="" disabled>
-                Chọn NCC hoặc một combo bên dưới
+                Chọn NCC, combo hoặc dịch vụ bên dưới
               </option>
               {vendors.map((vendor) => (
                 <option key={vendor.id} value={vendor.id}>
@@ -845,6 +859,12 @@ function ComboBuilder() {
             ref={categoryNavRef}
           >
             <p>DANH MỤC DỊCH VỤ</p>
+            <button className="combo-service-entry" onClick={() => {
+              const category = categories.find(item => catalog.data?.categoryCounts.some(count => count.categoryId === item.categoryId && count.count > 0));
+              if (category) openCategory(category.categoryId);
+            }} disabled={!categories.some(item => catalog.data?.categoryCounts.some(count => count.categoryId === item.categoryId && count.count > 0))}>
+              <LayoutGrid size={18} /><span>Tự chọn dịch vụ<small>Theo danh mục</small></span>
+            </button>
             <button
               className={activeId === "templates" ? "selected" : ""}
               aria-current={activeId === "templates" ? "page" : undefined}
@@ -901,6 +921,31 @@ function ComboBuilder() {
               guests={data.previewGuestCount ?? 200} templateMode={activeId === "templates"}
               lockedVendorName={selectedVendor?.name} onChange={changeFilters} onReset={resetFilters} />
             <p className="combo-discovery-price-note" role="status">{catalog.data?.totalCount ?? 0} {activeId === "templates" ? "combo" : "dịch vụ"} phù hợp</p>
+            {activeId === "templates" && <section className="combo-service-discovery" aria-label="Tự chọn dịch vụ lẻ">
+              <div className="combo-section-heading">
+                <div><p className="combo-eyebrow">KHÔNG CẦN CHỌN GÓI CÓ SẴN</p><h2>Tự chọn dịch vụ</h2>
+                  <p>Xem ảnh, giá và chọn dịch vụ vào giỏ ngay tại đây. Các dịch vụ trong một giỏ thuộc cùng một nhà cung cấp.</p></div>
+              </div>
+              <div className="combo-service-category-links" aria-label="Chọn nhóm dịch vụ lẻ">
+                {categories.map(category => <button key={category.categoryId} type="button" className="combo-secondary"
+                  onClick={() => openCategory(category.categoryId)}>{categoryLabels[category.slug] ?? category.name.split("(")[0].trim()}
+                  <small>{catalog.data?.categoryCounts.find(count => count.categoryId === category.categoryId)?.count ?? 0}</small></button>)}
+              </div>
+              {servicePreviewInput && servicePreview.isPending && <p role="status" className="combo-catalog-status">Đang tải dịch vụ lẻ...</p>}
+              {servicePreviewInput && servicePreview.isError && <div role="alert" className="co-error">Không tải được dịch vụ lẻ. Giỏ vẫn được giữ.
+                <button className="combo-text-button" onClick={() => void servicePreview.refetch()}>Thử tải dịch vụ</button></div>}
+              {servicePreviewInput && servicePreview.isSuccess && <>
+                <p className="combo-discovery-price-note">{previewCategory?.name} · Giá dịch vụ chưa áp ưu đãi combo. Các bộ lọc số thành phần và tiết kiệm chỉ áp dụng cho gói combo.</p>
+                <ComboServiceCards items={previewCategory?.options.filter(matches) ?? []} categoryId={servicePreviewInput.categoryId!}
+                  selections={cart.selections} guestCount={cart.guestCount} fixedCart={fixedCart}
+                  onConfigure={(item, categoryId) => setConfigItem({ item, categoryId })} />
+                {!previewCategory?.options.some(matches) && <p className="combo-catalog-status">Chưa có dịch vụ lẻ phù hợp bộ lọc. Bạn có thể chọn nhóm khác ở trên.</p>}
+                <button className="combo-text-button" onClick={() => openCategory(servicePreviewInput.categoryId!)}>
+                  Xem tất cả {servicePreview.data?.totalCount ?? 0} dịch vụ trong nhóm <ChevronRight size={15} />
+                </button>
+              </>}
+              {!servicePreviewInput && <p className="combo-catalog-status">Chưa có dịch vụ lẻ khả dụng cho nhà cung cấp hoặc bộ lọc hiện tại. Bạn vẫn có thể xem các nhóm dịch vụ ở trên.</p>}
+            </section>}
             {activeId === "templates" ? (
               <>
                 <div className="combo-section-heading">
@@ -908,8 +953,8 @@ function ComboBuilder() {
                     <p className="combo-eyebrow">CHỌN MỘT ĐIỂM BẮT ĐẦU</p>
                     <h2>Combo riêng của nhà cung cấp</h2>
                     <p>
-                      Chọn gói do NCC tạo. Sau đó thêm, bớt hoặc đổi dịch vụ
-                      trong danh mục của cùng NCC.
+                      Xem thành phần và giá gói do NCC công bố. Chọn nguyên gói
+                      để gửi yêu cầu; thay đổi riêng cần được hai bên xác nhận.
                     </p>
                   </div>
                 </div>
@@ -926,10 +971,12 @@ function ComboBuilder() {
                 <div className="combo-preset-grid">
                   {templates.map((template) => {
                     const estimate = catalog.data?.estimates?.find(item => item.templateId === template.id);
+                    const fixedSummary = fixedComboSummary(template);
+                    const isFixed = template.pricingMode === "FixedPrice";
                     const vendor = template.ownerVendorId
                       ? vendorProfiles.get(template.ownerVendorId)
                       : undefined;
-                    const templateOptions = template.items.flatMap((slot) =>
+                    const templateOptions = isFixed ? fixedComboOptions(template) : template.items.flatMap((slot) =>
                       slot.serviceItemId && options.get(slot.serviceItemId)
                         ? [options.get(slot.serviceItemId)!]
                         : [],
@@ -949,7 +996,7 @@ function ComboBuilder() {
                             sources={[
                               template.imageUrl,
                               ...(template.content?.galleryUrls ?? []),
-                              vendor?.coverImageUrl,
+                              ...(!isFixed ? [vendor?.coverImageUrl] : []),
                               ...templateOptions.flatMap((item) => [
                                 item.imageUrl,
                                 ...(item.galleryUrls ?? []),
@@ -980,7 +1027,7 @@ function ComboBuilder() {
                                 "Nhà cung cấp của combo"}
                             </strong>
                             <small>
-                              {vendor?.city}
+                              {vendor && operatingAreaLabel(vendor.operatingRegions, vendor.nationwide, vendor.city)}
                               {vendor?.isVerified && (
                                 <>
                                   <BadgeCheck size={12} /> Đã xác minh
@@ -995,11 +1042,14 @@ function ComboBuilder() {
                             hạng mục có sẵn
                           </span>
                         </div>
-                        {estimate && <div className="combo-preset-estimate">
-                          <small>{template.pricingMode === "FixedPrice" ? "Giá nguyên gói đã duyệt" : `Dự kiến cho ${estimate.guests.toLocaleString("vi-VN")} khách`}</small>
-                          <strong>{vnd(estimate.total)}</strong>
-                          {estimate.savings > 0 && <p>Tiết kiệm {vnd(estimate.savings)} so với dịch vụ có sẵn</p>}
-                          {estimate.shopRating != null && <span>Đánh giá shop: {estimate.shopRating.toLocaleString("vi-VN")} / 5</span>}
+                        {(fixedSummary || !isFixed && estimate) && <div className="combo-preset-estimate">
+                          <small>{fixedSummary ? "Giá nguyên gói đã duyệt" : `Dự kiến cho ${estimate!.guests.toLocaleString("vi-VN")} khách`}</small>
+                          <strong>{vnd(fixedSummary?.price ?? estimate!.total)}</strong>
+                          {fixedSummary ? <>
+                            <small>Tổng giá bán lẻ: {vnd(fixedSummary.original)}</small>
+                            {fixedSummary.saving > 0 && <p>Tiết kiệm {vnd(fixedSummary.saving)} · {fixedSummary.percentage.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%</p>}
+                          </> : estimate!.savings > 0 && <p>Tiết kiệm {vnd(estimate!.savings)} so với dịch vụ có sẵn</p>}
+                          {estimate?.shopRating != null && <span>Đánh giá shop: {estimate.shopRating.toLocaleString("vi-VN")} / 5</span>}
                         </div>}
                         <ul>
                           {template.items.slice(0, 4).map((item) => (
@@ -1007,14 +1057,14 @@ function ComboBuilder() {
                               <ComboPhoto
                                 sources={[
                                   item.serviceItemId
-                                    ? options.get(item.serviceItemId)?.imageUrl
+                                    ? templateOptions.find(option => option.serviceItemId === item.serviceItemId)?.imageUrl
                                     : undefined,
                                 ]}
                                 alt=""
                                 placeholder={<LayoutGrid size={13} />}
                               />
                               <span>
-                                {categories
+                                {templateOptions.find(option => option.serviceItemId === item.serviceItemId)?.title ?? categories
                                   .find((c) => c.categoryId === item.categoryId)
                                   ?.name.split("(")[0]
                                   .trim() ?? "Dịch vụ cưới"}
@@ -1060,8 +1110,7 @@ function ComboBuilder() {
                     <p className="combo-eyebrow">CHỌN DỊCH VỤ CHO COMBO</p>
                     <h2>{activeCategory?.name ?? "Danh mục dịch vụ"}</h2>
                     <p>
-                      Mỗi hạng mục có một lựa chọn. Bạn có thể thay gói và tùy
-                      chỉnh tiện ích của cùng nhà cung cấp trước khi gửi.
+                      {fixedCart ? "Giỏ đang dùng nguyên gói đã duyệt. Gửi yêu cầu rồi trao đổi với NCC nếu cần thay đổi riêng." : "Mỗi hạng mục có một lựa chọn. Bạn có thể thay gói và tùy chỉnh tiện ích của cùng nhà cung cấp trước khi gửi."}
                     </p>
                   </div>
                 </div>
@@ -1076,81 +1125,9 @@ function ComboBuilder() {
                     </button>
                   </p>
                 )}
-                <div className="combo-product-grid">
-                  {activeCategory?.options.filter(matches).map((item) => {
-                    const selected = cart.selections.find(
-                      (s) => s.serviceItemId === item.serviceItemId,
-                    );
-                    const current = cart.selections.some(
-                      (s) => s.categoryId === activeCategory.categoryId,
-                    );
-                    return (
-                      <article
-                        key={item.serviceItemId}
-                        className={`combo-product-card ${selected ? "is-selected" : ""}`}
-                      >
-                        <div className="combo-product-image">
-                          <ComboPhoto
-                            sources={[
-                              item.imageUrl,
-                              ...(item.galleryUrls ?? []),
-                            ]}
-                            alt={`${item.title} — ${item.vendorName}`}
-                          />
-                          {selected && (
-                            <span>
-                              <Check size={13} /> Trong giỏ
-                            </span>
-                          )}
-                        </div>
-                        <div className="combo-product-body">
-                          <p className="combo-vendor-name">
-                            <BadgeCheck size={13} />
-                            {item.vendorName}
-                          </p>
-                          <h3>{item.title}</h3>
-                          <p className="combo-product-capacity">
-                            Phục vụ {item.minGuests}–{item.maxGuests} khách
-                          </p>
-                          <p className="combo-product-price">
-                            <strong>{vnd(item.price)}</strong>/
-                            {unitName[item.unit]}
-                          </p>
-                          {item.unit === "Table" && cart.guestCount > 0 && (
-                            <p className="combo-product-capacity">
-                              {cart.guestCount} khách →{" "}
-                              {Math.ceil(cart.guestCount / 10)} bàn
-                            </p>
-                          )}
-                          <button
-                            className={
-                              selected ? "combo-secondary" : "combo-primary"
-                            }
-                            onClick={() =>
-                              setConfigItem({
-                                item,
-                                categoryId: activeCategory.categoryId,
-                              })
-                            }
-                          >
-                            <SlidersHorizontal size={14} />
-                            {selected
-                              ? "Tùy chỉnh / đổi"
-                              : current
-                                ? "Chọn để thay dịch vụ"
-                                : "Chọn dịch vụ"}
-                          </button>
-                          <Link
-                            to={`/listings/${item.listingId}`}
-                            className="combo-product-link"
-                          >
-                            Xem nhà cung cấp
-                          </Link>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
+                {activeCategory && <ComboServiceCards items={activeCategory.options.filter(matches)} categoryId={activeCategory.categoryId}
+                  selections={cart.selections} guestCount={cart.guestCount} fixedCart={fixedCart}
+                  onConfigure={(item, categoryId) => setConfigItem({ item, categoryId })} />}
                 {!activeCategory?.options.some(matches) && (
                   <div className="combo-empty">
                     <PackageOpen size={36} />
@@ -1230,7 +1207,7 @@ function ComboBuilder() {
           </div>
         )}
       </div>
-      {configItem && (
+      {configItem && !fixedCart && (
         <ServiceConfigurator
           key={configItem.item.serviceItemId}
           item={configItem.item}

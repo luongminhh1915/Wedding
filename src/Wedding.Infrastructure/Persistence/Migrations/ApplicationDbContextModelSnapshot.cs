@@ -1155,6 +1155,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ComboTemplateId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ComboTemplateRevisionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ComboTemplateSnapshotJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1205,6 +1211,8 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("ComboTemplateRevisionId");
 
                     b.HasIndex("CustomerId");
 
@@ -1572,6 +1580,184 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("Commissions", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionAdjustmentRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CommissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CommissionVersionSnapshot")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ContractId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DecidedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DecisionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal>("OriginalAmountSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OriginalRateSnapshot")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<decimal>("OutstandingAmountSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ProposedRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommissionId")
+                        .IsUnique()
+                        .HasFilter("[Status] = 'Submitted'");
+
+                    b.HasIndex("ContractId");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("CommissionAdjustmentRequests", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionComponentBasisApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BasisDefinition")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("BasisKind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("ComboTemplateRevisionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExcludedCostsJson")
+                        .IsRequired()
+                        .HasMaxLength(12000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ServiceItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("ComboTemplateRevisionId", "ServiceItemId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("CommissionComponentBasisApprovals", (string)null);
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.CommissionCreditNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1608,6 +1794,116 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("CommissionCreditNotes");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionPolicyRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BasisKind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ComboTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ComboTemplateRevisionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PolicyVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("Rate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid?>("ServiceItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ComboTemplateId");
+
+                    b.HasIndex("ComboTemplateRevisionId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("VendorId");
+
+                    b.HasIndex("EffectiveFrom", "EffectiveTo");
+
+                    b.HasIndex("Scope", "CategoryId", "VendorId", "ServiceItemId", "ComboTemplateId", "ComboTemplateRevisionId");
+
+                    b.ToTable("CommissionPolicyRules", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CommissionPolicyRules_TargetScope", "([Scope] = 'System' AND [CategoryId] IS NULL AND [VendorId] IS NULL AND [ServiceItemId] IS NULL AND [ComboTemplateId] IS NULL AND [ComboTemplateRevisionId] IS NULL AND [Rate] IS NOT NULL AND [BasisKind] <> 'ComboComponents')\r\nOR ([Scope] = 'Category' AND [CategoryId] IS NOT NULL AND [VendorId] IS NULL AND [ServiceItemId] IS NULL AND [ComboTemplateId] IS NULL AND [ComboTemplateRevisionId] IS NULL AND [Rate] IS NOT NULL AND [BasisKind] <> 'ComboComponents')\r\nOR ([Scope] = 'Vendor' AND [CategoryId] IS NULL AND [VendorId] IS NOT NULL AND [ServiceItemId] IS NULL AND [ComboTemplateId] IS NULL AND [ComboTemplateRevisionId] IS NULL AND [Rate] IS NOT NULL AND [BasisKind] <> 'ComboComponents')\r\nOR ([Scope] = 'VendorCategory' AND [CategoryId] IS NOT NULL AND [VendorId] IS NOT NULL AND [ServiceItemId] IS NULL AND [ComboTemplateId] IS NULL AND [ComboTemplateRevisionId] IS NULL AND [Rate] IS NOT NULL AND [BasisKind] <> 'ComboComponents')\r\nOR ([Scope] = 'Service' AND [CategoryId] IS NULL AND [VendorId] IS NULL AND [ServiceItemId] IS NOT NULL AND [ComboTemplateId] IS NULL AND [ComboTemplateRevisionId] IS NULL AND [Rate] IS NOT NULL AND [BasisKind] <> 'ComboComponents')\r\nOR ([Scope] = 'Combo' AND [CategoryId] IS NULL AND [VendorId] IS NULL AND [ServiceItemId] IS NULL AND [ComboTemplateId] IS NOT NULL AND [ComboTemplateRevisionId] IS NOT NULL AND [Rate] IS NULL AND [BasisKind] = 'ComboComponents')");
+                        });
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.CommissionSettlement", b =>
@@ -2711,6 +3007,43 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("OtpCodes", (string)null);
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .IsConcurrencyToken()
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("PasswordResetTokens", (string)null);
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.PaymentTransaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2822,6 +3155,92 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("PremiumOrders");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.PrivateServiceAgreement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasMaxLength(40000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal>("OriginalTotal")
+                        .HasPrecision(18)
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<string>("OriginalVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RespondedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Response")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Terms")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("VendorId");
+
+                    b.HasIndex("Kind", "TargetId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("PrivateServiceAgreements", (string)null);
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.Quote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2907,6 +3326,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("BookingContractId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ComboOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ComboTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasMaxLength(3000)
@@ -2921,7 +3346,7 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsVerifiedBuyer")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("ListingId")
+                    b.Property<Guid?>("ListingId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ModeratedAt")
@@ -2954,6 +3379,13 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Service");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -2972,9 +3404,7 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookingContractId")
-                        .IsUnique()
-                        .HasFilter("[BookingContractId] IS NOT NULL");
+                    b.HasIndex("ComboTemplateId");
 
                     b.HasIndex("IsVerifiedBuyer");
 
@@ -2984,10 +3414,137 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("VendorId");
 
+                    b.HasIndex("BookingContractId", "ListingId")
+                        .IsUnique()
+                        .HasFilter("[TargetType] = 'Service' AND [BookingContractId] IS NOT NULL");
+
+                    b.HasIndex("BookingContractId", "VendorId")
+                        .IsUnique()
+                        .HasFilter("[TargetType] = 'Shop' AND [BookingContractId] IS NOT NULL");
+
+                    b.HasIndex("ComboOrderId", "ComboTemplateId")
+                        .IsUnique()
+                        .HasFilter("[TargetType] = 'Combo' AND [ComboOrderId] IS NOT NULL");
+
+                    b.HasIndex("ComboOrderId", "VendorId")
+                        .IsUnique()
+                        .HasFilter("[TargetType] = 'Shop' AND [ComboOrderId] IS NOT NULL");
+
                     b.HasIndex("CustomerId", "ListingId")
+                        .IsUnique()
+                        .HasFilter("[TargetType] = 'Service' AND [BookingContractId] IS NULL");
+
+                    b.HasIndex("TargetType", "ComboTemplateId", "Status", "CreatedAt");
+
+                    b.HasIndex("TargetType", "ListingId", "Status", "CreatedAt");
+
+                    b.HasIndex("TargetType", "VendorId", "Status", "CreatedAt");
+
+                    b.ToTable("Reviews", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Reviews_TargetReferences", "([TargetType] = 'Service' AND [ListingId] IS NOT NULL AND [ComboTemplateId] IS NULL AND [ComboOrderId] IS NULL) OR ([TargetType] = 'Shop' AND [ListingId] IS NULL AND [ComboTemplateId] IS NULL AND (([BookingContractId] IS NOT NULL AND [ComboOrderId] IS NULL) OR ([BookingContractId] IS NULL AND [ComboOrderId] IS NOT NULL))) OR ([TargetType] = 'Combo' AND [ListingId] IS NULL AND [BookingContractId] IS NULL AND [ComboTemplateId] IS NOT NULL AND [ComboOrderId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ReviewEditRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AfterContent")
+                        .IsRequired()
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<string>("AfterPhotosJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int?>("AfterPunctualityRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AfterQualityRating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AfterRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AfterServiceRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AfterValueRating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BeforeContent")
+                        .IsRequired()
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<string>("BeforePhotosJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int?>("BeforePunctualityRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BeforeQualityRating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BeforeRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BeforeServiceRating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BeforeValueRating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewId", "AttemptNumber")
                         .IsUnique();
 
-                    b.ToTable("Reviews", (string)null);
+                    b.HasIndex("ReviewId", "Status")
+                        .IsUnique()
+                        .HasFilter("[Status] IN ('Pending', 'Approved')");
+
+                    b.HasIndex("Status", "RequestedAt");
+
+                    b.ToTable("ReviewEditRequests", (string)null);
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.SeatTable", b =>
@@ -3108,9 +3665,12 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("FacebookSubject")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -3126,6 +3686,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("LoginName")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -3156,15 +3720,27 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
+
+                    b.HasIndex("FacebookSubject")
+                        .IsUnique()
+                        .HasFilter("[FacebookSubject] IS NOT NULL");
 
                     b.HasIndex("GoogleSubject")
                         .IsUnique()
                         .HasFilter("[GoogleSubject] IS NOT NULL");
 
+                    b.HasIndex("LoginName")
+                        .IsUnique()
+                        .HasFilter("[LoginName] IS NOT NULL");
+
                     b.HasIndex("PhoneNumber");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Users_SocialEmail", "[Email] IS NOT NULL OR ([Role] = 'Customer' AND ([GoogleSubject] IS NOT NULL OR [FacebookSubject] IS NOT NULL)) OR ([Role] = 'VendorOwner' AND [LoginName] IS NOT NULL AND [LoginName] <> '')");
+                        });
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.Vendor", b =>
@@ -3231,6 +3807,10 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("MaxComboDiscount")
                         .HasPrecision(8, 5)
                         .HasColumnType("decimal(8,5)");
+
+                    b.Property<string>("OperatingRegions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime?>("PartnershipPolicyAcceptedAt")
                         .HasColumnType("datetime2");
@@ -3958,11 +4538,18 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Wedding.Domain.Entities.ComboOrder", b =>
                 {
+                    b.HasOne("Wedding.Domain.Entities.ComboTemplateRevision", "ComboTemplateRevision")
+                        .WithMany()
+                        .HasForeignKey("ComboTemplateRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Wedding.Domain.Entities.User", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ComboTemplateRevision");
 
                     b.Navigation("Customer");
                 });
@@ -4039,6 +4626,135 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Contract");
+
+                    b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionAdjustmentRequest", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.Commission", "Commission")
+                        .WithMany()
+                        .HasForeignKey("CommissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.BookingContract", "Contract")
+                        .WithMany()
+                        .HasForeignKey("ContractId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.User", "DecidedBy")
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Commission");
+
+                    b.Navigation("Contract");
+
+                    b.Navigation("DecidedBy");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionComponentBasisApproval", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.ComboTemplateRevision", "ComboTemplateRevision")
+                        .WithMany()
+                        .HasForeignKey("ComboTemplateRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.ServiceItem", "ServiceItem")
+                        .WithMany()
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("ComboTemplateRevision");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("ServiceItem");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionPolicyRule", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.ComboTemplate", "ComboTemplate")
+                        .WithMany()
+                        .HasForeignKey("ComboTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.ComboTemplateRevision", "ComboTemplateRevision")
+                        .WithMany()
+                        .HasForeignKey("ComboTemplateRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.ServiceItem", "ServiceItem")
+                        .WithMany()
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("ComboTemplate");
+
+                    b.Navigation("ComboTemplateRevision");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("ServiceItem");
 
                     b.Navigation("Vendor");
                 });
@@ -4185,6 +4901,36 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.PrivateServiceAgreement", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.Vendor", null)
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.Quote", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.Lead", "Lead")
@@ -4207,9 +4953,19 @@ namespace Wedding.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Wedding.Domain.Entities.Review", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.BookingContract", "BookingContract")
-                        .WithOne("Review")
-                        .HasForeignKey("Wedding.Domain.Entities.Review", "BookingContractId")
+                        .WithMany("Reviews")
+                        .HasForeignKey("BookingContractId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Wedding.Domain.Entities.ComboOrder", "ComboOrder")
+                        .WithMany()
+                        .HasForeignKey("ComboOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.ComboTemplate", "ComboTemplate")
+                        .WithMany()
+                        .HasForeignKey("ComboTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Wedding.Domain.Entities.User", "Customer")
                         .WithMany("Reviews")
@@ -4220,8 +4976,7 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.HasOne("Wedding.Domain.Entities.Listing", "Listing")
                         .WithMany("Reviews")
                         .HasForeignKey("ListingId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
                         .WithMany("Reviews")
@@ -4231,11 +4986,26 @@ namespace Wedding.Infrastructure.Persistence.Migrations
 
                     b.Navigation("BookingContract");
 
+                    b.Navigation("ComboOrder");
+
+                    b.Navigation("ComboTemplate");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Listing");
 
                     b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.ReviewEditRequest", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.Review", "Review")
+                        .WithMany("EditRequests")
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Review");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.SeatTable", b =>
@@ -4403,7 +5173,7 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                 {
                     b.Navigation("Commissions");
 
-                    b.Navigation("Review");
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.BusinessGroup", b =>
@@ -4442,6 +5212,11 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("Media");
 
                     b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.Review", b =>
+                {
+                    b.Navigation("EditRequests");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.ServiceItem", b =>

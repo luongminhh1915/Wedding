@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Wallet,
   Plus,
@@ -8,7 +8,6 @@ import {
   RotateCw,
   Loader2,
   Sparkles,
-  X,
   Pencil,
 } from "lucide-react";
 import { useWeddingBudget } from "../../hooks/useWeddingTools";
@@ -16,6 +15,8 @@ import type { SaveBudgetItemPayload } from "../../../../types/wedding-tools.type
 import { usePlannerAction } from "../../../journey/planner/plannerApi";
 import { apiError } from "../../../journey/api";
 import { MoneyInput } from "../../../../components/MoneyInput";
+import { personalBudgetProgress } from "./personalBudgetModel";
+import { ComboDialog } from "../../../journey/combo/ComboDialog";
 
 export function WeddingBudgetPlanner() {
   const action = usePlannerAction();
@@ -27,6 +28,7 @@ export function WeddingBudgetPlanner() {
     saveItem,
     isSaving,
     deleteItem,
+    isDeleting,
   } = useWeddingBudget();
 
   const [customTotalBudget, setCustomTotalBudget] = useState<number | null>(
@@ -34,6 +36,8 @@ export function WeddingBudgetPlanner() {
   );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [itemError, setItemError] = useState<string | null>(null);
+  const itemSubmission = useRef(false);
 
   // Form thêm khoản chi mới
   const [newItemForm, setNewItemForm] = useState<SaveBudgetItemPayload>({
@@ -52,11 +56,26 @@ export function WeddingBudgetPlanner() {
   const spentPercentage =
     totalPlanned > 0 ? (totalActual / totalPlanned) * 100 : 0;
   const isOverBudget = remainingBudget < 0;
+  const draftProgress = personalBudgetProgress(newItemForm.plannedCost, newItemForm.actualCost ?? 0);
+  const budgetBusy = isSaving || isDeleting || action.isPending;
+
+  function openItem(form: SaveBudgetItemPayload = { itemName: "", plannedCost: 0, actualCost: 0, owner: "Shared" }) {
+    if (budgetBusy || itemSubmission.current) return;
+    setItemError(null);
+    setNewItemForm(form);
+    setIsAddModalOpen(true);
+  }
+
+  function closeItem() {
+    if (!itemSubmission.current && !isSaving) setIsAddModalOpen(false);
+  }
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemForm.itemName.trim()) return;
+    if (!newItemForm.itemName.trim() || budgetBusy || itemSubmission.current) return;
 
+    itemSubmission.current = true;
+    setItemError(null);
     try {
       await saveItem(newItemForm);
       setIsAddModalOpen(false);
@@ -69,16 +88,22 @@ export function WeddingBudgetPlanner() {
       setSaveSuccessMsg("Đã lưu hạng mục chi phí thành công!");
       setTimeout(() => setSaveSuccessMsg(null), 4000);
     } catch (error) {
-      alert(apiError(error, "Không thể lưu mục chi phí."));
+      setItemError(apiError(error, "Không thể lưu mục chi phí. Nội dung đang nhập được giữ lại; hãy thử lưu lại."));
+    } finally {
+      itemSubmission.current = false;
     }
   };
 
   const handleDeleteItem = async (id: string) => {
+    if (budgetBusy || itemSubmission.current) return;
     if (!confirm("Bạn có chắc chắn muốn xóa hạng mục này không?")) return;
+    itemSubmission.current = true;
     try {
       await deleteItem(id);
     } catch {
       alert("Không thể xóa mục chi phí.");
+    } finally {
+      itemSubmission.current = false;
     }
   };
 
@@ -114,14 +139,17 @@ export function WeddingBudgetPlanner() {
             </span>
             <span className="text-xs text-slate-400">•</span>
             <span className="text-xs font-semibold text-slate-500">
-              Công thức: Còn lại = Dự toán - Thực tế
+              Còn lại = Ngân sách dự kiến − Tổng đã chi / đã cọc
             </span>
           </div>
           <h2 className="text-2xl font-black text-slate-900 mt-1">
-            Bảng Dự Toán & Quản Lý Chi Phí Cưới
+            Sổ Ngân Sách Của Hai Bạn
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Theo dõi dự toán và chi phí thực tế để mỗi lựa chọn đều thật an tâm.
+            Tự ghi chi phí, kể cả khoản trả ngoài hệ thống, để biết đã chi bao nhiêu và còn cần chuẩn bị bao nhiêu.
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            Đây là công cụ lập kế hoạch cá nhân, không xác nhận thanh toán với NCC hay đối soát hợp đồng.
           </p>
         </div>
 
@@ -134,7 +162,8 @@ export function WeddingBudgetPlanner() {
             <RotateCw className="w-4 h-4" />
           </button>
           <button
-            onClick={() => { setNewItemForm({ itemName: "", plannedCost: 0, actualCost: 0, owner: "Shared" }); setIsAddModalOpen(true); }}
+            onClick={() => openItem()}
+            disabled={budgetBusy}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center gap-1.5 transition"
           >
             <Plus className="w-4 h-4" />
@@ -183,7 +212,7 @@ export function WeddingBudgetPlanner() {
             {/* Spent and Remaining */}
             <div className="mt-5 space-y-3">
               <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                <span>Đã Chi Thực Tế:</span>
+                <span>Đã chi / đã cọc:</span>
                 <span className="font-extrabold text-slate-900 text-sm">
                   {totalActual.toLocaleString("vi-VN")} đ{" "}
                   <span className="text-xs font-medium text-slate-500">
@@ -208,7 +237,7 @@ export function WeddingBudgetPlanner() {
 
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/80">
                 <span className="font-semibold text-slate-600">
-                  Ngân sách còn lại:
+                  Còn trong ngân sách dự kiến:
                 </span>
                 <span
                   className={`font-black text-base ${isOverBudget ? "text-red-600" : "text-emerald-700"}`}
@@ -242,7 +271,7 @@ export function WeddingBudgetPlanner() {
           <div>
             <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              Gợi Ý Phân Bổ Tỷ Lệ Vàng Theo Tổng Ngân Sách
+              Gợi ý phân bổ tham khảo theo ngân sách
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
@@ -303,9 +332,7 @@ export function WeddingBudgetPlanner() {
           </div>
 
           <p className="text-[11px] text-slate-400 mt-4">
-            💡 <strong>Mẹo chuyên gia:</strong> Giữ lại 10% ngân sách dự phòng
-            cho các chi phí phát sinh bất ngờ như bàn tiệc dự phòng hoặc phương
-            tiện đi lại ngày rước dâu.
+            Các tỷ lệ trên chỉ để tham khảo, không bắt buộc. Bạn có thể tự điều chỉnh từng khoản theo kế hoạch của hai bạn.
           </p>
         </div>
       </div>
@@ -318,11 +345,12 @@ export function WeddingBudgetPlanner() {
               Chi Tiết Hạng Mục Chi Phí Cưới
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              So sánh chi phí dự toán ban đầu và thực tế thanh toán
+              Ghi tổng dự kiến và số đã chi, bao gồm tiền cọc. Cột còn lại là ước tính theo dự toán, không phải công nợ được xác nhận.
             </p>
           </div>
           <button
-            onClick={() => { setNewItemForm({ itemName: "", plannedCost: 0, actualCost: 0, owner: "Shared" }); setIsAddModalOpen(true); }}
+            onClick={() => openItem()}
+            disabled={budgetBusy}
             className="px-3.5 py-1.5 rounded-xl border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-50 transition flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -343,13 +371,16 @@ export function WeddingBudgetPlanner() {
                   <th className="py-3 px-5">Hạng Mục Chi Phí</th>
                   <th className="py-3 px-5">Nhà Cung Cấp / Ghi Chú</th>
                   <th className="py-3 px-5 text-right">Dự Toán Ban Đầu</th>
-                  <th className="py-3 px-5 text-right">Chi Phí Thực Tế</th>
+                  <th className="py-3 px-5 text-right">Đã chi / đã cọc</th>
+                  <th className="py-3 px-5 text-right">Còn theo dự toán</th>
                   <th className="py-3 px-5 text-center">Trạng Thái</th>
                   <th className="py-3 px-5 text-center">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {items.map((item) => (
+                {items.map((item) => {
+                  const progress = personalBudgetProgress(item.plannedCost, item.actualCost);
+                  return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition">
                     <td className="py-3.5 px-5 font-bold text-slate-900">
                       {item.itemName}
@@ -364,29 +395,28 @@ export function WeddingBudgetPlanner() {
                     <td className="py-3.5 px-5 text-right font-black text-rose-600">
                       {item.actualCost.toLocaleString("vi-VN")} đ
                     </td>
-                    <td className="py-3.5 px-5 text-center">
-                      {item.actualCost > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> Đã Chi
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                          Dự Kiến
-                        </span>
-                      )}
+                    <td className="py-3.5 px-5 text-right font-semibold text-slate-700">
+                      {progress.remaining.toLocaleString("vi-VN")} đ
+                      {progress.excess > 0 && <small className="block text-red-700">Vượt {progress.excess.toLocaleString("vi-VN")} đ</small>}
                     </td>
                     <td className="py-3.5 px-5 text-center">
-                      <button className="p-1 text-slate-500 mr-2" title="Sửa khoản chi" onClick={() => { setNewItemForm(item); setIsAddModalOpen(true); }}><Pencil className="w-4 h-4" /></button>
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${progress.status === "over-plan" ? "text-red-700 bg-red-50" : progress.status === "unrecorded" ? "text-slate-500 bg-slate-100" : "text-slate-700 bg-slate-100"}`}>
+                        {progress.label}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-5 text-center">
+                      <button className="p-1 text-slate-500 mr-2" title="Sửa khoản chi" disabled={budgetBusy} onClick={() => openItem({ id: item.id, itemName: item.itemName, plannedCost: item.plannedCost, actualCost: item.actualCost, notes: item.notes, owner: item.owner })}><Pencil className="w-4 h-4" /></button>
                       <button
                         onClick={() => handleDeleteItem(item.id)}
                         className="p-1 text-slate-400 hover:text-red-600 rounded transition"
                         title="Xóa khoản này"
+                        disabled={budgetBusy}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
-                ))}
+                ); })}
               </tbody>
             </table>
           )}
@@ -395,27 +425,16 @@ export function WeddingBudgetPlanner() {
 
       {/* Modal Thêm Khoản Chi */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-base text-slate-900">
-                {newItemForm.id ? "Chỉnh Sửa Khoản Chi" : "Thêm Khoản Chi Phí Mới"}
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddItem} className="space-y-4 my-4 text-xs">
+        <ComboDialog title={newItemForm.id ? "Chỉnh Sửa Khoản Chi" : "Thêm Khoản Chi Phí Mới"} onClose={closeItem}>
+            <form onSubmit={handleAddItem} className="space-y-4 my-4 text-xs" aria-busy={isSaving}>
+              <fieldset disabled={isSaving} className="space-y-4 min-w-0">
               <label className="block font-bold text-slate-700">Quỹ phụ trách<select className="block w-full border border-slate-300 rounded-xl p-2 mt-1" value={newItemForm.owner || "Shared"} onChange={e => setNewItemForm(f => ({ ...f, owner: e.target.value }))}><option value="Shared">Quỹ chung</option><option value="Bride">Cô dâu</option><option value="Groom">Chú rể</option></select></label>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label htmlFor="budget-item-name" className="block font-bold text-slate-700 mb-1">
                   Tên Hạng Mục Chi Phí:
                 </label>
                 <input
+                  id="budget-item-name"
                   type="text"
                   required
                   value={newItemForm.itemName}
@@ -429,10 +448,11 @@ export function WeddingBudgetPlanner() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label htmlFor="budget-planned-cost" className="block font-bold text-slate-700 mb-1">
                     Dự Toán Ban Đầu (đ):
                   </label>
                   <MoneyInput
+                    id="budget-planned-cost"
                     aria-label="Dự toán ban đầu (VNĐ)"
                     required
                     value={newItemForm.plannedCost}
@@ -446,11 +466,12 @@ export function WeddingBudgetPlanner() {
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Thực Tế Đã Chi (đ):
+                  <label htmlFor="budget-recorded-spent" className="block font-bold text-slate-700 mb-1">
+                    Đã chi / đã cọc (đ):
                   </label>
                   <MoneyInput
-                    aria-label="Thực tế đã chi (VNĐ)"
+                    id="budget-recorded-spent"
+                    aria-label="Đã chi / đã cọc (VNĐ)"
                     value={newItemForm.actualCost ?? 0}
                     onValueChange={(value) =>
                       setNewItemForm((f) => ({
@@ -463,11 +484,18 @@ export function WeddingBudgetPlanner() {
                 </div>
               </div>
 
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3" role="status" aria-live="polite">
+                <p className="font-semibold text-slate-700">Còn theo dự toán: {draftProgress.remaining.toLocaleString("vi-VN")} đ</p>
+                {draftProgress.excess > 0 && <p className="text-red-700 mt-1">Vượt dự toán: {draftProgress.excess.toLocaleString("vi-VN")} đ</p>}
+                <p className="text-slate-500 mt-2">Nhập tổng số tiền bạn đã chi cho khoản này, bao gồm tiền cọc. Khi trả thêm, cập nhật tổng mới; không cộng tiền cọc lần nữa.</p>
+              </div>
+
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label htmlFor="budget-item-notes" className="block font-bold text-slate-700 mb-1">
                   Nhà Cung Cấp / Ghi Chú:
                 </label>
                 <input
+                  id="budget-item-notes"
                   type="text"
                   value={newItemForm.notes || ""}
                   onChange={(e) =>
@@ -478,10 +506,13 @@ export function WeddingBudgetPlanner() {
                 />
               </div>
 
+              </fieldset>
+              {itemError && <p role="alert" className="text-red-700 rounded-xl border border-red-200 bg-red-50 p-3">{itemError}</p>}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={closeItem}
+                  disabled={isSaving}
                   className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl"
                 >
                   Hủy Bỏ
@@ -495,8 +526,7 @@ export function WeddingBudgetPlanner() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ComboDialog>
       )}
     </div>
   );

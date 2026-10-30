@@ -11,6 +11,8 @@ using Wedding.Application.Features.Listings.Commands.RejectListing;
 using Wedding.Application.Features.Listings.Commands.SubmitForApproval;
 using Wedding.Application.Features.Listings.Commands.UpdateListing;
 using Wedding.Application.Features.Listings.DTOs;
+using Wedding.Application.Features.Listings.Queries.GetListingDetail;
+using Wedding.Application.Features.Listings.Queries.GetPublicListings;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
@@ -43,6 +45,24 @@ public class UnifiedServiceAuthoringTests
         Assert.Single(editor.PricingOptions!); Assert.Single(await f.Db.ServiceItems.ToListAsync());
         await Assert.ThrowsAsync<DomainException>(() => new ReviewServiceItemCommandHandler(f.Db, new AuditLogger(f.Db, f.Staff), f.Staff)
             .Handle(new(facet.Id, true, null, editor.PricingOptions![0].ReviewVersion), default));
+    }
+
+    [Fact]
+    public async Task PublicRetailDetailsAndFiltersUseTheSameApprovedCanonicalPriceAndNeverExposePrivatePricingOptions()
+    {
+        await using var f = await Fixture.Create(); var id = await f.CreateService();
+        var listing = await f.Db.Listings.SingleAsync();
+        listing.Update(listing.Title, 1000000, 9000000, listing.Description, listing.Location); await f.Db.SaveChangesAsync();
+        await f.Submit(id); await f.Approve(id);
+        var detail = await new GetListingDetailQueryHandler(f.Db, new Current(null, null)).Handle(new(id), default);
+        Assert.Equal(5000000, detail.Pricing!.BasePrice); Assert.Equal("Package", detail.Pricing.Unit);
+        Assert.Null(detail.Pricing.SourceVersion); Assert.Null(detail.PricingOptions); Assert.Null(detail.RevisionHistory);
+        var browse = new GetPublicListingsQueryHandler(f.Db);
+        var card = Assert.Single((await browse.Handle(new(null, null, 4000000, 6000000, null), default)).Items);
+        Assert.Equal(detail.Pricing.BasePrice, card.BasePrice); Assert.Equal(detail.Pricing.Unit, card.PriceUnit);
+        Assert.Empty((await browse.Handle(new(null, null, 6000000, null, null), default)).Items);
+        Assert.Empty((await browse.Handle(new(null, null, null, 4000000, null), default)).Items);
+        Assert.Equal(1000000, detail.MinPrice); Assert.Equal(9000000, detail.MaxPrice);
     }
 
     [Fact]

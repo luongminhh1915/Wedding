@@ -27,10 +27,34 @@ public static class ReviewRules
     }
     public static async Task RefreshVendorAsync(IApplicationDbContext db, Guid vendorId, CancellationToken ct)
     {
-        var reviews = await db.Reviews.AsNoTracking().Where(r => r.VendorId == vendorId && r.Status == ReviewStatus.Approved).ToListAsync(ct);
+        var reviews = await db.Reviews.AsNoTracking().Where(r => r.TargetType == ReviewTargetType.Shop &&
+            r.VendorId == vendorId && r.Status == ReviewStatus.Approved).ToListAsync(ct);
         var result = Calculate(reviews); var vendor = await db.Vendors.FirstOrDefaultAsync(v => v.Id == vendorId, ct);
         if (vendor != null) vendor.UpdateRating(result.Rating, result.Count);
     }
-    public static ReviewDto Dto(Review r) => new(r.Id, r.BookingContractId, r.BookingContract?.ContractCode, r.ListingId, r.Listing?.Title ?? "", r.CustomerId, r.Customer?.FullName ?? "", r.VendorId, r.Vendor?.BrandName ?? "", r.Rating, r.Content, r.PhotosJson, r.IsVerifiedBuyer, r.Status.ToString(), r.VendorReply, r.VendorRepliedAt, r.CreatedAt,
-        r.QualityRating, r.ServiceRating, r.PunctualityRating, r.ValueRating, r.AverageRating, r.ModerationFlag, r.CreatedAt.AddHours(24), r.RejectionReason);
+    public static async Task<bool> HasDisputedEvidenceAsync(IApplicationDbContext db, Review review, CancellationToken ct)
+    {
+        var contracts = db.BookingContracts.Where(contract => contract.CustomerId == review.CustomerId &&
+            contract.VendorId == review.VendorId && contract.Status == ContractStatus.Disputed);
+        return review.TargetType switch
+        {
+            ReviewTargetType.Service => await contracts.AnyAsync(contract => contract.Lead.ListingId == review.ListingId, ct),
+            ReviewTargetType.Shop when review.BookingContractId.HasValue => await contracts.AnyAsync(contract => contract.Id == review.BookingContractId, ct),
+            ReviewTargetType.Shop when review.ComboOrderId.HasValue => await contracts.AnyAsync(contract => contract.Lead.ComboOrderId == review.ComboOrderId, ct),
+            ReviewTargetType.Combo => await contracts.AnyAsync(contract => contract.Lead.ComboOrderId == review.ComboOrderId, ct),
+            _ => false
+        };
+    }
+    public static ReviewDto Dto(Review r, int editAttemptCount = 0, string? editStatus = null,
+        bool? hasApprovedEdit = null, bool? hasPendingEdit = null) =>
+        new(r.Id, r.BookingContractId, r.BookingContract?.ContractCode, r.ListingId, r.Listing?.Title ?? "",
+            r.CustomerId, r.Customer?.FullName ?? "", r.VendorId, r.Vendor?.BrandName ?? "", r.Rating,
+            r.Content, r.PhotosJson, r.IsVerifiedBuyer, r.Status.ToString(), r.VendorReply, r.VendorRepliedAt,
+            r.CreatedAt, r.QualityRating, r.ServiceRating, r.PunctualityRating, r.ValueRating,
+            r.AverageRating, r.ModerationFlag, r.CreatedAt.AddHours(24), r.RejectionReason,
+            r.TargetType.ToString(), r.ComboOrderId, r.ComboTemplateId, r.ComboTemplate?.Name,
+            editStatus, editAttemptCount, r.Status == ReviewStatus.Approved &&
+            editAttemptCount < 3 && !(hasApprovedEdit ?? r.EditRequests.Any(edit => edit.Status == ReviewEditStatus.Approved)) &&
+            !(hasPendingEdit ?? r.EditRequests.Any(edit => edit.Status == ReviewEditStatus.Pending)) &&
+            DateTime.UtcNow <= r.CreatedAt.AddDays(7));
 }

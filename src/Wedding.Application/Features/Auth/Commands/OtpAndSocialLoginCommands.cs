@@ -117,9 +117,44 @@ public class GoogleLoginCommandHandler(IApplicationDbContext context, IPasswordH
             var user = await context.Users.FirstOrDefaultAsync(u => u.GoogleSubject == identity.Subject, token);
             if (user == null)
             {
-                if (await context.Users.AnyAsync(u => u.Email == email, token)) throw new DomainException("Email đã có tài khoản. Đăng nhập bằng mật khẩu/OTP rồi liên kết Google.");
-                user = User.Create(name, email, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer);
+                var emailAccount = await context.Users.FirstOrDefaultAsync(u => u.Email == email, token);
+                if (emailAccount != null && emailAccount.Role != UserRole.Customer)
+                    throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
+                // Provider subject is the identity key. An email collision never takes over another account.
+                user = emailAccount == null
+                    ? User.Create(name, email, "chua-cap-nhat", hasher.Hash(Guid.NewGuid().ToString("N")), UserRole.Customer)
+                    : User.CreateSocialCustomer(name, hasher.Hash(Guid.NewGuid().ToString("N")), googleSubject: identity.Subject);
                 user.LinkGoogle(identity.Subject); user.UpdateProfile(name, identity.Picture?.Length <= 500 ? identity.Picture : null); context.Users.Add(user);
+            }
+            if (user.Role != UserRole.Customer) throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
+            return await SocialLogin.IssueAsync(context, jwt, user, token);
+        }, ct);
+    }
+}
+public record FacebookLoginCommand(string AccessToken) : IRequest<AuthResponseDto>;
+public class FacebookLoginCommandValidator : AbstractValidator<FacebookLoginCommand>
+{
+    public FacebookLoginCommandValidator() => RuleFor(x => x.AccessToken).NotEmpty().MaximumLength(8192).WithMessage("Facebook access token không hợp lệ.");
+}
+public class FacebookLoginCommandHandler(IApplicationDbContext context, IPasswordHasher hasher, IJwtProvider jwt, IFacebookIdentityVerifier facebook) : IRequestHandler<FacebookLoginCommand, AuthResponseDto>
+{
+    public async Task<AuthResponseDto> Handle(FacebookLoginCommand request, CancellationToken ct)
+    {
+        var validation = new FacebookLoginCommandValidator().Validate(request);
+        if (!validation.IsValid) throw new DomainException(validation.Errors[0].ErrorMessage);
+        var identity = await facebook.VerifyAsync(request.AccessToken, ct);
+        if (string.IsNullOrWhiteSpace(identity.Subject) || identity.Subject.Length > 255)
+            throw new DomainException("Thông tin tài khoản Facebook không hợp lệ.");
+        var name = string.IsNullOrWhiteSpace(identity.Name) ? "Khách hàng Facebook" : identity.Name.Trim();
+        if (name.Length > 150) name = name[..150];
+        return await context.ExecuteSerializableAsync(async token =>
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.FacebookSubject == identity.Subject, token);
+            if (user == null)
+            {
+                user = User.CreateSocialCustomer(name, hasher.Hash(Guid.NewGuid().ToString("N")), facebookSubject: identity.Subject);
+                user.UpdateProfile(name, identity.Picture?.Length <= 500 ? identity.Picture : null);
+                context.Users.Add(user);
             }
             if (user.Role != UserRole.Customer) throw new DomainException("Tài khoản vận hành/NCC vui lòng đăng nhập bằng mật khẩu.");
             return await SocialLogin.IssueAsync(context, jwt, user, token);

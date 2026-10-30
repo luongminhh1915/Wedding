@@ -16,7 +16,8 @@ public record ComboOptionDto(Guid ListingId, Guid VendorId, string VendorName, b
     List<string>? GalleryUrls = null, string? Description = null);
 /// <summary>Explicit allowlist of public shop details. Never serialize the Vendor/User/tax/document entity graphs.</summary>
 public record ComboPublicVendorDto(Guid Id, string Name, string Slug, string? LogoUrl, string? CoverImageUrl,
-    string City, string? Address, string? Bio, bool IsVerified, decimal? RatingAvg, int TotalReviews);
+    string City, string? Address, string? Bio, bool IsVerified, decimal? RatingAvg, int TotalReviews,
+    IReadOnlyList<string>? OperatingRegions = null, bool Nationwide = false);
 public record ComboCategoryDto(Guid CategoryId, string Name, string Slug, string? Icon, List<ComboOptionDto> Options);
 public record ComboTemplateItemDto(Guid CategoryId, Guid ListingId, bool IsOptional, Guid? ServiceItemId = null, List<Guid>? AllowedItemIds = null);
 public record ComboTemplateDto(Guid Id, string Name, string Tier, string Style, string? Description, string? ImageUrl,
@@ -113,7 +114,8 @@ public class GetComboBuilderQueryHandler : IRequestHandler<GetComboBuilderQuery,
         var visibleVendorIds = cats.SelectMany(c => c.Options).Select(option => option.VendorId).ToHashSet();
         var vendors = items.Where(i => visibleVendorIds.Contains(i.VendorId)).Select(i => i.Vendor).DistinctBy(v => v.Id)
             .OrderBy(v => v.BrandName).Select(v => new ComboPublicVendorDto(v.Id, v.BrandName, v.Slug, v.LogoUrl, v.CoverImageUrl,
-                v.City, v.Address, v.Bio, v.IsVerified, v.TotalReviews >= 3 ? v.RatingAvg : null, v.TotalReviews)).ToList();
+                v.City, v.Address, v.Bio, v.IsVerified, v.TotalReviews >= 3 ? v.RatingAvg : null, v.TotalReviews,
+                OperatingAreaRules.Read(v.OperatingRegions, v.City).Regions, OperatingAreaRules.Read(v.OperatingRegions, v.City).Nationwide)).ToList();
         return new ComboBuilderDto(cats, templates.Select(t => ComboMap.ToDto(t) with
         {
             OwnerVendorName = t.OwnerVendorId.HasValue && owners.TryGetValue(t.OwnerVendorId.Value, out var name) ? name : null,
@@ -212,8 +214,10 @@ public class SubmitComboOrderCommandHandler : IRequestHandler<SubmitComboOrderCo
                 _context.Vouchers.Add(Voucher.Create(lead.Id, uid, Guid.NewGuid().ToString("N")[..8], discountValue: line.DiscountShare)); item.AttachLead(lead.Id);
                 await ComboBudgetSynchronization.ReserveLineAsync(_context, scope, order, item, line, selection, token);
                 var vendor = await _context.Vendors.Include(v => v.User).FirstAsync(v => v.Id == item.VendorId, token);
-                await _notify.SendContextAsync("Email", vendor.User.Email, $"Bạn có yêu cầu combo {order.Code}: {item.Title}.", "lead", lead.Id, token);
+                await _notify.SendContextAsync("Email", vendor.User.NotificationRecipient, $"Bạn có yêu cầu combo {order.Code}: {item.Title}.", "lead", lead.Id, token);
             }
+            var templateVersion = await ComboOrderVersionSnapshot.CaptureAsync(_context, order, token);
+            order.CaptureTemplateVersion(templateVersion?.RevisionId, templateVersion?.Json);
             _context.AuditLogs.Add(AuditLog.Create(uid, _user.Role, r.SaveAsDraft ? "Combo.DraftSaved" : source == null ? "Combo.Submitted" : "Combo.RevisionSubmitted", "ComboOrder", order.Id.ToString(), JsonSerializer.Serialize(new { revisionOfId = source?.Id, revisionReason })));
             await _context.SaveChangesAsync(token);
             return (await new GetMyComboOrdersQueryHandler(_context, _user).Load(uid, order.Id, token)).Single();
@@ -319,6 +323,11 @@ public class SaveComboTemplateCommandHandler(IApplicationDbContext context, IAud
             throw new DomainException("Không được đổi combo sang nhà cung cấp khác.");
         var latest = template == null ? null : await context.ComboTemplateRevisions.AsNoTracking()
             .Where(revision => revision.ComboTemplateId == template.Id).OrderByDescending(revision => revision.Sequence).FirstOrDefaultAsync(token);
+        // Unpublished fixed packages still have a legacy-default database row until approval.
+        // The server-authored revision also identifies the flow, so a draft cannot be used as
+        // a bridge to create a one-service dynamic template through the compatibility API.
+        if (request.PricingMode == "Dynamic" && latest != null && ComboTemplateLifecycle.ReadProposal(latest).PricingMode == "FixedPrice")
+            throw new DomainException("Không được đổi bản đề xuất combo cố định về combo linh hoạt cũ.");
         var inheritedContent = latest == null ? template == null ? null : ComboTemplateContent.Read(template) : ComboTemplateLifecycle.ReadProposal(latest).Content;
         var content = ComboTemplateContent.Normalize(request.Content ?? inheritedContent);
         if (!string.IsNullOrWhiteSpace(request.ImageUrl)) ComboTemplateContent.Normalize(new([request.ImageUrl]));

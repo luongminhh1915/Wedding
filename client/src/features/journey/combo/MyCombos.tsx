@@ -22,7 +22,9 @@ import { useSavedCombosPage, type SavedCombo } from "../comboApi";
 import { Pagination } from "../../../components/Pagination";
 import { useOrderPage } from "../customerOrders/useOrderPage";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
+import { PrivateServiceAgreementPanel } from "../../private-agreements/PrivateServiceAgreementPanel";
 import { apiError } from "../api";
+import { OrderReadError, orderReadBlockedMessage } from "../customerOrders/OrderReadError";
 import { vnd } from "../format";
 import { ComboDialog } from "./ComboDialog";
 import { unitName } from "./cartModel";
@@ -97,6 +99,7 @@ export function MyCombos() {
   const run = () => {
     if (
       !selected ||
+      orders.isError || journey.isError ||
       !comboCardModel(
         selected.order,
         metadata.get(selected.order.id),
@@ -136,18 +139,7 @@ export function MyCombos() {
         options={filters}
         label="Lọc combo theo tiến độ"
       />
-      {orders.isError && (
-        <div className="co-error" role="alert">
-          {apiError(orders.error)}
-          <button
-            className="co-button secondary ml-3"
-            onClick={() => void orders.refetch()}
-          >
-            Thử lại
-          </button>
-        </div>
-      )}
-      {journey.isError && (
+      {!orders.isError && journey.isError && (
         <div className="co-error" role="alert">
           Chưa tải được quyền thao tác và hình ảnh của đơn. Không thể sửa, rút
           hay lưu trữ cho tới khi kiểm tra được trạng thái mới nhất.
@@ -160,7 +152,7 @@ export function MyCombos() {
         </div>
       )}
       {notificationFocus.missing && <p className="co-summary-note" role="status">Combo trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
-      {orders.isLoading || journey.isLoading ? (
+      {orders.isError ? <OrderReadError label="lựa chọn dịch vụ và combo" error={orders.error} retry={orders.refetch} busy={orders.isFetching} /> : orders.isLoading || journey.isLoading ? (
         <div className="co-loading" role="status">
           <ShoppingBag size={30} />
           <p>Đang mở các combo và tiến độ của bạn...</p>
@@ -178,7 +170,7 @@ export function MyCombos() {
           <p>
             {filter === "archived"
               ? "Lưu trữ chỉ ẩn combo khỏi danh sách chính, không xóa lịch sử. Bạn có thể khôi phục khi cần."
-              : "Chọn một combo của NCC, tùy chỉnh dịch vụ rồi lưu nháp hoặc gửi yêu cầu báo giá. Chưa tự động thanh toán."}
+              : "Chọn dịch vụ lẻ hoặc combo của một NCC rồi lưu nháp hoặc gửi yêu cầu báo giá. Combo giá cố định giữ nguyên thành phần; muốn đổi hãy trao đổi với NCC. Chưa tự động thanh toán."}
           </p>
           {data.length ? (
             <button
@@ -263,10 +255,12 @@ export function MyCombos() {
           onClose={() => setSelected(null)}
           busy={action.isPending}
           confirmDisabled={
-            selected.type === "withdraw" && reason.trim().length < 10
+            orders.isError || journey.isError ||
+            !comboCardModel(selected.order, metadata.get(selected.order.id)).actions.includes(selected.type) ||
+            (selected.type === "withdraw" && reason.trim().length < 10)
           }
           danger={selected.type === "withdraw"}
-          error={action.isError ? apiError(action.error) : undefined}
+          error={orders.isError || journey.isError ? orderReadBlockedMessage : action.isError ? apiError(action.error) : undefined}
         >
           {selected.type === "withdraw" && (
             <label className="customer-order-form mt-4">
@@ -279,7 +273,7 @@ export function MyCombos() {
                 onChange={(event) => setReason(event.target.value)}
                 placeholder="Chia sẻ ngắn gọn để NCC nắm được mong muốn của bạn..."
               />
-              <small className="text-[#66758b]">
+              <small className="text-[#53637b]">
                 {reason.trim().length}/2000 ký tự
               </small>
             </label>
@@ -487,6 +481,7 @@ function ComboOrderCard({
           </span>
         </p>
       )}
+      {order.status !== "Draft" && <PrivateServiceAgreementPanel kind="combo" id={order.id} partnerName={model.vendorName} title={model.title} />}
       {order.status !== "Draft" &&
         !["Cancelled", "Expired", "Superseded", "Completed"].includes(
           order.status,

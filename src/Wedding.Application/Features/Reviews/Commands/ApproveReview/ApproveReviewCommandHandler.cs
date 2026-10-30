@@ -14,8 +14,13 @@ public class ApproveReviewCommandHandler : IRequestHandler<ApproveReviewCommand,
     public Task<ReviewDto> Handle(ApproveReviewCommand r, CancellationToken ct) => _db.ExecuteSerializableAsync(token => ApproveAsync(r, token), ct);
     private async Task<ReviewDto> ApproveAsync(ApproveReviewCommand r, CancellationToken ct)
     {
-        var review = await _db.Reviews.Include(x => x.Customer).Include(x => x.Vendor).Include(x => x.Listing).Include(x => x.BookingContract).FirstOrDefaultAsync(x => x.Id == r.ReviewId, ct) ?? throw new NotFoundException("Đánh giá không tồn tại.");
-        if (await _db.BookingContracts.AnyAsync(c => c.CustomerId == review.CustomerId && c.VendorId == review.VendorId && c.Lead.ListingId == review.ListingId && c.Status == ContractStatus.Disputed, ct)) throw new DomainException("Tạm dừng duyệt đánh giá trong thời gian tranh chấp.");
-        review.Approve(); await _db.SaveChangesAsync(ct); await ReviewRules.RefreshVendorAsync(_db, review.VendorId, ct); await _db.SaveChangesAsync(ct); return ReviewRules.Dto(review);
+        var review = await _db.Reviews.Include(x => x.Customer).Include(x => x.Vendor).Include(x => x.Listing)
+            .Include(x => x.ComboTemplate).Include(x => x.BookingContract)
+            .FirstOrDefaultAsync(x => x.Id == r.ReviewId, ct) ?? throw new NotFoundException("Đánh giá không tồn tại.");
+        if (await ReviewRules.HasDisputedEvidenceAsync(_db, review, ct))
+            throw new DomainException("Tạm dừng duyệt đánh giá trong thời gian tranh chấp.");
+        review.Approve(); await _db.SaveChangesAsync(ct);
+        if (review.TargetType == ReviewTargetType.Shop) await ReviewRules.RefreshVendorAsync(_db, review.VendorId, ct);
+        await _db.SaveChangesAsync(ct); return ReviewRules.Dto(review);
     }
 }

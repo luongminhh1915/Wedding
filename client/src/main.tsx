@@ -6,13 +6,13 @@ import { queryClient } from './services/queryClient'
 import './index.css'
 import AppRoutes from './routes/AppRoutes'
 import AuthSessionBoundary from './features/auth/components/AuthSessionBoundary'
-import StudyNotice from './components/StudyNotice'
+import RouteSeoMetadata from './components/RouteSeoMetadata'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <StudyNotice />
+        <RouteSeoMetadata />
         <AuthSessionBoundary><AppRoutes /></AuthSessionBoundary>
       </BrowserRouter>
     </QueryClientProvider>

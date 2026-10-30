@@ -4,6 +4,7 @@
 *.db-wal
 advance_payments.json
 **/App_Data/invitation-uploads/
+**/App_Data/invitation-audio/
 
 # Build output
 **/[Bb]in/

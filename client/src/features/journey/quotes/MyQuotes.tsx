@@ -30,6 +30,7 @@ import {
 import { Pagination } from "../../../components/Pagination";
 import { useOrderPage } from "../customerOrders/useOrderPage";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
+import { OrderReadError, orderReadBlockedMessage } from "../customerOrders/OrderReadError";
 
 export function MyQuotes({
   onOpenContracts,
@@ -65,6 +66,9 @@ export function MyQuotes({
     }));
   const groups = groupCustomerOrders(rows);
   const notificationFocus = useNotificationFocus("quote", rows.map(row => row.id), quotes.isSuccess && !quotes.isFetching);
+  const reviewCaps = review ? metadata.get(review.quote.id)?.capabilities : undefined;
+  const reviewBlocked = !!review && (quotes.isError || !orderCapability(reviewCaps, "canRespondQuote") ||
+    (review.accept && reviewCaps?.canAcceptQuote === false));
   function startReview(quote: FinancialQuote, accept: boolean) {
     respond.reset();
     setNote("");
@@ -72,7 +76,7 @@ export function MyQuotes({
     setReview({ quote, accept });
   }
   async function submitReview() {
-    if (!review || (!review.accept && !note.trim())) return;
+    if (!review || reviewBlocked || (!review.accept && !note.trim())) return;
     try {
       await respond.mutateAsync({
         id: review.quote.id,
@@ -126,12 +130,7 @@ export function MyQuotes({
         </p>
       )}
       {notificationFocus.missing && <p className="co-summary-note" role="status">Báo giá trong thông báo không còn khả dụng trong tài khoản này. <button className="co-button secondary" onClick={notificationFocus.clearFocus}>Xem danh sách</button></p>}
-      {(quotes.isError || journey.isError) && (
-        <p className="co-error" role="alert">
-          {apiError(quotes.error || journey.error)}
-        </p>
-      )}
-      {quotes.isPending ? (
+      {quotes.isError ? <OrderReadError label="báo giá" error={quotes.error} retry={quotes.refetch} busy={quotes.isFetching} /> : quotes.isPending ? (
         <div className="co-loading">
           <p>Đang tải báo giá...</p>
         </div>
@@ -242,7 +241,7 @@ export function MyQuotes({
                           <>
                             <button
                               className="co-button primary"
-                              disabled={respond.isPending}
+                              disabled={respond.isPending || caps?.canAcceptQuote === false}
                               onClick={() => startReview(quote, true)}
                             >
                               <FileSignature size={14} /> Chấp nhận & tạo hợp
@@ -292,6 +291,7 @@ export function MyQuotes({
                           cần xử lý trên hợp đồng, không xóa báo giá cũ.
                         </p>
                       )}
+                      {caps?.blockedReason && <p className="co-summary-note">{caps.blockedReason}</p>}
                       {quote.status === "Sent" && expired && (
                         <p className="co-summary-note">
                           Báo giá đã quá hạn. Đề nghị NCC gửi phiên bản còn hiệu
@@ -306,7 +306,7 @@ export function MyQuotes({
           })}
         </div>
       )}
-      <Pagination page={quotes.data?.page ?? page} pageSize={pageSize} totalCount={quotes.data?.totalCount ?? 0} isLoading={quotes.isFetching} onPageChange={next => changePage(next, quotes.data?.filter)} label="Phân trang nhóm báo giá" />
+      {!quotes.isError && <Pagination page={quotes.data?.page ?? page} pageSize={pageSize} totalCount={quotes.data?.totalCount ?? 0} isLoading={quotes.isFetching} onPageChange={next => changePage(next, quotes.data?.filter)} label="Phân trang nhóm báo giá" />}
       {gallery && (
         <OrderGallery {...gallery} onClose={() => setGallery(null)} />
       )}
@@ -314,6 +314,8 @@ export function MyQuotes({
         <CustomerOrderActionDialog
           key={`${dialog.item.id}:${dialog.intent}`}
           {...dialog}
+          item={metadata.get(dialog.item.id) ?? dialog.item}
+          readBlocked={quotes.isError || !metadata.has(dialog.item.id)}
           onClose={() => setDialog(null)}
           onSuccess={() =>
             setNotice(
@@ -336,8 +338,8 @@ export function MyQuotes({
           onClose={() => setReview(null)}
           onConfirm={() => void submitReview()}
           busy={respond.isPending}
-          confirmDisabled={!review.accept && !note.trim()}
-          error={respond.isError ? apiError(respond.error) : ""}
+          confirmDisabled={reviewBlocked || (!review.accept && !note.trim())}
+          error={reviewBlocked ? (review.accept && reviewCaps?.blockedReason) || orderReadBlockedMessage : respond.isError ? apiError(respond.error) : ""}
         >
           <div className="customer-order-form">
             <p>

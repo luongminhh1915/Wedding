@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, RefreshCw } from "lucide-react";
@@ -10,11 +10,12 @@ import { listingImagePreview } from "../vendor-portal/components/listingEditMode
 import { apiError } from "../journey/api";
 import { comboDate, comboPreviewPath } from "../journey/combo/comboTemplateEditorModel";
 import { useModerationQueue } from "./useModerationQueue";
+import { ApprovalConfirmationDialog, type ApprovalConfirmationDetails } from "./ApprovalConfirmationDialog";
 import { MODERATION_TYPES, MODERATION_STATUSES, moderationFilters, moderationSelection, updateModerationFilters, selectModerationRow,
   moderationStatus, moderationDecision, type ModerationDetail, type ModerationFilters } from "./moderationQueueModel";
 
-const button = "rounded-xl border border-[#dcd8ca] bg-white px-4 py-2 text-sm font-semibold text-[#25334c] disabled:opacity-50";
-const input = "min-w-0 w-full rounded-xl border border-[#dcd8ca] bg-white px-3 py-2 text-sm text-[#25334c]";
+const button = "rounded-xl border border-[#dedccf] bg-white px-4 py-2 text-sm font-semibold text-[#233a42] disabled:opacity-50";
+const input = "min-w-0 w-full rounded-xl border border-[#dedccf] bg-white px-3 py-2 text-sm text-[#233a42]";
 const money = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
 const label = (status: string) => MODERATION_STATUSES.find(([value]) => value === status)?.[1] ?? status;
 const kindLabel = (type: string) => MODERATION_TYPES.find(([value]) => value === type)?.[1] ?? type;
@@ -43,26 +44,62 @@ function Content({ detail }: { detail: ModerationDetail }) {
     <Gallery urls={[combo.imageUrl, ...(combo.content?.galleryUrls ?? [])].filter((url): url is string => !!url)} />
     <p className="whitespace-pre-wrap text-sm leading-relaxed">{combo.description}</p>
     <p className="mt-3 text-xs text-slate-500">Thời hạn: {combo.content?.validFromUtc ? comboDate(combo.content.validFromUtc) : "Không đặt ngày bắt đầu"} → {combo.content?.validUntilUtc ? comboDate(combo.content.validUntilUtc) : "Không đặt ngày kết thúc"}</p>
-    <h4 className="mt-5 font-semibold">Các hạng mục ({combo.items.length})</h4><ul className="mt-3 space-y-3">{combo.items.map(slot => { const option = combo.previewOptions?.find(option => option.serviceItemId === slot.serviceItemId); return <li key={slot.categoryId} className="rounded-xl border border-[#e4dfcf] p-3 text-sm"><b>{option?.title || "Dịch vụ không còn khả dụng"}</b><p className="mt-1 text-xs text-slate-500">{slot.isOptional ? "Tùy chọn" : "Bao gồm"} · {option ? `${money(option.price)}/${option.unit}` : slot.serviceItemId} · {slot.allowedItemIds?.length ?? 0} lựa chọn thay thế</p></li>; })}</ul>
+    <h4 className="mt-5 font-semibold">Các hạng mục ({combo.items.length})</h4><ul className="mt-3 space-y-3">{combo.items.map(slot => { const option = combo.previewOptions?.find(option => option.serviceItemId === slot.serviceItemId); return <li key={slot.categoryId} className="rounded-xl border border-[#dedccf] p-3 text-sm"><b>{option?.title || "Dịch vụ không còn khả dụng"}</b><p className="mt-1 text-xs text-slate-500">{slot.isOptional ? "Tùy chọn" : "Bao gồm"} · {option ? `${money(option.price)}/${option.unit}` : slot.serviceItemId} · {slot.allowedItemIds?.length ?? 0} lựa chọn thay thế</p></li>; })}</ul>
     <h4 className="mt-5 font-semibold">Điều khoản</h4><p className="mt-2 whitespace-pre-wrap text-sm">{combo.content?.terms || "Chưa ghi điều khoản bổ sung."}</p>{combo.latestRevision?.reviewNote && <p className="mt-3 whitespace-pre-wrap text-sm">Phản hồi: {combo.latestRevision.reviewNote}</p>}
   </>;
   return <p role="alert">Không đọc được nội dung đang chọn. Hãy tải lại trước khi duyệt.</p>;
 }
-function ReviewDetail({ detail, onRefresh, onDone }: { detail: ModerationDetail; onRefresh: () => void; onDone: () => void }) {
+export function ReviewDetail({ detail, onRefresh, onDone }: { detail: ModerationDetail; onRefresh: () => void; onDone: () => void }) {
   const qc = useQueryClient(); const [note, setNote] = useState(""); const [validation, setValidation] = useState("");
-  const review = useMutation({ mutationFn: async (approve: boolean) => { const request = moderationDecision(detail, approve, note); return axiosClient.post(request.url, request.body, { params: request.params }); },
-    onSuccess: async () => { onDone(); await qc.invalidateQueries(); } });
+  const [approval, setApproval] = useState<{ request: ReturnType<typeof moderationDecision>; contentSignature: string; details: ApprovalConfirmationDetails } | null>(null);
+  const reviewLock = useRef(false);
+  const review = useMutation({ mutationFn: async (request: ReturnType<typeof moderationDecision>) => axiosClient.post(request.url, request.body, { params: request.params }),
+    onSuccess: async () => { setApproval(null); onDone(); await qc.invalidateQueries(); },
+    onSettled: () => { reviewLock.current = false; } });
   const pending = moderationStatus(detail) === "Pending";
-  const decide = (approve: boolean) => { setValidation(""); try { moderationDecision(detail, approve, note); review.mutate(approve); } catch (error) { setValidation(error instanceof Error ? error.message : "Nội dung kiểm duyệt không hợp lệ."); } };
-  return <article className="min-w-0 rounded-2xl border border-[#e4dfcf] bg-white p-4 text-[#25334c] [overflow-wrap:anywhere] sm:p-6" aria-label="Nội dung phiên bản được chọn">
+  const decide = (approve: boolean) => {
+    if (review.isPending || reviewLock.current) return;
+    setValidation("");
+    try {
+      const request = moderationDecision(detail, approve, note);
+      if (approve) {
+        const revision = detail.listing?.latestRevision ?? detail.combo?.latestRevision;
+        review.reset();
+        setApproval({ request, contentSignature: JSON.stringify(detail), details: {
+          typeLabel: kindLabel(detail.type),
+          title: detail.listing?.title ?? detail.serviceItem?.name ?? detail.combo?.latestRevision?.proposal?.name ?? detail.combo?.name ?? "Nội dung đang chọn",
+          vendorName: detail.listing?.vendorBrandName ?? detail.serviceItem?.vendorName ?? detail.combo?.ownerVendorName,
+          versionLabel: revision ? `Phiên bản #${revision.sequence}` : "Nội dung hiện tại đang xem",
+        } });
+        return;
+      }
+      reviewLock.current = true;
+      review.mutate(request);
+    } catch (error) { setValidation(error instanceof Error ? error.message : "Nội dung kiểm duyệt không hợp lệ."); }
+  };
+  const confirmApproval = () => {
+    if (!approval || review.isPending || reviewLock.current) return;
+    try {
+      const current = moderationDecision(detail, true, note);
+      if (JSON.stringify(detail) !== approval.contentSignature || JSON.stringify(current) !== JSON.stringify(approval.request)) throw new Error("Nội dung hoặc ghi chú đã thay đổi. Hãy xem lại đúng phiên bản trước khi duyệt.");
+      reviewLock.current = true;
+      review.mutate(approval.request);
+    } catch (error) {
+      setApproval(null);
+      setValidation(error instanceof Error ? error.message : "Hãy tải lại đúng phiên bản trước khi duyệt.");
+    }
+  };
+  return <article className="min-w-0 rounded-2xl border border-[#dedccf] bg-white p-4 text-[#233a42] [overflow-wrap:anywhere] sm:p-6" aria-label="Nội dung phiên bản được chọn">
     <p className="mb-4 text-xs text-slate-500">{kindLabel(detail.type)} · {label(moderationStatus(detail))}</p><Content detail={detail} />
-    <p role="note" className="mt-5 rounded-xl bg-[#faf8f0] p-3 text-xs leading-relaxed">Đang xem nội dung riêng của phiên bản được chọn. Duyệt nội dung không thay đổi hoa hồng, giao dịch đã chốt hoặc tự bật lại trạng thái kinh doanh.</p>
+    <p role="note" className="mt-5 rounded-xl bg-[#fcf6ea] p-3 text-xs leading-relaxed">Đang xem nội dung riêng của phiên bản được chọn. Duyệt nội dung không thay đổi hoa hồng, giao dịch đã chốt hoặc tự bật lại trạng thái kinh doanh.</p>
     {pending && <fieldset disabled={review.isPending} className="mt-5 min-w-0 border-t border-slate-100 pt-4"><legend className="sr-only">Quyết định kiểm duyệt</legend>
       <label className="block text-sm font-semibold" htmlFor="moderation-review-note">Ghi chú / lý do từ chối (bắt buộc khi từ chối)</label><textarea id="moderation-review-note" className={input + " mt-2"} rows={3} maxLength={detail.type === "listing" ? 1000 : 2000} value={note} onChange={event => setNote(event.target.value)} />
       <p className="mt-2 text-xs text-slate-500">Chỉ áp dụng cho đúng phiên bản đang xem. Nếu NCC đã chỉnh sửa, máy chủ sẽ yêu cầu tải lại.</p>
-      <div className="mt-4 flex flex-wrap justify-end gap-3"><button className={button} disabled={!note.trim()} onClick={() => decide(false)}>Từ chối kèm lý do</button><button className={button + " !bg-[#25334c] !text-white"} onClick={() => decide(true)}>{review.isPending ? "Đang gửi..." : "Phê duyệt phiên bản"}</button></div>
+      <div className="mt-4 flex flex-wrap justify-end gap-3"><button className={button} disabled={!note.trim()} onClick={() => decide(false)}>Từ chối kèm lý do</button><button className={button + " !bg-[#e38c82] !text-[#233a42]"} onClick={() => decide(true)}>{review.isPending ? "Đang gửi..." : "Phê duyệt phiên bản"}</button></div>
     </fieldset>}
     {(validation || review.isError) && <div role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700"><p>{validation || apiError(review.error)}</p><button className={button + " mt-3"} disabled={review.isPending} onClick={onRefresh}>Tải lại đúng phiên bản</button></div>}
+    {approval && <ApprovalConfirmationDialog details={approval.details} busy={review.isPending} error={review.isError ? apiError(review.error) : undefined}
+      onCancel={() => { if (!review.isPending && !reviewLock.current) setApproval(null); }} onConfirm={confirmApproval} />}
   </article>;
 }
 export default function ModerationQueue() {
@@ -77,8 +114,8 @@ export default function ModerationQueue() {
   const done = () => { const next = new URLSearchParams(params); for (const key of ["reviewType", "reviewId", "reviewRevision"]) next.delete(key); setParams(next, { replace: true }); setNotice("Đã lưu quyết định và thông báo tới đúng NCC. Các dữ liệu tài chính được giữ nguyên."); };
   const version = detail.data?.serviceItem?.reviewVersion ?? detail.data?.listing?.latestRevision?.id ?? detail.data?.combo?.latestRevision?.id ?? "legacy";
   return <section aria-label="Hàng chờ kiểm duyệt thống nhất" className="min-w-0">
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-[#25334c]">Hàng chờ nội dung</h2><p className="mt-1 text-xs text-slate-500">Bài giới thiệu, dịch vụ thành phần và combo · {query.data?.pendingCount ?? "…"} nội dung chờ duyệt.</p></div><button className={button} onClick={() => { void query.refetch(); if (selected) void detail.refetch(); }}>Tải lại hàng chờ</button></div>
-    <div className="mb-5 grid min-w-0 gap-3 rounded-2xl border border-[#e4dfcf] bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr_auto]">
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-[#233a42]">Hàng chờ nội dung</h2><p className="mt-1 text-xs text-slate-500">Bài giới thiệu, dịch vụ thành phần và combo · {query.data?.pendingCount ?? "…"} nội dung chờ duyệt.</p></div><button className={button} onClick={() => { void query.refetch(); if (selected) void detail.refetch(); }}>Tải lại hàng chờ</button></div>
+    <div className="mb-5 grid min-w-0 gap-3 rounded-2xl border border-[#dedccf] bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr_auto]">
       <label className="min-w-0 text-xs font-semibold text-slate-600">Loại nội dung<select aria-label="Loại nội dung kiểm duyệt" className={input + " mt-2"} value={filters.type} onChange={event => update({ type: event.target.value })}>{MODERATION_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
       <label className="min-w-0 text-xs font-semibold text-slate-600">Trạng thái<select aria-label="Trạng thái kiểm duyệt" className={input + " mt-2"} value={filters.status} onChange={event => update({ status: event.target.value })}>{MODERATION_STATUSES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
       <form key={filters.search} className="flex min-w-0 items-end gap-2" onSubmit={event => { event.preventDefault(); update({ search: String(new FormData(event.currentTarget).get("search") ?? "") }); }}><label className="min-w-0 flex-1 text-xs font-semibold text-slate-600">Tên đề xuất / nhà cung cấp<input name="search" className={input + " mt-2"} defaultValue={filters.search} maxLength={150} placeholder="Tìm trong nội dung đề xuất mới nhất" /></label><button className={button}>Tìm</button></form>
@@ -87,9 +124,9 @@ export default function ModerationQueue() {
     {notice && <p role="status" className="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</p>}
     {query.isPending ? <p role="status" className="flex items-center gap-2 p-8"><Loader2 className="animate-spin" size={18} />Đang tải hàng chờ...</p> : query.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(query.error)}</p><button className={button + " mt-3"} onClick={() => void query.refetch()}><RefreshCw size={16} className="mr-2 inline" />Thử lại</button></div> : <>
       <div className="grid min-w-0 gap-5 lg:grid-cols-[300px_minmax(0,1fr)]"><div className="min-w-0 space-y-3">
-        {!query.data?.items.length && <div className="rounded-2xl border border-[#e4dfcf] bg-white p-6 text-center text-slate-500"><CheckCircle2 className="mx-auto mb-3" /><p>Không có nội dung phù hợp bộ lọc.</p></div>}
-        {query.data?.items.map(row => <button key={`${row.type}:${row.id}:${row.revisionId ?? row.changedAt}`} className={`w-full rounded-2xl border p-4 text-left [overflow-wrap:anywhere] ${selected?.id === row.id && selected.type === row.type ? "border-[#c9a740] bg-[#faf8f0]" : "border-[#e4dfcf] bg-white"}`} onClick={() => { setNotice(""); setParams(selectModerationRow(params, row)); }}><span className="block text-xs text-slate-500">{kindLabel(row.type)} · {label(row.status)}</span><b className="mt-2 block text-sm text-[#25334c]">{row.title}</b><span className="mt-2 block text-xs text-slate-500">{row.vendorName}</span><span className="mt-2 block text-xs text-slate-500">{row.revisionSequence ? `Phiên bản #${row.revisionSequence}` : "Nội dung hiện tại"} · {comboDate(row.changedAt)}</span></button>)}
-      </div><div className="min-w-0">{!selected ? <div className="rounded-2xl border border-dashed border-[#dcd8ca] p-10 text-center text-slate-500"><Eye className="mx-auto mb-3" /><p>Chọn nội dung để xem đúng đề xuất, ảnh và điều khoản trước khi duyệt.</p></div> : detail.isPending ? <p role="status" className="p-8">Đang tải phiên bản được chọn...</p> : detail.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(detail.error)}</p><button className={button + " mt-3"} onClick={refreshDetail}>Tải lại đúng phiên bản</button></div> : detail.data && <ReviewDetail key={`${detail.data.type}:${detail.data.id}:${version}`} detail={detail.data} onRefresh={refreshDetail} onDone={done} />}</div></div>
+        {!query.data?.items.length && <div className="rounded-2xl border border-[#dedccf] bg-white p-6 text-center text-slate-500"><CheckCircle2 className="mx-auto mb-3" /><p>Không có nội dung phù hợp bộ lọc.</p></div>}
+        {query.data?.items.map(row => <button key={`${row.type}:${row.id}:${row.revisionId ?? row.changedAt}`} className={`w-full rounded-2xl border p-4 text-left [overflow-wrap:anywhere] ${selected?.id === row.id && selected.type === row.type ? "border-[#e38c82] bg-[#fcf6ea]" : "border-[#dedccf] bg-white"}`} onClick={() => { setNotice(""); setParams(selectModerationRow(params, row)); }}><span className="block text-xs text-slate-500">{kindLabel(row.type)} · {label(row.status)}</span><b className="mt-2 block text-sm text-[#233a42]">{row.title}</b><span className="mt-2 block text-xs text-slate-500">{row.vendorName}</span><span className="mt-2 block text-xs text-slate-500">{row.revisionSequence ? `Phiên bản #${row.revisionSequence}` : "Nội dung hiện tại"} · {comboDate(row.changedAt)}</span></button>)}
+      </div><div className="min-w-0">{!selected ? <div className="rounded-2xl border border-dashed border-[#dedccf] p-10 text-center text-slate-500"><Eye className="mx-auto mb-3" /><p>Chọn nội dung để xem đúng đề xuất, ảnh và điều khoản trước khi duyệt.</p></div> : detail.isPending ? <p role="status" className="p-8">Đang tải phiên bản được chọn...</p> : detail.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(detail.error)}</p><button className={button + " mt-3"} onClick={refreshDetail}>Tải lại đúng phiên bản</button></div> : detail.data && <ReviewDetail key={`${detail.data.type}:${detail.data.id}:${version}`} detail={detail.data} onRefresh={refreshDetail} onDone={done} />}</div></div>
       {query.data && <Pagination page={query.data.page} pageSize={query.data.pageSize} totalCount={query.data.totalCount} isLoading={query.isFetching} onPageChange={page => update({ page })} label="Phân trang hàng chờ kiểm duyệt" />}
     </>}
   </section>;

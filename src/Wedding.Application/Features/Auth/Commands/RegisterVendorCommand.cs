@@ -1,9 +1,6 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
-using System.Globalization;
-using System.Text;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Auth.DTOs;
 using Wedding.Domain.Entities;
@@ -20,8 +17,11 @@ public record RegisterVendorCommand(
     string BrandName,
     string City,
     decimal? CommissionRate = null,
+    // Compatibility input only. Service categories, not signup membership, determine policy.
     List<Guid>? BusinessGroupIds = null,
-    bool PartnershipPolicyAccepted = false
+    bool PartnershipPolicyAccepted = false,
+    IReadOnlyList<string>? OperatingRegions = null,
+    bool Nationwide = false
 ) : IRequest<AuthResponseDto>;
 
 public class RegisterVendorCommandValidator : AbstractValidator<RegisterVendorCommand>
@@ -33,15 +33,12 @@ public class RegisterVendorCommandValidator : AbstractValidator<RegisterVendorCo
         RuleFor(x => x.PhoneNumber).Phone();
         RuleFor(x => x.Password).NewPassword();
         RuleFor(x => x.BrandName).Must(value => AuthInputRules.RequiredText(value, 200)).WithMessage("Tên thương hiệu cần từ 1 đến 200 ký tự.");
-        RuleFor(x => x.City).Must(value => AuthInputRules.RequiredText(value, 100) && VietnamProvinces.TryNormalize(value, out _))
-            .WithMessage("Chọn tỉnh / thành phố thuộc danh sách 34 địa phương hiện hành.");
+        RuleFor(x => x).Must(value => OperatingAreaRules.IsValid(value.City, value.OperatingRegions, value.Nationwide, requireArea: true))
+            .WithMessage("Chọn Toàn quốc hoặc ít nhất một tỉnh / thành phố trong danh sách 34 địa phương hiện hành.");
         RuleFor(x => x.CommissionRate).Null()
-            .WithMessage("Không được tự chọn tỷ lệ hoa hồng khi đăng ký. Hãy tải lại trang và chọn nhóm dịch vụ theo chính sách hiện hành.");
-        RuleFor(x => x.BusinessGroupIds).Must(ids => ids is { Count: > 0 and <= 20 } &&
-            ids.All(id => id != Guid.Empty) && ids.Distinct().Count() == ids.Count)
-            .WithMessage("Chọn ít nhất một nhóm dịch vụ hợp lệ, không chọn trùng nhóm.");
+            .WithMessage("Không được tự chọn tỷ lệ hoa hồng khi đăng ký. Chính sách được xác định theo danh mục khi tạo dịch vụ.");
         RuleFor(x => x.PartnershipPolicyAccepted).Equal(true)
-            .WithMessage("Vui lòng xác nhận đã đọc chính sách hợp tác và hoa hồng theo nhóm dịch vụ.");
+            .WithMessage("Vui lòng xác nhận đã hiểu chính sách hợp tác và cách xác định hoa hồng theo danh mục dịch vụ.");
     }
 }
 
@@ -72,21 +69,11 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
             if (await _context.Users.AnyAsync(u => u.Email == emailLower, ct))
                 throw new DomainException("Email đối tác này đã được sử dụng trên hệ thống.");
 
-            // The client chooses business scope, never rates or publication/approval state.
-            var selectedIds = request.BusinessGroupIds!;
-            var groups = await _context.BusinessGroups.AsNoTracking()
-                .Where(group => selectedIds.Contains(group.Id) && group.IsActive).ToListAsync(ct);
-            if (groups.Count != selectedIds.Count)
-                throw new DomainException("Có nhóm dịch vụ không tồn tại hoặc đã ngừng tiếp nhận. Hãy tải lại chính sách và chọn lại.");
-            var policyVersions = groups.Select(group => group.PolicyVersion).Distinct().ToList();
-            if (policyVersions.Count != 1 || string.IsNullOrWhiteSpace(policyVersions[0]))
-                throw new DomainException("Chính sách nhóm dịch vụ chưa đồng bộ. Vui lòng liên hệ nền tảng trước khi đăng ký.");
-
             // Tạo User chủ với vai trò VendorOwner (BR-001)
             var user = User.Create(request.FullName, emailLower, request.PhoneNumber, passwordHash, UserRole.VendorOwner);
 
             // Tạo Slug cho thương hiệu
-            var baseSlug = GenerateSlug(request.BrandName);
+            var baseSlug = VendorRegistrationRules.GenerateSlug(request.BrandName);
             var slug = baseSlug;
             var counter = 1;
             while (await _context.Vendors.AnyAsync(v => v.Slug == slug, ct))
@@ -97,12 +84,13 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
             // Tạo hồ sơ Vendor gắn liền 1-1
             VietnamProvinces.TryNormalize(request.City, out var city);
             var vendor = Vendor.CreateWithCategoryDefaults(user.Id, request.BrandName, slug, request.FullName,
-                request.PhoneNumber, city, policyVersions[0]);
+                request.PhoneNumber, city, BusinessGroupPolicy.ServiceCategoryRegistrationVersion);
+            vendor.SetOperatingAreas(request.OperatingRegions, request.Nationwide, request.City);
 
             _context.Users.Add(user);
             _context.Vendors.Add(vendor);
-            foreach (var group in groups)
-                _context.VendorBusinessGroups.Add(VendorBusinessGroup.Create(vendor.Id, group.Id));
+            // Old clients may still send BusinessGroupIds. Ignore them rather than
+            // fabricating memberships, a group-specific acknowledgement or a rate.
             await _context.SaveChangesAsync(ct);
 
             var token = _jwtProvider.GenerateToken(user);
@@ -112,13 +100,4 @@ public class RegisterVendorCommandHandler : IRequestHandler<RegisterVendorComman
         }, cancellationToken);
     }
 
-    private static string GenerateSlug(string phrase)
-    {
-        var normalized = phrase.Trim().ToLowerInvariant().Replace('đ', 'd').Normalize(NormalizationForm.FormD);
-        var ascii = new string(normalized.Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark).ToArray());
-        var slug = Regex.Replace(ascii, @"[^a-z0-9]+", "-").Trim('-');
-        // Leave room for a uniqueness suffix, including non-Latin or emoji-only brands.
-        if (slug.Length == 0) slug = "doi-tac";
-        return slug[..Math.Min(slug.Length, 180)].TrimEnd('-');
-    }
 }

@@ -1,6 +1,6 @@
 import type { FullServiceDetailsDto, ServiceDetailsDto } from "../../types/listing.types.ts";
 
-type TextKey = Exclude<keyof ServiceDetailsDto, "portfolioUrls" | "videoUrl" | "fullService">;
+type TextKey = Exclude<keyof ServiceDetailsDto, "portfolioUrls" | "videoUrl" | "fullService" | "collections" | "latestUpdate">;
 export interface ServiceTextField { key: TextKey; label: string; maxLength: number; }
 export const SERVICE_DETAIL_SECTIONS: { title: string; fields: ServiceTextField[] }[] = [
   { title: "Giới thiệu & cách niêm yết giá", fields: [
@@ -38,7 +38,7 @@ export function emptyFullServiceDetails(): FullServiceDetailsDto {
   return { scope: "", capacity: "", stages: "", outsourcing: "", managementFeeDescription: "", packagePriceDescription: "", extraCostTerms: "", paymentTerms: "" };
 }
 export function emptyServiceDetails(): ServiceDetailsDto {
-  return { shortDescription: "", priceUnit: "", includedItems: "", excludedItems: "", duration: "", process: "", serviceOptions: "", additionalFees: "", terms: "", reschedulePolicy: "", portfolioUrls: [], videoUrl: null, highlights: "", customerRequirements: "", notes: "", fullService: null };
+  return { shortDescription: "", priceUnit: "", includedItems: "", excludedItems: "", duration: "", process: "", serviceOptions: "", additionalFees: "", terms: "", reschedulePolicy: "", portfolioUrls: [], videoUrl: null, highlights: "", customerRequirements: "", notes: "", fullService: null, collections: [], latestUpdate: null };
 }
 
 /** Whitelist informational metadata only; never transport financial snapshots, rates or cancellation state. */
@@ -48,6 +48,16 @@ export function normalizeServiceDetails(value?: Partial<ServiceDetailsDto> | nul
     result[field.key] = typeof value?.[field.key] === "string" ? value[field.key]!.trim() : "";
   result.portfolioUrls = Array.isArray(value?.portfolioUrls) ? value.portfolioUrls.map(url => typeof url === "string" ? url.trim() : "").filter(Boolean) : [];
   result.videoUrl = typeof value?.videoUrl === "string" && value.videoUrl.trim() ? value.videoUrl.trim() : null;
+  result.collections = Array.isArray(value?.collections) ? value.collections.map(collection => ({
+    id: typeof collection?.id === "string" ? collection.id.trim() : "",
+    name: typeof collection?.name === "string" ? collection.name.trim() : "",
+    images: Array.isArray(collection?.images) ? collection.images.map(url => typeof url === "string" ? url.trim() : "") : [],
+  })) : [];
+  if (value?.latestUpdate) {
+    const content = typeof value.latestUpdate.content === "string" ? value.latestUpdate.content.trim() : "";
+    const imageUrl = typeof value.latestUpdate.imageUrl === "string" ? value.latestUpdate.imageUrl.trim() : "";
+    if (content || imageUrl) result.latestUpdate = { content, imageUrl };
+  }
   if (value?.fullService) {
     const full = emptyFullServiceDetails();
     for (const field of FULL_SERVICE_FIELDS) full[field.key] = typeof value.fullService[field.key] === "string" ? value.fullService[field.key].trim() : "";
@@ -81,8 +91,25 @@ export function validateServiceDetails(value: ServiceDetailsDto): Record<string,
   if (normalized.videoUrl && !isServiceDetailsLink(normalized.videoUrl)) errors["serviceDetails.videoUrl"] = "Dùng liên kết video HTTP(S) hợp lệ, tối đa 1000 ký tự; không nhập mã nhúng.";
   if (normalized.fullService) for (const field of FULL_SERVICE_FIELDS)
     if (normalized.fullService[field.key].length > 4000) errors[`serviceDetails.fullService.${field.key}`] = `${field.label} tối đa 4000 ký tự.`;
+  const collections = normalized.collections ?? [];
+  if (collections.length > 10 || new Set(collections.map(collection => collection.id.toLowerCase())).size !== collections.length || collections.some(collection =>
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(collection.id) || collection.id === "00000000-0000-0000-0000-000000000000" || !collection.name || collection.name.length > 100 ||
+    collection.images.length < 1 || collection.images.length > 10 || new Set(collection.images).size !== collection.images.length || collection.images.some(url => !isServiceStudioImage(url))))
+    errors["serviceDetails.collections"] = "Tối đa 10 bộ sưu tập; tên tối đa 100 ký tự, mỗi bộ có 1–10 ảnh đã tải lên hoặc HTTPS hợp lệ, không trùng ảnh.";
+  if (normalized.latestUpdate && (normalized.latestUpdate.content.length > 4000 || normalized.latestUpdate.imageUrl && !isServiceStudioImage(normalized.latestUpdate.imageUrl)))
+    errors["serviceDetails.latestUpdate"] = "Cập nhật tối đa 4000 ký tự; ảnh cần được tải lên thành công hoặc dùng ảnh HTTPS hợp lệ.";
   if (JSON.stringify(normalized).length > 60000) errors.serviceDetails = "Nội dung bổ sung quá dài. Vui lòng rút gọn trước khi lưu.";
   return errors;
+}
+
+/** Persisted Studio photos may be managed images or safe legacy HTTPS, never local blobs. */
+export function isServiceStudioImage(reference: string): boolean {
+  return typeof reference === "string" && reference.length <= 500 && (
+    reference.startsWith("/uploads/listings/") && /^\/uploads\/listings\/[0-9a-f]{32}\.(jpg|jpeg|png|webp)$/i.test(reference) || /^https:\/\//i.test(reference) && isServiceDetailsLink(reference));
+}
+
+export function serviceStudioImageSrc(reference: string, apiBase = ""): string {
+  return isServiceStudioImage(reference) ? reference.startsWith("/uploads/listings/") ? `${apiBase.replace(/\/$/, "")}${reference}` : reference : "";
 }
 
 export function serviceDetailsUpdate(value: ServiceDetailsDto, original?: ServiceDetailsDto | null): ServiceDetailsDto | undefined {

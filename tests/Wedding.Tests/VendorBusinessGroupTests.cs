@@ -60,7 +60,7 @@ public class VendorBusinessGroupTests
     }
 
     [Fact]
-    public async Task RegistrationPersistsMultipleMembershipsAcknowledgementAndReloadsAfterLogin()
+    public async Task RegistrationWithoutGroupSelectionPersistsGeneralAcknowledgementAndReloadsAfterLogin()
     {
         await using var f = await Fixture.Create();
         var before = DateTime.UtcNow;
@@ -71,11 +71,9 @@ public class VendorBusinessGroupTests
         Assert.Equal(0m, vendor.CommissionRate); Assert.False(vendor.IsVerified);
         Assert.NotNull(vendor.PartnershipPolicyAcceptedAt);
         Assert.InRange(vendor.PartnershipPolicyAcceptedAt.Value, before, DateTime.UtcNow);
-        Assert.Equal(BusinessGroupPolicy.InitialVersion, vendor.PartnershipPolicyVersion);
-        Assert.Equal(new[] { BusinessGroupPolicy.DecorInvitationsId, BusinessGroupPolicy.PhotoBridalMakeupId }.Order(),
-            vendor.BusinessGroups.Select(membership => membership.BusinessGroupId).Order());
-        Assert.All(vendor.BusinessGroups, membership => Assert.Equal(vendor.Id, membership.VendorId));
-        Assert.Single(await reload.Users.ToListAsync()); Assert.Equal(2, await reload.VendorBusinessGroups.CountAsync());
+        Assert.Equal(BusinessGroupPolicy.ServiceCategoryRegistrationVersion, vendor.PartnershipPolicyVersion);
+        Assert.Empty(vendor.BusinessGroups);
+        Assert.Single(await reload.Users.ToListAsync()); Assert.Empty(await reload.VendorBusinessGroups.ToListAsync());
         Assert.Empty(await reload.Listings.ToListAsync()); Assert.Empty(await reload.Commissions.ToListAsync());
 
         var login = await new LoginCommandHandler(reload, f.Hasher, new Jwt()).Handle(new(registered.User.Email, Password), default);
@@ -83,8 +81,8 @@ public class VendorBusinessGroupTests
         var own = await new GetMyBusinessGroupsQueryHandler(reload, new Current(login.User.Id)).Handle(new(), default);
         Assert.False(own.UsesLegacyCommissionRate); Assert.Null(own.LegacyCommissionRate);
         Assert.Equal(vendor.PartnershipPolicyAcceptedAt, own.PolicyAcceptedAt);
-        Assert.Equal(BusinessGroupPolicy.InitialVersion, own.PolicyVersion);
-        Assert.Equal(new[] { .08m, .10m }, own.Groups.Select(group => group.DefaultCommissionRate));
+        Assert.Equal(BusinessGroupPolicy.ServiceCategoryRegistrationVersion, own.PolicyVersion);
+        Assert.Empty(own.Groups);
     }
 
     [Fact]
@@ -113,34 +111,22 @@ public class VendorBusinessGroupTests
     }
 
     [Fact]
-    public async Task MissingDuplicateEmptyUnknownAndUnacknowledgedGroupsNeverCreatePartialAccounts()
+    public async Task MissingGeneralAcknowledgementNeverCreatesPartialAccount()
     {
         await using var f = await Fixture.Create();
-        var valid = f.Valid();
-        var invalid = new[]
-        {
-            valid with { BusinessGroupIds = null }, valid with { BusinessGroupIds = [] },
-            valid with { BusinessGroupIds = [Guid.Empty] },
-            valid with { BusinessGroupIds = [BusinessGroupPolicy.DecorInvitationsId, BusinessGroupPolicy.DecorInvitationsId] },
-            valid with { BusinessGroupIds = [BusinessGroupPolicy.DecorInvitationsId, Guid.NewGuid()] },
-            valid with { PartnershipPolicyAccepted = false }
-        };
-        foreach (var request in invalid)
-        {
-            await Assert.ThrowsAsync<DomainException>(() => f.Register.Handle(request, default));
-            Assert.Empty(await f.Db.Users.ToListAsync()); Assert.Empty(await f.Db.Vendors.ToListAsync());
-            Assert.Empty(await f.Db.VendorBusinessGroups.ToListAsync());
-        }
+        await Assert.ThrowsAsync<DomainException>(() => f.Register.Handle(f.Valid() with { PartnershipPolicyAccepted = false }, default));
+        Assert.Empty(await f.Db.Users.ToListAsync()); Assert.Empty(await f.Db.Vendors.ToListAsync());
+        Assert.Empty(await f.Db.VendorBusinessGroups.ToListAsync());
     }
 
     [Fact]
-    public async Task InactiveOrInconsistentPoliciesAreRejectedAndInactiveGroupsLeavePublicOptions()
+    public async Task RegistrationDoesNotDependOnGroupAvailabilityOrClaimGroupPolicyAcceptance()
     {
         await using var f = await Fixture.Create();
         var group = await f.Db.BusinessGroups.SingleAsync(item => item.Id == BusinessGroupPolicy.PhotoBridalMakeupId);
         f.Db.Entry(group).Property(item => item.IsActive).CurrentValue = false;
         await f.Db.SaveChangesAsync();
-        await Assert.ThrowsAsync<DomainException>(() => f.Register.Handle(f.Valid(), default));
+        var first = await f.Register.Handle(f.Valid(), default);
         var publicGroups = await new GetBusinessGroupsQueryHandler(f.Db).Handle(new(), default);
         Assert.Equal(4, publicGroups.Count); Assert.DoesNotContain(publicGroups, item => item.Id == group.Id);
 
@@ -149,9 +135,28 @@ public class VendorBusinessGroupTests
         f.Db.Entry(group).Property(item => item.IsActive).CurrentValue = true;
         f.Db.Entry(group).Property(item => item.PolicyVersion).CurrentValue = "different-unapproved-fixture-version";
         await f.Db.SaveChangesAsync();
-        await Assert.ThrowsAsync<DomainException>(() => f.Register.Handle(f.Valid(), default));
-        Assert.Empty(await f.Db.Users.ToListAsync()); Assert.Empty(await f.Db.Vendors.ToListAsync());
+        var second = await f.Register.Handle(f.Valid("other-new-owner@example.invalid"), default);
+        Assert.NotEqual(first.User.Id, second.User.Id);
+        Assert.Equal(2, await f.Db.Users.CountAsync()); Assert.Equal(2, await f.Db.Vendors.CountAsync());
+        Assert.All(await f.Db.Vendors.AsNoTracking().ToListAsync(), vendor => Assert.Equal(BusinessGroupPolicy.ServiceCategoryRegistrationVersion, vendor.PartnershipPolicyVersion));
         Assert.Empty(await f.Db.VendorBusinessGroups.ToListAsync());
+    }
+
+    [Fact]
+    public async Task LegacyGroupInputsAreIgnoredWithoutAssigningMembershipOrClientChosenRate()
+    {
+        await using var f = await Fixture.Create();
+        List<Guid>?[] oldInputs = [null, [], [Guid.Empty], [BusinessGroupPolicy.DecorInvitationsId],
+            [BusinessGroupPolicy.PhotoBridalMakeupId, BusinessGroupPolicy.PhotoBridalMakeupId], [Guid.NewGuid()]];
+        for (var index = 0; index < oldInputs.Length; index++)
+        {
+            var registered = await f.Register.Handle(f.Valid($"compat-{index}@example.invalid") with { BusinessGroupIds = oldInputs[index] }, default);
+            var vendor = await f.Db.Vendors.AsNoTracking().SingleAsync(row => row.Id == registered.User.VendorId);
+            Assert.Equal(0, vendor.CommissionRate);
+            Assert.Equal(BusinessGroupPolicy.ServiceCategoryRegistrationVersion, vendor.PartnershipPolicyVersion);
+        }
+        Assert.Equal(oldInputs.Length, await f.Db.Users.CountAsync());
+        Assert.Empty(await f.Db.VendorBusinessGroups.ToListAsync()); Assert.Empty(await f.Db.Commissions.ToListAsync());
     }
 
     [Fact]
@@ -160,6 +165,12 @@ public class VendorBusinessGroupTests
         await using var f = await Fixture.Create();
         var first = await f.Register.Handle(f.Valid(), default);
         var second = await f.Register.Handle(f.Valid("other-owner@example.invalid") with { BusinessGroupIds = [BusinessGroupPolicy.OtherEventsId] }, default);
+        // Historical memberships remain independently readable but no longer arise at signup.
+        f.Db.VendorBusinessGroups.AddRange(
+            VendorBusinessGroup.Create(first.User.VendorId!.Value, BusinessGroupPolicy.DecorInvitationsId),
+            VendorBusinessGroup.Create(first.User.VendorId.Value, BusinessGroupPolicy.PhotoBridalMakeupId),
+            VendorBusinessGroup.Create(second.User.VendorId!.Value, BusinessGroupPolicy.OtherEventsId));
+        await f.Db.SaveChangesAsync();
         var own = await new GetMyBusinessGroupsQueryHandler(f.Db, new Current(first.User.Id)).Handle(new(), default);
         Assert.Equal(2, own.Groups.Count); Assert.DoesNotContain(own.Groups, group => group.Id == BusinessGroupPolicy.OtherEventsId);
         var other = await new GetMyBusinessGroupsQueryHandler(f.Db, new Current(second.User.Id)).Handle(new(), default);
@@ -359,7 +370,8 @@ public class VendorBusinessGroupTests
                 BusinessGroupIds: [BusinessGroupPolicy.DecorInvitationsId, BusinessGroupPolicy.PhotoBridalMakeupId], PartnershipPolicyAccepted: true), default);
             db.ChangeTracker.Clear();
             Assert.Equal(0m, (await db.Vendors.SingleAsync(item => item.Id == signup.User.VendorId)).CommissionRate);
-            Assert.Equal(2, await db.VendorBusinessGroups.CountAsync(item => item.VendorId == signup.User.VendorId));
+            Assert.Empty(await db.VendorBusinessGroups.Where(item => item.VendorId == signup.User.VendorId).ToListAsync());
+            Assert.Equal(BusinessGroupPolicy.ServiceCategoryRegistrationVersion, (await db.Vendors.SingleAsync(item => item.Id == signup.User.VendorId)).PartnershipPolicyVersion);
             Assert.Empty(await db.VendorBusinessGroups.Where(item => item.VendorId == vendorId).ToListAsync());
             Assert.Equal(.10m, (await db.BookingContracts.SingleAsync(item => item.Id == contractId)).CommissionRateSnapshot);
         }
@@ -395,8 +407,7 @@ public class VendorBusinessGroupTests
         public Hasher Hasher { get; } = new();
         public RegisterVendorCommandHandler Register => new(Db, Hasher, new Jwt());
         public RegisterVendorCommand Valid(string email = "new-owner@example.invalid") => new("Synthetic owner", email,
-            "0901234567", Password, "Synthetic shop", "HCM", BusinessGroupIds:
-            [BusinessGroupPolicy.DecorInvitationsId, BusinessGroupPolicy.PhotoBridalMakeupId], PartnershipPolicyAccepted: true);
+            "0901234567", Password, "Synthetic shop", "HCM", PartnershipPolicyAccepted: true);
         public ApplicationDbContext OpenContext() => new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options);
         public static async Task<Fixture> Create()
         {

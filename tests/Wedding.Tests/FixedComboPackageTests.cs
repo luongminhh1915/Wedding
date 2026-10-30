@@ -121,6 +121,28 @@ public class FixedComboPackageTests
     }
 
     [Fact]
+    public async Task SameCategoryPackageClaimsWizardSeedOnlyOnceAndCancellationRestoresOriginalEstimate()
+    {
+        await using var fixture = await Fixture.Create();
+        var seed = BudgetItem.Create(fixture.CustomerActor.UserId!.Value, fixture.First.CategoryId, "Chụp ảnh cưới", 8_000_000);
+        seed.MarkPlanTemplate("photo"); fixture.Db.BudgetItems.Add(seed); await fixture.Db.SaveChangesAsync();
+        var package = await fixture.Publish();
+        var order = await new SubmitComboOrderCommandHandler(fixture.Db, fixture.CustomerActor, new Notify())
+            .Handle(new(package.Id, [], fixture.Date, 100, "0901234567", null, "HCM", fixture.Selections, 2_500_000), default);
+        var lines = await fixture.Db.ComboOrderItems.AsNoTracking().Where(line => line.ComboOrderId == order.Id).ToListAsync();
+        Assert.Equal(2, lines.Select(line => line.BudgetItemId).Distinct().Count());
+        Assert.Single(lines, line => line.BudgetItemId == seed.Id);
+        var reserved = await fixture.Db.BudgetItems.AsNoTracking().ToListAsync();
+        Assert.Equal(2, reserved.Count); Assert.Equal(order.Total, reserved.Sum(row => row.PlannedCost));
+        foreach (var line in lines)
+            Assert.Equal(line.Price - line.DiscountShare, reserved.Single(row => row.Id == line.BudgetItemId).PlannedCost);
+        await new CancelComboOrderCommandHandler(fixture.Db, fixture.CustomerActor)
+            .Handle(new(order.Id), default);
+        var restored = Assert.Single(await fixture.Db.BudgetItems.AsNoTracking().ToListAsync());
+        Assert.Equal(seed.Id, restored.Id); Assert.Equal(8_000_000, restored.PlannedCost); Assert.Equal("photo", restored.PlanTemplateKey);
+    }
+
+    [Fact]
     public async Task ComponentContentChangesAfterSubmissionRequireANewReviewedSnapshot()
     {
         await using var fixture = await Fixture.Create(); var pending = await fixture.Save(fixture.Command);
@@ -152,6 +174,49 @@ public class FixedComboPackageTests
         Assert.Equal("Pending", (await fixture.Db.ComboTemplateRevisions.AsNoTracking().SingleAsync()).Status);
     }
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public async Task FixedDraftOrPendingProposalCannotDowngradeToOneServiceDynamicCreation(bool submit)
+    {
+        await using var fixture = await Fixture.Create();
+        var saved = await fixture.Save(fixture.Command with { SubmitForApproval = submit });
+        var originalRevision = await fixture.Db.ComboTemplateRevisions.AsNoTracking().SingleAsync();
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Save(fixture.Command with
+        {
+            Id = saved.Id, PricingMode = "Dynamic", ComboPrice = null, Items = [fixture.Slot(fixture.First)]
+        }));
+        var unchanged = await fixture.Db.ComboTemplateRevisions.AsNoTracking().SingleAsync();
+        Assert.Equal(originalRevision.Id, unchanged.Id); Assert.Equal(originalRevision.SnapshotJson, unchanged.SnapshotJson);
+        Assert.Empty((await fixture.Builder()).Templates);
+    }
+
+    [Fact]
+    public async Task RealLegacyDynamicCanStillBeRevisedButItsNewFixedDraftCannotDowngrade()
+    {
+        await using var fixture = await Fixture.Create();
+        var legacy = ComboTemplate.Create("Existing legacy dynamic", "Popular", "Classic", null, null, 0);
+        legacy.StageUnpublished(fixture.Vendor.Id, "Draft"); fixture.Db.ComboTemplates.Add(legacy); await fixture.Db.SaveChangesAsync();
+        var legacyCommand = fixture.Command with { Id = legacy.Id, PricingMode = "Dynamic", ComboPrice = null, Items = [fixture.Slot(fixture.First)] };
+        var saved = await fixture.Save(legacyCommand); await fixture.Review(saved.Id);
+        var published = Assert.Single((await fixture.Builder()).Templates);
+        Assert.Equal("Dynamic", published.PricingMode); Assert.Single(published.Items); Assert.Null(published.ComboPrice);
+        var fixedDraft = await fixture.Save(fixture.Command with { Id = legacy.Id, SubmitForApproval = false });
+        Assert.Equal("FixedPrice", fixedDraft.LatestRevision!.Proposal!.PricingMode);
+        Assert.Equal("Dynamic", fixedDraft.PricingMode); // Published legacy version is still intact.
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Save(legacyCommand));
+        Assert.Equal(2, await fixture.Db.ComboTemplateRevisions.CountAsync());
+        Assert.Equal("Dynamic", Assert.Single((await fixture.Builder()).Templates).PricingMode);
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(-1)]
+    public async Task FixedPackagePriceMustBePositive(decimal comboPrice)
+    {
+        await using var fixture = await Fixture.Create();
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Save(fixture.Command with { ComboPrice = comboPrice }));
+        Assert.Empty(await fixture.Db.ComboTemplates.ToListAsync());
+    }
+
     [SqlServerFact]
     public async Task SqlAdditiveUpgradePreservesLegacyModeAndRunsFixedSameCategoryOrderWithoutModelDrift()
     {
@@ -173,6 +238,8 @@ public class FixedComboPackageTests
             await using var fixture = await Fixture.Create(db);
             var package = await fixture.Publish();
             Assert.Equal(2_500_000, (await fixture.Price(package.Id)).Total);
+            var seed = BudgetItem.Create(fixture.CustomerActor.UserId!.Value, fixture.First.CategoryId, "Chụp ảnh cưới", 8_000_000);
+            seed.MarkPlanTemplate("photo"); db.BudgetItems.Add(seed); await db.SaveChangesAsync();
             var order = await new SubmitComboOrderCommandHandler(db, fixture.CustomerActor, new Notify()).Handle(
                 new(package.Id, [], fixture.Date, 100, "0901234567", null, "HCM", fixture.Selections, 2_500_000), default);
             Assert.Equal(2_500_000, order.Total); Assert.All(order.Items, item => Assert.NotNull(item.Component));
@@ -180,7 +247,13 @@ public class FixedComboPackageTests
             db.ChangeTracker.Clear();
             Assert.Equal(3_000_000, (await db.ComboTemplates.SingleAsync(template => template.Id == package.Id)).OriginalPrice);
             Assert.Equal(2, await db.ComboOrderItems.CountAsync(item => item.ComboOrderId == order.Id && item.ComponentSnapshotJson != null));
+            var budgetIds = await db.ComboOrderItems.Where(item => item.ComboOrderId == order.Id).Select(item => item.BudgetItemId).ToListAsync();
+            Assert.Equal(2, budgetIds.Distinct().Count()); Assert.Contains(seed.Id, budgetIds);
+            Assert.Equal(order.Total, await db.BudgetItems.Where(row => budgetIds.Contains(row.Id)).SumAsync(row => row.PlannedCost));
             Assert.Equal("Dynamic", (await db.ComboTemplates.SingleAsync(template => template.Id == oldId)).PricingMode);
+            await new CancelComboOrderCommandHandler(db, fixture.CustomerActor).Handle(new(order.Id), default);
+            var restored = Assert.Single(await db.BudgetItems.AsNoTracking().ToListAsync());
+            Assert.Equal(seed.Id, restored.Id); Assert.Equal(8_000_000, restored.PlannedCost); Assert.Equal("photo", restored.PlanTemplateKey);
         }
         finally { Assert.StartsWith("WeddingPlanTest_FixedCombo_", database); await db.Database.EnsureDeletedAsync(); }
     }

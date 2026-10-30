@@ -27,5 +27,5 @@ export function readStoredSession(rawUser: string | null, token: string | null, 
 }
 export function shouldInvalidateSession(status: number | undefined, url: string | undefined, bearer: unknown, currentToken: string | null) {
   if (status !== 401 || !currentToken || bearer !== `Bearer ${currentToken}`) return false;
-  return !/\/api\/auth\/(login|register-customer|register-vendor|providers|otp\/(request|verify)|google)\/?(?:\?|$)/i.test(url ?? "");
+  return !/\/api\/auth\/(login|register-customer|register-vendor|providers|otp\/(request|verify)|google|facebook)\/?(?:\?|$)/i.test(url ?? "");
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Link,
   NavLink,
@@ -8,25 +8,52 @@ import {
 } from "react-router-dom";
 import {
   ArrowUpRight,
+  BookOpen,
+  BriefcaseBusiness,
   ChevronDown,
   Heart,
   House,
-  LayoutDashboard,
   LogOut,
   PanelsTopLeft,
   Star,
-  Wallet,
-  CheckCheck,
   FileCheck2,
   UserRound,
+  Package,
+  MessageSquare,
+  ShieldCheck,
+  Wallet,
+  Gavel,
+  Users,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { dashboardPath } from "../utils/navigation";
-import AuthModal from "../features/auth/components/AuthModal";
+import { safeAnchorId } from "../utils/anchorNavigation";
 import NotificationBell from "./NotificationBell";
 import ComboCartLink from "./ComboCartLink";
 import "../styles/combo-builder.css";
 import { useIntentStore } from "../store/intentStore";
+import { CustomerNavigationGroups } from "../features/customer/CustomerToolNavigation";
+import { customerMobileSection, isCustomerWorkspace } from "../features/customer/customerNavigationModel";
+import { actorWorkspaceNavigation, usesCustomerNavigation } from "./actorNavigationModel";
+
+const actorNavigationIcons = {
+  overview: PanelsTopLeft, listings: Star, combos: Package, leads: MessageSquare,
+  moderation: ShieldCheck, reviews: Star, "published-listings": Star,
+  finance: Wallet, settlements: FileCheck2, disputes: Gavel,
+  emergency: ShieldCheck, users: Users, account: UserRound, cms: BookOpen,
+};
+
+export function ActorWorkspaceLinks({ role, pathname, search = "", mobile = false }: {
+  role: unknown; pathname: string; search?: string; mobile?: boolean;
+}) {
+  return <>{actorWorkspaceNavigation(role, pathname, search, mobile).map(item => {
+    const Icon = actorNavigationIcons[item.id as keyof typeof actorNavigationIcons];
+    return <Link key={item.id} to={item.to} className={item.active ? "active" : undefined}
+      aria-current={item.active ? "page" : undefined}>
+      {mobile && <Icon size={21} aria-hidden="true" />}
+      {mobile ? <span>{item.mobileLabel}</span> : item.label}
+    </Link>;
+  })}</>;
+}
 
 export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
   return (
@@ -35,7 +62,7 @@ export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
       className={`wm-logo${light ? " is-light" : ""}`}
       aria-label="Wedding Match — Trang chủ"
     >
-      <img src="/wedding-match/mark.svg" alt="" width="36" height="36" />
+      <img src="/wedding-match/brand-mark.svg" alt="" width="44" height="44" />
       <span className="brand-wordmark">
         WEDDING <strong>MATCH</strong>
       </span>
@@ -44,7 +71,6 @@ export function WeddingMatchLogo({ light = false }: { light?: boolean }) {
 }
 
 export function WeddingMatchHeader() {
-  const [authOpen, setAuthOpen] = useState(false);
   const { user, token, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,50 +86,30 @@ export function WeddingMatchHeader() {
     <header className="wm-header">
       <WeddingMatchLogo light />
       <nav className="wm-desktop-nav" aria-label="Điều hướng chính">
+        {usesCustomerNavigation(user?.role) ? <>
         <NavLink to="/" end>
           Trang chủ
         </NavLink>
-        {user && user.role !== "Customer" ? <NavLink to={dashboardPath(user)}>{user.role === "VendorOwner" ? "Quản lý nhà cung cấp" : "Không gian quản trị"}</NavLink> : <details
+        <NavLink to="/combo">Combo cưới</NavLink>
+        <details
           className="wm-nav-menu"
-          data-active={
-            location.pathname.startsWith("/customer/") &&
-            !location.search.includes("tab=invitations")
-          }
+          data-active={isCustomerWorkspace(location.pathname)}
         >
           <summary>
-            Planner <ChevronDown size={13} />
+            Wedding Planner <ChevronDown size={13} />
           </summary>
-          <div className="wm-dropdown">
-            <Link to="/customer/dashboard">
-              <LayoutDashboard size={17} /> Tổng quan kế hoạch
-            </Link>
-            <Link to="/customer/dashboard?tab=checklist">
-              <CheckCheck size={17} /> Checklist cưới
-            </Link>
-            <Link to="/customer/dashboard?tab=budget">
-              <Wallet size={17} /> Ngân sách cưới
-            </Link>
-            <Link to="/combo"><Star size={17} /> Khám phá dịch vụ & combo</Link>
-            <Link to="/customer/dashboard?tab=combos"><PanelsTopLeft size={17} /> Lựa chọn của bạn</Link>
-            <Link to="/customer/dashboard?tab=contracts">
-              <FileCheck2 size={17} /> Hợp đồng & tư vấn
-            </Link>
+          <div className="wm-dropdown !w-72 max-h-[calc(100dvh-120px)] max-w-[calc(100vw-32px)] overflow-y-auto">
+            <CustomerNavigationGroups pathname={location.pathname} search={location.search} compact />
           </div>
-        </details>}
-        {(!user || user.role === "Customer") && <Link
-          className={
-            location.pathname.startsWith("/customer/") &&
-            location.search.includes("tab=invitations")
-              ? "active"
-              : ""
-          }
-          to="/invitation"
-        >
-          Thiệp mời <ChevronDown size={13} />
-        </Link>}
-        <NavLink to="/browse">Dịch vụ</NavLink>
-        <NavLink to="/combo">Combo cưới</NavLink>
+        </details>
         <NavLink to="/cam-nang">Cẩm nang</NavLink>
+        <Link className="wm-about-nav" to="/#cong-cu">
+          Về Wedding Match
+        </Link>
+        <Link className="wm-partner-nav" to="/register?role=vendor">
+          Dành cho NCC <ArrowUpRight size={13} aria-hidden="true" />
+        </Link>
+        </> : <ActorWorkspaceLinks role={user?.role} pathname={location.pathname} search={location.search} />}
       </nav>
       <div className="wm-header-actions">
         <ComboCartLink />
@@ -125,7 +131,6 @@ export function WeddingMatchHeader() {
               aria-label="Đăng xuất"
               onClick={() => {
                 logout();
-                setAuthOpen(false);
                 navigate("/login", { replace: true });
               }}
             >
@@ -133,12 +138,11 @@ export function WeddingMatchHeader() {
             </button>
           </>
         ) : (
-          <button type="button" className="wm-login" onClick={() => { useIntentStore.getState().remember(location.pathname + location.search); setAuthOpen(true); }}>
+          <button type="button" className="wm-login" onClick={() => { useIntentStore.getState().remember(location.pathname + location.search); navigate("/login", { state: { from: location.pathname + location.search } }); }}>
             Đăng nhập
           </button>
         )}
       </div>
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </header>
   );
 }
@@ -198,47 +202,30 @@ export function WeddingMatchFooter() {
   );
 }
 
-function MobileNavigation() {
+export function MobileNavigation() {
   const { user } = useAuthStore();
-  const { pathname, search } = useLocation();
-  const tab = new URLSearchParams(search).get("tab");
-  const items = user && user.role !== "Customer" ? [
-    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
-    { to: dashboardPath(user), label: user.role === "VendorOwner" ? "Quản lý NCC" : "Quản trị", icon: PanelsTopLeft, active: pathname === dashboardPath(user) },
-    { to: "/browse", label: "Dịch vụ", icon: Star, active: pathname === "/browse" || pathname.startsWith("/listings") },
-    { to: "/cam-nang", label: "Cẩm nang", icon: FileCheck2, active: pathname === "/cam-nang" },
-    { to: "/account", label: "Tài khoản", icon: UserRound, active: pathname === "/account" },
-  ] : [
-    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
+  const { pathname, search, hash } = useLocation();
+  if (!usesCustomerNavigation(user?.role)) return (
+    <nav className="wm-mobile-nav" aria-label="Điều hướng chính">
+      <ActorWorkspaceLinks role={user?.role} pathname={pathname} search={search} />
+    </nav>
+  );
+  const customerActive = customerMobileSection(pathname);
+  const items = [
+    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" && !hash },
+    { to: "/combo", label: "Combo cưới", icon: Star, active: customerActive === "combo" },
     {
       to: "/customer/dashboard",
-      label: "Kế hoạch",
+      label: "Wedding Planner",
       icon: PanelsTopLeft,
-      active: pathname.startsWith("/customer") && tab !== "invitations",
+      active: customerActive === "planner",
     },
-    {
-      to: "/combo",
-      label: "Combo",
-      icon: Star,
-      active: pathname === "/combo" || pathname.startsWith("/combo/"),
-    },
-    {
-      to: "/browse",
-      label: "Dịch vụ",
-      icon: Star,
-      active: pathname === "/browse" || pathname.startsWith("/listings"),
-    },
-    {
-      to: user ? "/account" : "/login",
-      label: "Tài khoản",
-      icon: UserRound,
-      active:
-        pathname === "/account" ||
-        pathname === "/login",
-    },
+    { to: "/cam-nang", label: "Cẩm nang", icon: BookOpen, active: pathname === "/cam-nang" || pathname.startsWith("/cam-nang/") },
+    { to: "/#cong-cu", label: "Về Wedding Match", icon: Heart, active: pathname === "/" && hash === "#cong-cu" },
+    { to: "/register?role=vendor", label: "Dành cho NCC", icon: BriefcaseBusiness, active: pathname === "/register" && search.includes("role=vendor") },
   ];
   return (
-    <nav className="wm-mobile-nav" aria-label="Điều hướng di động">
+    <nav className="wm-mobile-nav" aria-label="Điều hướng chính">
       {items.map(({ to, label, icon: Icon, active }) => (
         <Link
           key={label}
@@ -246,7 +233,7 @@ function MobileNavigation() {
           className={active ? "active" : ""}
           aria-current={active ? "page" : undefined}
         >
-          <Icon size={21} />
+          <Icon size={17} aria-hidden="true" />
           <span>{label}</span>
         </Link>
       ))}
@@ -257,11 +244,12 @@ function MobileNavigation() {
 export default function WeddingMatchLayout() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
-    if (hash)
+    const anchorId = safeAnchorId(hash);
+    if (anchorId)
       document
-        .getElementById(decodeURIComponent(hash.slice(1)))
+        .getElementById(anchorId)
         ?.scrollIntoView({ behavior: "smooth" });
-    else window.scrollTo(0, 0);
+    else if (!hash) window.scrollTo(0, 0);
   }, [pathname, hash]);
   return (
     <div className="wm-theme">
@@ -269,11 +257,11 @@ export default function WeddingMatchLayout() {
         Đến nội dung chính
       </a>
       <WeddingMatchHeader />
+      <MobileNavigation />
       <div id="main-content">
         <Outlet />
       </div>
       <WeddingMatchFooter />
-      <MobileNavigation />
     </div>
   );
 }

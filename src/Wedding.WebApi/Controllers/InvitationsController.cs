@@ -45,7 +45,7 @@ public class InvitationsController : ControllerBase
     /// [Customer] Tạo mới hoặc cập nhật thiệp cưới điện tử (E-Invitation Builder).
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SaveInvitation([FromBody] SaveInvitationCommand command)
     {
         var result = await _mediator.Send(command);

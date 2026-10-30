@@ -14,7 +14,11 @@ public record ServiceDetailsDto(string ShortDescription = "", string PriceUnit =
     string ExcludedItems = "", string Duration = "", string Process = "", string ServiceOptions = "",
     string AdditionalFees = "", string Terms = "", string ReschedulePolicy = "", List<string>? PortfolioUrls = null,
     string? VideoUrl = null, string Highlights = "", string CustomerRequirements = "", string Notes = "",
-    FullServiceDetailsDto? FullService = null);
+    FullServiceDetailsDto? FullService = null, List<ServiceCollectionDto>? Collections = null,
+    ServiceLatestUpdateDto? LatestUpdate = null);
+
+public record ServiceCollectionDto(string Id, string Name, List<string> Images);
+public record ServiceLatestUpdateDto(string Content = "", string ImageUrl = "");
 
 public static class ListingServiceDetails
 {
@@ -47,6 +51,8 @@ public static class ListingServiceDetails
             Highlights = Text(details.Highlights, "Điểm nổi bật"),
             CustomerRequirements = Text(details.CustomerRequirements, "Yêu cầu dành cho khách hàng"),
             Notes = Text(details.Notes, "Ghi chú"),
+            Collections = ListingStudioContent.Collections(details.Collections),
+            LatestUpdate = ListingStudioContent.LatestUpdate(details.LatestUpdate),
             FullService = full == null ? null : full with
             {
                 Scope = Text(full.Scope, "Phạm vi tổ chức"),

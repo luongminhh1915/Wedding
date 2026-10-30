@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Send, Trash2 } from "lucide-react";
 import axiosClient from "../../../services/axiosClient";
@@ -11,14 +11,17 @@ import {
 import { Empty, ErrorText, Panel, StatusPill } from "../ui";
 import { vnd, vnDate } from "../format";
 import { useNotificationFocus } from "../../notifications/useNotificationFocus";
+import { MoneyInput } from "../../../components/MoneyInput";
 
 /** P4 – NCC gửi báo giá có cấu trúc cho các yêu cầu đã tiếp nhận (gồm cả Lead đến từ combo). */
 export function VendorQuotes() {
-  const { data: leads = [] } = useQuery({
+  const leadQuery = useQuery({
     queryKey: ["vendor-leads", "quotable"],
     queryFn: async () =>
       (await axiosClient.get<Lead[]>("/api/leads/vendor-inbox")).data,
   });
+  const leads = leadQuery.data ?? [];
+  const leadsReady = !leadQuery.isPending && !leadQuery.isError && !leadQuery.isFetching;
   const { data: quotes = [], isPending: loadingQuotes, isError: quotesError, refetch: reloadQuotes } = useQuotes();
   const { focusId, missing } = useNotificationFocus("quote", quotes.map(quote => quote.id), !loadingQuotes && !quotesError);
   const send = useSendQuote();
@@ -36,7 +39,14 @@ export function VendorQuotes() {
   );
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const total = subtotal + Math.round(subtotal * vatRate);
+  const selectedLead = quotable.find(lead => lead.id === leadId);
+  const sendLock = useRef(false);
+  const latestSelection = useRef({ ready: leadsReady, leadId, selectedLeadId: selectedLead?.id });
+  useLayoutEffect(() => {
+    latestSelection.current = { ready: leadsReady, leadId, selectedLeadId: selectedLead?.id };
+  }, [leadsReady, leadId, selectedLead?.id]);
   const pick = (id: string) => {
+    if (!leadsReady || send.isPending || sendLock.current) return;
     setLeadId(id);
     const l = leads.find((x) => x.id === id);
     setItems([
@@ -48,25 +58,44 @@ export function VendorQuotes() {
     ]);
     setDeposit(Math.round(((l?.estimatedBudget ?? 0) * 0.3) / 100000) * 100000);
   };
+  const submit = () => {
+    const current = latestSelection.current;
+    if (sendLock.current || send.isPending || !current.ready ||
+      !current.selectedLeadId || current.leadId !== leadId || current.selectedLeadId !== leadId || total <= 0) return;
+    sendLock.current = true;
+    send.mutate({ leadId, items, depositAmount: deposit, terms, validDays: 7, vatRate }, {
+      onSuccess: () => setLeadId(""),
+      onSettled: () => { sendLock.current = false; },
+    });
+  };
 
   return (
     <div className="wd">
       <Panel eyebrow="Báo giá" title="Gửi báo giá cho cặp đôi">
-        {quotable.length === 0 ? (
+        {leadQuery.isError ? (
+          <div role="alert" className="mb-3 space-y-2">
+            <p>Chưa tải được yêu cầu tư vấn. Bản nháp đang nhập được giữ nguyên; hãy tải lại trước khi gửi báo giá.</p>
+            <button type="button" className="btn btn-outline" disabled={leadQuery.isFetching} onClick={() => void leadQuery.refetch()}>Tải lại yêu cầu</button>
+          </div>
+        ) : leadQuery.isPending ? <p role="status">Đang tải yêu cầu tư vấn...</p>
+          : leadQuery.isFetching ? <p role="status" className="mb-3">Đang cập nhật yêu cầu tư vấn. Vui lòng chờ trước khi gửi báo giá.</p> : null}
+        {leadsReady && quotable.length === 0 && !leadId ? (
           <Empty>
             Chưa có yêu cầu nào đã tiếp nhận. Tiếp nhận Lead ở tab “Yêu cầu tư
             vấn” trước.
           </Empty>
-        ) : (
+        ) : quotable.length > 0 || leadId ? (
           <div className="space-y-3">
             <label className="block">
               <span className="label">Yêu cầu tư vấn</span>
               <select
                 className="input"
                 value={leadId}
+                disabled={!leadsReady || send.isPending}
                 onChange={(e) => pick(e.target.value)}
               >
                 <option value="">— Chọn yêu cầu —</option>
+                {leadId && !selectedLead && <option value={leadId} disabled>Yêu cầu đã chọn không còn nhận báo giá</option>}
                 {quotable.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.customerName} · {l.listingTitle ?? "Dịch vụ"} ·{" "}
@@ -76,8 +105,9 @@ export function VendorQuotes() {
                 ))}
               </select>
             </label>
+            {leadsReady && leadId && !selectedLead && <p role="alert">Yêu cầu đã chọn không còn nhận báo giá. Bản nháp được giữ để đối chiếu; hãy chọn một yêu cầu đang tiếp nhận trước khi gửi.</p>}
             {leadId && (
-              <>
+              <fieldset className="min-w-0 space-y-3 border-0 p-0" disabled={!leadsReady || !selectedLead || send.isPending}>
                 {items.map((it, k) => (
                   <div
                     key={k}
@@ -183,28 +213,16 @@ export function VendorQuotes() {
                   </p>
                   <button
                     className="btn btn-primary"
-                    disabled={send.isPending || total <= 0}
-                    onClick={() =>
-                      send.mutate(
-                        {
-                          leadId,
-                          items,
-                          depositAmount: deposit,
-                          terms,
-                          validDays: 7,
-                          vatRate,
-                        },
-                        { onSuccess: () => setLeadId("") },
-                      )
-                    }
+                    disabled={!leadsReady || !selectedLead || send.isPending || total <= 0}
+                    onClick={submit}
                   >
                     <Send size={14} /> Gửi báo giá
                   </button>
                 </div>
-              </>
+              </fieldset>
             )}
           </div>
-        )}
+        ) : null}
       </Panel>
       <Panel title="Báo giá đã gửi">
         {missing && <p role="status" className="text-sm muted">Báo giá trong thông báo không còn khả dụng trong tài khoản của bạn.</p>}
@@ -242,4 +260,3 @@ export function VendorQuotes() {
     </div>
   );
 }
-import { MoneyInput } from "../../../components/MoneyInput";

@@ -8,6 +8,7 @@ import PostLoginRedirect from "./PostLoginRedirect";
 import PublicAuthRoute from "./PublicAuthRoute";
 
 const LoginForm = lazy(() => import("../features/auth/components/LoginForm"));
+const PasswordResetPage = lazy(() => import("../features/auth/components/PasswordResetPage"));
 const RegisterForm = lazy(
   () => import("../features/auth/components/RegisterForm"),
 );
@@ -52,6 +53,7 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/invitation/:slug" element={<PublicInvitationPage />} />
         <Route element={<WeddingMatchLayout />}>
+          <Route path="/reset-password" element={<PasswordResetPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/account" element={<AccountPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />

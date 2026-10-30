@@ -44,7 +44,7 @@ public class BookingContract : BaseEntity
     public Vendor Vendor { get; private set; } = null!;
     public User Customer { get; private set; } = null!;
     public ICollection<Commission> Commissions { get; private set; } = new List<Commission>();
-    public Review? Review { get; private set; }
+    public ICollection<Review> Reviews { get; private set; } = new List<Review>();
 
     private BookingContract() { } // Dành cho EF Core
 
@@ -126,7 +126,7 @@ public class BookingContract : BaseEntity
     public void LinkQuote(Guid quoteId) { QuoteId = quoteId; SetUpdated(); }
 
     public void SnapshotCommissionRate(decimal rate) { if (rate is < 0.03m or > 0.12m) throw new DomainException("Hoa hồng phải trong khung 3–12%."); CommissionRateSnapshot ??= rate; SetUpdated(); }
-    public void SnapshotCommissionCategory(Category category, string rateSource)
+    public void SnapshotCommissionCategory(Category category, string rateSource, string? policyVersion = null)
     {
         if (Status != ContractStatus.Confirmed || !ConfirmedAt.HasValue || !CommissionRateSnapshot.HasValue)
             throw new DomainException("Chỉ lưu danh mục/chính sách hoa hồng cùng lần xác nhận hợp đồng.");
@@ -134,7 +134,7 @@ public class BookingContract : BaseEntity
             throw new DomainException("Danh mục/chính sách hoa hồng đã chốt không được ghi đè.");
         if (category.Id == Guid.Empty || !category.IsActive || string.IsNullOrWhiteSpace(category.Name))
             throw new DomainException("Danh mục dịch vụ không hợp lệ để xác nhận hợp đồng.");
-        if (rateSource is not ("LegacyVendor" or "CategoryDefault"))
+        if (rateSource is not ("LegacyVendor" or "CategoryDefault") && !rateSource.StartsWith("PolicyRule:", StringComparison.Ordinal))
             throw new DomainException("Nguồn chính sách hoa hồng không hợp lệ.");
         if (rateSource == "CategoryDefault" && (category.BusinessGroup == null || !category.BusinessGroup.IsActive ||
             category.BusinessGroupId != category.BusinessGroup.Id || string.IsNullOrWhiteSpace(category.BusinessGroup.PolicyVersion)))
@@ -146,7 +146,7 @@ public class BookingContract : BaseEntity
         CommissionBusinessGroupNameSnapshot = category.BusinessGroup?.Name;
         CommissionRateSourceSnapshot = rateSource;
         // The current group policy did not establish a positive historical shop-wide rate.
-        CommissionPolicyVersionSnapshot = rateSource == "CategoryDefault" ? category.BusinessGroup!.PolicyVersion : null;
+        CommissionPolicyVersionSnapshot = rateSource == "CategoryDefault" ? category.BusinessGroup!.PolicyVersion : policyVersion;
         SetUpdated();
     }
     public void SetCancellationPolicy(string? policy) { if (policy?.Length > 4000) throw new DomainException("Chính sách hủy tối đa 4000 ký tự."); if (!string.IsNullOrWhiteSpace(policy)) CancellationPolicySnapshot = policy.Trim(); }

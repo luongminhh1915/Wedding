@@ -61,7 +61,7 @@ test("only an authenticated 401 for the current token invalidates a session", ()
 test("failed public login, registration and quick-login attempts do not log out another valid session", () => {
   for (const path of [
     "/api/auth/login", "/api/auth/login?from=/combo", "/api/auth/register-customer", "/api/auth/register-vendor/",
-    "/api/auth/providers", "/api/auth/otp/request", "/api/auth/otp/verify", "/api/auth/google",
+    "/api/auth/providers", "/api/auth/otp/request", "/api/auth/otp/verify", "/api/auth/google", "/api/auth/facebook",
     "https://api.example.invalid/api/auth/login", "/API/AUTH/LOGIN",
   ]) assert.equal(shouldInvalidateSession(401, path, "Bearer current-token", "current-token"), false, path);
 });

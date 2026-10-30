@@ -17,9 +17,8 @@ public class GetMyCategoriesQueryHandler(IApplicationDbContext db, ICurrentUserS
         var vendor = await ListingPublication.RequireOwner(db, actor, ct);
         var membershipIds = await db.VendorBusinessGroups.AsNoTracking().Where(membership => membership.VendorId == vendor.Id)
             .Select(membership => membership.BusinessGroupId).OrderBy(id => id).ToListAsync(ct);
-        var activeIds = await db.BusinessGroups.AsNoTracking().Where(group => group.IsActive && membershipIds.Contains(group.Id))
-            .Select(group => group.Id).ToListAsync(ct);
-        var allowed = await db.Categories.AsNoTracking().Where(category => category.IsActive && category.BusinessGroupId.HasValue && activeIds.Contains(category.BusinessGroupId.Value))
+        // Memberships are retained as historical metadata, not an authorization scope.
+        var allowed = await db.Categories.AsNoTracking().Where(category => category.IsActive && category.BusinessGroupId.HasValue && category.BusinessGroup!.IsActive)
             .OrderBy(category => category.DisplayOrder).ThenBy(category => category.Id)
             .Select(category => new CategoryDto(category.Id, category.Name, category.Slug, 0, category.RequiresCommissionBasisApproval,
                 category.BusinessGroupId, category.BusinessGroup!.Name, category.DefaultCommissionRate, category.Icon)).ToListAsync(ct);
@@ -27,8 +26,6 @@ public class GetMyCategoriesQueryHandler(IApplicationDbContext db, ICurrentUserS
             .OrderBy(category => category.DisplayOrder).ThenBy(category => category.Id)
             .Select(category => new CategoryDto(category.Id, category.Name, category.Slug, 0, category.RequiresCommissionBasisApproval,
                 category.BusinessGroupId, category.BusinessGroup != null ? category.BusinessGroup.Name : null, category.DefaultCommissionRate, category.Icon)).ToListAsync(ct);
-        var requiresReview = activeIds.Count == 0;
-        return new(allowed, existing, requiresReview, membershipIds.Count == 0 ? ListingCategoryAccess.LegacyGuidance :
-            requiresReview ? "Nhóm kinh doanh của shop đã ngừng hoạt động. Liên hệ Admin để rà soát; dịch vụ và giao dịch cũ không bị xóa." : null, membershipIds);
+        return new(allowed, existing, false, null, membershipIds);
     }
 }

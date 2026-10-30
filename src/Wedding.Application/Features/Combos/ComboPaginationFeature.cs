@@ -35,7 +35,8 @@ public class GetComboCatalogPageQueryHandler(IApplicationDbContext db) : IReques
         var categories = await db.Categories.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToListAsync(ct);
         var vendors = await db.Vendors.AsNoTracking().Where(v => eligible.Any(i => i.VendorId == v.Id)).OrderBy(v => v.BrandName)
             .Select(v => new ComboPublicVendorDto(v.Id, v.BrandName, v.Slug, v.LogoUrl, v.CoverImageUrl, v.City, v.Address, v.Bio,
-                v.IsVerified, v.TotalReviews >= 3 ? v.RatingAvg : null, v.TotalReviews)).ToListAsync(ct);
+                v.IsVerified, v.TotalReviews >= 3 ? v.RatingAvg : null, v.TotalReviews,
+                OperatingAreaRules.Read(v.OperatingRegions, v.City).Regions, OperatingAreaRules.Read(v.OperatingRegions, v.City).Nationwide)).ToListAsync(ct);
         var search = (r.Search ?? "").Trim().ToLowerInvariant();
         if (search.Length > 150) throw new DomainException("Từ khóa tìm kiếm tối đa 150 ký tự.");
         var hydratedIds = (r.SelectedItemIds ?? []).Distinct().Take(40).ToHashSet();

@@ -23,6 +23,9 @@ test('journey has six accessible local stages and suggests next steps without ga
   for (const step of JOURNEY_STAGES) assert.equal(roleAwareReturnPath('Customer', step.path), step.path);
   assert.equal(journeyNext('checklist').path, '/customer/dashboard?tab=budget');
   assert.equal(journeyNext('budget').path, '/combo');
+  assert.match(journeyNext('budget').note, /dịch vụ lẻ hoặc combo/);
+  assert.match(journeyNext('budget').note, /trao đổi với NCC nếu muốn đổi gói/);
+  assert.doesNotMatch(journeyNext('budget').note, /tùy chỉnh combo/);
   assert.equal(journeyNext('combos').path, '/customer/dashboard?tab=contracts');
   assert.equal(journeyNext('contracts'), null);
   assert.equal(journeyNext('guests'), null);

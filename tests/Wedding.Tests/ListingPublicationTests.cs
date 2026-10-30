@@ -26,6 +26,30 @@ namespace Wedding.Tests;
 public class ListingPublicationTests
 {
     [Fact]
+    public async Task StudioAlbumsAndLatestUpdateStayPrivateUntilApprovedAndRetainFinancialSnapshots()
+    {
+        await using var f = await Fixture.Create();
+        var original = await f.LiveSnapshot(); var financial = await f.FinancialSnapshot();
+        var content = new ServiceDetailsDto(Collections: [new(Guid.NewGuid().ToString(), "New approved gallery", [NewImage])],
+            LatestUpdate: new("New wedding season", NewImage));
+        await f.Edit("Original title", details: content);
+        Assert.Equal(original, await f.LiveSnapshot());
+        Assert.Empty((await f.Public()).ServiceDetails!.Collections!);
+        var reopened = (await f.Editor()).ServiceDetails!;
+        Assert.Equal("New approved gallery", Assert.Single(reopened.Collections!).Name);
+        Assert.Equal("New wedding season", reopened.LatestUpdate?.Content);
+        await f.Submit();
+        Assert.Empty((await f.Public()).ServiceDetails!.Collections!);
+        await f.Approve();
+        var published = (await f.Public()).ServiceDetails!;
+        Assert.Equal("New approved gallery", Assert.Single(published.Collections!).Name);
+        Assert.Equal(NewImage, Assert.Single(published.Collections!).Images.Single());
+        Assert.Equal("New wedding season", published.LatestUpdate?.Content);
+        Assert.Equal(financial, await f.FinancialSnapshot());
+        Assert.Equal(Cancellation, (await f.Public()).CancellationPolicy);
+    }
+
+    [Fact]
     public async Task PublishedEditsCaptureBaselineWithoutChangingTheLiveListingUntilApproved()
     {
         await using var f = await Fixture.Create();
