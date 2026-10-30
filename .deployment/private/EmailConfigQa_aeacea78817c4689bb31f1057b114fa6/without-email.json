@@ -1,0 +1,28 @@
+{
+  "AllowedHosts": "weddingmatch.website;www.weddingmatch.website",
+  "Database": {
+    "Provider": "SqlServer",
+    "ApplyMigrations": false,
+    "SeedDemoData": false
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=synthetic.invalid;Database=NoNetwork;Password=synthetic-only"
+  },
+  "JwtSettings": {
+    "Secret": "synthetic-only-not-a-real-signing-key"
+  },
+  "Google": {
+    "ClientId": "1234567890-keep.apps.googleusercontent.com"
+  },
+  "Facebook": {
+    "AppId": "1234567890000",
+    "AppSecret": "synthetic-old",
+    "GraphApiVersion": "v26.0"
+  },
+  "Uploads": {
+    "Root": "../private/uploads/keep"
+  },
+  "UnknownRoot": {
+    "Amount": 123456789012345678901234567890
+  }
+}

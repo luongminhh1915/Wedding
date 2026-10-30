@@ -1,0 +1,191 @@
+{
+  "desktop": [
+    {
+      "role": "Customer",
+      "viewport": "desktop",
+      "left": 150.60000610351562,
+      "links": [
+        "/",
+        "/invitation",
+        "/browse",
+        "/combo",
+        "/cam-nang"
+      ],
+      "mainWidth": 1050,
+      "overflow": false,
+      "right": 150.39999389648438,
+      "width": 1351
+    },
+    {
+      "role": "VendorOwner",
+      "viewport": "desktop",
+      "left": 150.60000610351562,
+      "links": [
+        "/vendor/dashboard",
+        "/vendor/dashboard?tab=listings",
+        "/vendor/dashboard?tab=combos",
+        "/vendor/dashboard?tab=leads"
+      ],
+      "mainWidth": 1050,
+      "overflow": false,
+      "right": 150.39999389648438,
+      "width": 1351
+    },
+    {
+      "role": "Moderator",
+      "viewport": "desktop",
+      "left": 150.60000610351562,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=moderation",
+        "/admin/dashboard?tab=reviews",
+        "/admin/dashboard?tab=published-listings"
+      ],
+      "mainWidth": 1050,
+      "overflow": false,
+      "right": 150.39999389648438,
+      "width": 1351
+    },
+    {
+      "role": "Finance",
+      "viewport": "desktop",
+      "left": 150.60000610351562,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=finance",
+        "/admin/dashboard?tab=settlements",
+        "/admin/dashboard?tab=disputes"
+      ],
+      "mainWidth": 1050,
+      "overflow": false,
+      "right": 150.39999389648438,
+      "width": 1351
+    },
+    {
+      "role": "CustomerCare",
+      "viewport": "desktop",
+      "left": 150.60000610351562,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=disputes",
+        "/admin/dashboard?tab=emergency"
+      ],
+      "mainWidth": 1050,
+      "overflow": false,
+      "right": 150.39999389648438,
+      "width": 1351
+    },
+    {
+      "role": "SuperAdmin",
+      "viewport": "desktop",
+      "left": 150.60000610351562,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=moderation",
+        "/admin/dashboard?tab=users",
+        "/admin/dashboard?tab=finance"
+      ],
+      "mainWidth": 1050,
+      "overflow": false,
+      "right": 150.39999389648438,
+      "width": 1351
+    }
+  ],
+  "mobile": [
+    {
+      "role": "Customer",
+      "viewport": "mobile",
+      "left": 16,
+      "links": [
+        "/",
+        "/customer/dashboard",
+        "/combo",
+        "/browse",
+        "/account"
+      ],
+      "mainWidth": 343.20001220703125,
+      "overflow": false,
+      "right": 15.79998779296875,
+      "width": 375
+    },
+    {
+      "role": "VendorOwner",
+      "viewport": "mobile",
+      "left": 16,
+      "links": [
+        "/vendor/dashboard",
+        "/vendor/dashboard?tab=listings",
+        "/vendor/dashboard?tab=combos",
+        "/vendor/dashboard?tab=leads",
+        "/account"
+      ],
+      "mainWidth": 343.20001220703125,
+      "overflow": false,
+      "right": 15.79998779296875,
+      "width": 375
+    },
+    {
+      "role": "Moderator",
+      "viewport": "mobile",
+      "left": 16,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=moderation",
+        "/admin/dashboard?tab=reviews",
+        "/admin/dashboard?tab=published-listings",
+        "/account"
+      ],
+      "mainWidth": 343.20001220703125,
+      "overflow": false,
+      "right": 15.79998779296875,
+      "width": 375
+    },
+    {
+      "role": "Finance",
+      "viewport": "mobile",
+      "left": 16,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=finance",
+        "/admin/dashboard?tab=settlements",
+        "/admin/dashboard?tab=disputes",
+        "/account"
+      ],
+      "mainWidth": 343.20001220703125,
+      "overflow": false,
+      "right": 15.79998779296875,
+      "width": 375
+    },
+    {
+      "role": "CustomerCare",
+      "viewport": "mobile",
+      "left": 16,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=disputes",
+        "/admin/dashboard?tab=emergency",
+        "/account"
+      ],
+      "mainWidth": 343.20001220703125,
+      "overflow": false,
+      "right": 15.79998779296875,
+      "width": 375
+    },
+    {
+      "role": "SuperAdmin",
+      "viewport": "mobile",
+      "left": 16,
+      "links": [
+        "/admin/dashboard",
+        "/admin/dashboard?tab=moderation",
+        "/admin/dashboard?tab=users",
+        "/admin/dashboard?tab=finance",
+        "/account"
+      ],
+      "mainWidth": 343.20001220703125,
+      "overflow": false,
+      "right": 15.79998779296875,
+      "width": 375
+    }
+  ]
+}

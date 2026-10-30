@@ -1,0 +1,250 @@
+[
+  {
+    "count": 18,
+    "table": "__EFMigrationsHistory"
+  },
+  {
+    "count": 0,
+    "table": "AdvancePayments"
+  },
+  {
+    "count": 0,
+    "table": "AppointmentAvailabilityExceptions"
+  },
+  {
+    "count": 0,
+    "table": "AppointmentEvents"
+  },
+  {
+    "count": 0,
+    "table": "Appointments"
+  },
+  {
+    "count": 0,
+    "table": "AppointmentTypes"
+  },
+  {
+    "count": 0,
+    "table": "ArticleListingPins"
+  },
+  {
+    "count": 0,
+    "table": "Articles"
+  },
+  {
+    "count": 131,
+    "table": "AuditLogs"
+  },
+  {
+    "count": 0,
+    "table": "BookingContracts"
+  },
+  {
+    "count": 28,
+    "table": "BudgetItems"
+  },
+  {
+    "count": 0,
+    "table": "BundleDiscountRules"
+  },
+  {
+    "count": 5,
+    "table": "BusinessGroups"
+  },
+  {
+    "count": 8,
+    "table": "Categories"
+  },
+  {
+    "count": 0,
+    "table": "ChatMessages"
+  },
+  {
+    "count": 70,
+    "table": "ChecklistTasks"
+  },
+  {
+    "count": 0,
+    "table": "ComboOrderItems"
+  },
+  {
+    "count": 0,
+    "table": "ComboOrders"
+  },
+  {
+    "count": 0,
+    "table": "ComboTemplateItems"
+  },
+  {
+    "count": 0,
+    "table": "ComboTemplateRevisions"
+  },
+  {
+    "count": 0,
+    "table": "ComboTemplates"
+  },
+  {
+    "count": 0,
+    "table": "CommissionAdjustmentRequests"
+  },
+  {
+    "count": 0,
+    "table": "CommissionComponentBasisApprovals"
+  },
+  {
+    "count": 0,
+    "table": "CommissionCreditNotes"
+  },
+  {
+    "count": 0,
+    "table": "CommissionPolicyRules"
+  },
+  {
+    "count": 0,
+    "table": "Commissions"
+  },
+  {
+    "count": 0,
+    "table": "CommissionSettlements"
+  },
+  {
+    "count": 0,
+    "table": "CustomerOrderStates"
+  },
+  {
+    "count": 0,
+    "table": "Disputes"
+  },
+  {
+    "count": 0,
+    "table": "EInvoiceRecords"
+  },
+  {
+    "count": 0,
+    "table": "EmergencyMatches"
+  },
+  {
+    "count": 0,
+    "table": "GuestRSVPs"
+  },
+  {
+    "count": 16,
+    "table": "InvitationTemplates"
+  },
+  {
+    "count": 0,
+    "table": "ItemAddOns"
+  },
+  {
+    "count": 0,
+    "table": "ItemVariants"
+  },
+  {
+    "count": 0,
+    "table": "Leads"
+  },
+  {
+    "count": 0,
+    "table": "ListingMedias"
+  },
+  {
+    "count": 0,
+    "table": "ListingRevisions"
+  },
+  {
+    "count": 0,
+    "table": "Listings"
+  },
+  {
+    "count": 39,
+    "table": "Notifications"
+  },
+  {
+    "count": 0,
+    "table": "OrderChangeRequests"
+  },
+  {
+    "count": 0,
+    "table": "OtpCodes"
+  },
+  {
+    "count": 0,
+    "table": "PasswordResetTokens"
+  },
+  {
+    "count": 0,
+    "table": "PaymentTransactions"
+  },
+  {
+    "count": 0,
+    "table": "PremiumOrders"
+  },
+  {
+    "count": 0,
+    "table": "PrivateServiceAgreements"
+  },
+  {
+    "count": 0,
+    "table": "Quotes"
+  },
+  {
+    "count": 0,
+    "table": "ReviewEditRequests"
+  },
+  {
+    "count": 0,
+    "table": "Reviews"
+  },
+  {
+    "count": 0,
+    "table": "SeatTables"
+  },
+  {
+    "count": 0,
+    "table": "ServiceItems"
+  },
+  {
+    "count": 17,
+    "table": "Users"
+  },
+  {
+    "count": 0,
+    "table": "VendorBusinessGroups"
+  },
+  {
+    "count": 0,
+    "table": "Vendors"
+  },
+  {
+    "count": 0,
+    "table": "VendorTaxProfiles"
+  },
+  {
+    "count": 0,
+    "table": "VendorVerifications"
+  },
+  {
+    "count": 0,
+    "table": "Vouchers"
+  },
+  {
+    "count": 0,
+    "table": "WeddingGuests"
+  },
+  {
+    "count": 0,
+    "table": "WeddingInvitations"
+  },
+  {
+    "count": 0,
+    "table": "WeddingJoinInvitations"
+  },
+  {
+    "count": 0,
+    "table": "WeddingMembers"
+  },
+  {
+    "count": 2,
+    "table": "WeddingProfiles"
+  }
+]

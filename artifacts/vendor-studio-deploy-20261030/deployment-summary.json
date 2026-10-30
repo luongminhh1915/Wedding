@@ -1,0 +1,19 @@
+{
+  "deployed": true,
+  "site": "https://weddingmatch.website/",
+  "siteZipSha256": "AE3C254DC15C8C18737E53FB9B2B0D29ECE6B4D72A0B4B06C6FE0C96B37C450F",
+  "remoteArchiveDownloadedAndMatched": true,
+  "extractionQueue": "Success",
+  "readiness": 200,
+  "frontendFiles": 129,
+  "frontendMatches": 129,
+  "privateConfigurationUnchanged": true,
+  "providerResponsesUnchanged": true,
+  "schemaMigrationCount": 21,
+  "migrationReappliedInContinuation": false,
+  "existingRowsPreservedInScopedDeploymentCheck": 539,
+  "tablesVerified": 62,
+  "originalMigrationPreservationEvidence": "Six table counts only",
+  "authenticatedHostedStudioMutation": "UNVERIFIED",
+  "individualHostedDllHashes": "UNVERIFIED"
+}

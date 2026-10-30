@@ -1,0 +1,11 @@
+{
+  "CreatedUtc": "2026-10-29T19:37:24.2213485Z",
+  "SiteZip": "WeddingMatch-site.zip",
+  "SiteZipSha256": "AE3C254DC15C8C18737E53FB9B2B0D29ECE6B4D72A0B4B06C6FE0C96B37C450F",
+  "MigrationSql": "sql/migrate.sql",
+  "MigrationSqlSha256": "059A4C4F7CBF92AC634CB2E1F2CB15C8A552BD7B62E5376ABD18B0C332184F69",
+  "ApiTarget": "net10.0",
+  "IncludesUserData": false,
+  "IncludesProductionSecrets": false,
+  "PublishedRemotely": false
+}

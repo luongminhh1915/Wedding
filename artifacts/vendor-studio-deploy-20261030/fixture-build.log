@@ -1,0 +1,15 @@
+  Determining projects to restore...
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Domain\Wedding.Domain.csproj (in 110 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Application\Wedding.Application.csproj (in 376 ms).
+  Restored D:\Gitgithubhub\Wedding\artifacts\admin-vendor-qa-20261029\AdminVendorQa.csproj (in 382 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Wedding.Infrastructure.csproj (in 432 ms).
+  Wedding.Domain -> D:\Gitgithubhub\Wedding\artifacts\admin-vendor-qa-20261029\build\bin\Wedding.Domain\debug\Wedding.Domain.dll
+  Wedding.Application -> D:\Gitgithubhub\Wedding\artifacts\admin-vendor-qa-20261029\build\bin\Wedding.Application\debug\Wedding.Application.dll
+  Wedding.Infrastructure -> D:\Gitgithubhub\Wedding\artifacts\admin-vendor-qa-20261029\build\bin\Wedding.Infrastructure\debug\Wedding.Infrastructure.dll
+  AdminVendorQa -> D:\Gitgithubhub\Wedding\artifacts\admin-vendor-qa-20261029\build\bin\AdminVendorQa\debug\AdminVendorQa.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:26.91

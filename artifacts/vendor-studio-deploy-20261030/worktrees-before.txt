@@ -1,0 +1,4 @@
+worktree D:/Gitgithubhub/Wedding
+HEAD 3596ae832faeac95fb15cc44bc0e8e62351c788b
+branch refs/heads/weddy-journey
+

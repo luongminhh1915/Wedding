@@ -1,0 +1,34 @@
+{
+  "Database": {
+    "Provider": "SqlServer",
+    "ApplyMigrations": false,
+    "SeedDemoData": false
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=sql1004.site4now.net;Database=db_ad0009_weddingmatch;User Id=db_ad0009_weddingmatch_admin;Password=T@i21012006;Encrypt=true;TrustServerCertificate=true;Max Pool Size=20;Connect Timeout=15"
+  },
+  "JwtSettings": {
+    "Audience": "WeddingPlatformClient",
+    "Issuer": "WeddingPlatform",
+    "ExpiryMinutes": 240,
+    "Secret": "XELeHaPOu3T3LMmnpicItUsdnCXrezyR8UUGaCdGTjQibg9f7TXmE6Zhj/zVDhMQ"
+  },
+  "AllowedHosts": "weddingmatch.website",
+  "Cors": {
+    "Origins": [
+      "https://weddingmatch.website"
+    ]
+  },
+  "Uploads": {
+    "InvitationAudioRoot": "../private/uploads/invitation-audio",
+    "ListingRoot": "../private/uploads/listings",
+    "InvitationRoot": "../private/uploads/invitations"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning",
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}

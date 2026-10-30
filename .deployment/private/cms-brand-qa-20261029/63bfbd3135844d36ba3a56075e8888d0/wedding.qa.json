@@ -1,0 +1,61 @@
+{
+  "database": {
+    "provider": "SqlServer",
+    "applyMigrations": false,
+    "seedDemoData": false
+  },
+  "connectionStrings": {
+    "defaultConnection": "Data Source=localhost;Initial Catalog=WeddingPlanTest_CmsBrand_63bfbd3135844d36ba3a56075e8888d0;Integrated Security=True;Pooling=False;Connect Timeout=5;Encrypt=True;Trust Server Certificate=True"
+  },
+  "jwtSettings": {
+    "secret": "QY63yjO2jpaGbJorHp2\u002BiUsrrBs4Oq0N2KjgzCFu3us6Bvrw8x8bRVw2KHKlEsLz",
+    "issuer": "WeddingPlatform",
+    "audience": "WeddingPlatformClient",
+    "expiryMinutes": 30
+  },
+  "allowedHosts": "127.0.0.1;localhost",
+  "cors": {
+    "origins": [
+      "http://127.0.0.1:5029"
+    ]
+  },
+  "smtp": {
+    "host": "",
+    "from": "",
+    "username": "",
+    "password": "",
+    "port": 587
+  },
+  "auth": {
+    "passwordResetBaseUrl": ""
+  },
+  "google": {
+    "clientId": ""
+  },
+  "facebook": {
+    "appId": "",
+    "appSecret": "",
+    "graphApiVersion": ""
+  },
+  "zalo": {
+    "accessToken": "",
+    "appId": "",
+    "appSecret": ""
+  },
+  "sePay": {
+    "apiKey": "",
+    "webhookSecret": ""
+  },
+  "uploads": {
+    "listingRoot": "D:\\Gitgithubhub\\Wedding\\artifacts\\cms-brand-qa-20261029\\runs\\63bfbd3135844d36ba3a56075e8888d0\\media\\listings",
+    "invitationRoot": "D:\\Gitgithubhub\\Wedding\\artifacts\\cms-brand-qa-20261029\\runs\\63bfbd3135844d36ba3a56075e8888d0\\media\\invitations",
+    "invitationAudioRoot": "D:\\Gitgithubhub\\Wedding\\artifacts\\cms-brand-qa-20261029\\runs\\63bfbd3135844d36ba3a56075e8888d0\\media\\audio"
+  },
+  "logging": {
+    "logLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    }
+  }
+}

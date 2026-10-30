@@ -1,0 +1,78 @@
+[
+  {
+    "name": "Anonymous provisioning requires login",
+    "pass": true
+  },
+  {
+    "name": "Customer cannot provision",
+    "pass": true
+  },
+  {
+    "name": "Admin creates vendor without contact details",
+    "pass": true
+  },
+  {
+    "name": "Generated alias and no invented contacts",
+    "pass": true
+  },
+  {
+    "name": "Multiple operating areas round trip",
+    "pass": true
+  },
+  {
+    "name": "Generated alias signs into correct vendor",
+    "pass": true
+  },
+  {
+    "name": "Display name is not an ambiguous login identifier",
+    "pass": true
+  },
+  {
+    "name": "Customer cannot upload vendor images",
+    "pass": true
+  },
+  {
+    "name": "Device image upload persists managed URL",
+    "pass": true
+  },
+  {
+    "name": "Uploaded image is readable",
+    "pass": true
+  },
+  {
+    "name": "Create draft with album and update",
+    "pass": true
+  },
+  {
+    "name": "Editor reload retains album and update",
+    "pass": true
+  },
+  {
+    "name": "Unpublished listing stays private",
+    "pass": true
+  },
+  {
+    "name": "Submit listing for moderation",
+    "pass": true
+  },
+  {
+    "name": "Moderator approves persisted content",
+    "pass": true
+  },
+  {
+    "name": "Approved public details retain album and update",
+    "pass": true
+  },
+  {
+    "name": "Vendor can save new revision",
+    "pass": true
+  },
+  {
+    "name": "Public approved update is unchanged while draft exists",
+    "pass": true
+  },
+  {
+    "name": "API rejects temporary blob image",
+    "pass": true
+  }
+]

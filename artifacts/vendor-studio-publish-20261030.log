@@ -1,0 +1,121 @@
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 2255 modules transformed.
+
+(!) outDir D:\Gitgithubhub\Wedding\artifacts\vendor-studio-release-20261030\wedding-match-20261029-190809-ab7ebdcb\build\client is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/index.html                                     2.55 kB │ gzip:  1.14 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/Pagination-B2CmXlcH.css                 0.75 kB │ gzip:  0.37 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/CustomerDashboard-DSYKhNcn.css          2.81 kB │ gzip:  0.89 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ComboBuilderPage-Dp5zopjr.css           3.67 kB │ gzip:  1.09 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/RegisterForm-_ZlwSYkc.css               3.77 kB │ gzip:  1.17 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/AccountPage-BsBQK7XY.css                4.40 kB │ gzip:  1.36 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/BrowsePage-BCSfbhxy.css                 8.10 kB │ gzip:  2.07 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useNotificationFocus-DkB-Cscx.css      10.05 kB │ gzip:  2.48 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ComboDetailPage-B4d6EpWb.css           10.40 kB │ gzip:  2.58 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/VendorDashboard-C030dpkI.css           11.15 kB │ gzip:  2.63 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ArticlesPage-F_LPCZdM.css              46.36 kB │ gzip:  8.99 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/index-Dk6f6UCs.css                    255.63 kB │ gzip: 44.76 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/chevron-left-CDcpXtZn.js                0.16 kB │ gzip:  0.16 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/chevron-right-BgfIpKv1.js               0.16 kB │ gzip:  0.16 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/plus-nFgpInN_.js                        0.18 kB │ gzip:  0.17 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/x-BTqvYNBZ.js                           0.18 kB │ gzip:  0.17 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/arrow-left-BAuLaWJl.js                  0.20 kB │ gzip:  0.18 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/loader-circle-C2FfPJBN.js               0.20 kB │ gzip:  0.18 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/user-nE7GVimY.js                        0.23 kB │ gzip:  0.20 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/rotate-ccw-Y241E1-o.js                  0.23 kB │ gzip:  0.20 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/lock-CAbAlfCB.js                        0.24 kB │ gzip:  0.21 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/mail-B7_adf_S.js                        0.24 kB │ gzip:  0.22 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/copy-Bd_HBPeY.js                        0.27 kB │ gzip:  0.23 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/external-link-CsdCCwqH.js               0.28 kB │ gzip:  0.22 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/circle-alert-BrPiOh7L.js                0.31 kB │ gzip:  0.22 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/pencil-iG_Cz2OD.js                      0.31 kB │ gzip:  0.24 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/circle-question-mark-DcSacdSs.js        0.32 kB │ gzip:  0.25 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/pencil-line-BTVvO2Pn.js                 0.35 kB │ gzip:  0.26 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/badge-check-DQfklYuN.js                 0.37 kB │ gzip:  0.26 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/layout-grid-CxiNbydO.js                 0.38 kB │ gzip:  0.22 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/trash-BQKq_7ek.js                       0.38 kB │ gzip:  0.25 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/share-2-DZVVd887.js                     0.39 kB │ gzip:  0.25 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/image-plus-Eh4e-A8W.js                  0.39 kB │ gzip:  0.27 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/format-nCIvYUS9.js                      0.40 kB │ gzip:  0.26 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/clock-bp6SyXKL.js                       0.43 kB │ gzip:  0.28 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/sliders-horizontal-DKCK9wJI.js          0.45 kB │ gzip:  0.26 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/eye-off-Df1c2Q2X.js                     0.46 kB │ gzip:  0.29 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/send-DaafdHFH.js                        0.50 kB │ gzip:  0.33 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/calendar-days-DJRQCtj8.js               0.52 kB │ gzip:  0.28 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/store-YlUhSjRp.js                       0.53 kB │ gzip:  0.31 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/file-text-BTkcmO2c.js                   0.61 kB │ gzip:  0.35 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/comboEditing-7KsJvlav.js                0.65 kB │ gzip:  0.39 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/qr-code-B4eXcWYn.js                     0.68 kB │ gzip:  0.33 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useAuth-CV9kwHHx.js                     0.88 kB │ gzip:  0.47 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/articleCmsModel-BUXW3AsF.js             1.10 kB │ gzip:  0.73 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/customerOrderApi-3lAmKLVQ.js            1.21 kB │ gzip:  0.54 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/invitationApi-D7aYY9CU.js               1.22 kB │ gzip:  0.62 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/facebookSdk-B20Xb-gD.js                 1.25 kB │ gzip:  0.73 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useInvitations-qomUnNnv.js              1.30 kB │ gzip:  0.60 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/operatingAreasModel-kvPIe8Ms.js         1.40 kB │ gzip:  0.85 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/invitationImages-CK2sXq-t.js            1.51 kB │ gzip:  0.92 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/reviewPresentationModel-VFSBo86G.js     1.61 kB │ gzip:  0.89 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/Pagination-57DXz_cp.js                  1.72 kB │ gzip:  0.86 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/notificationModel-CwfWIip5.js           1.77 kB │ gzip:  0.89 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ui-BqLUny6r.js                          1.97 kB │ gzip:  0.99 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useMutation-2nT7k7C8.js                 2.31 kB │ gzip:  0.95 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ContactPhoneForm-B-RjqNHt.js            2.42 kB │ gzip:  1.34 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/IndependentReviewPanel-C5hH3x3Y.js      3.54 kB │ gzip:  1.47 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ArticlesPage-CDAMt3Gz.js                3.59 kB │ gzip:  1.48 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/MoneyInput-Bv_ae8gm.js                  3.85 kB │ gzip:  1.76 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/PasswordResetPage-B3bKXUC2.js           3.85 kB │ gzip:  1.62 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ComboDialog-DscxOVbM.js                 4.05 kB │ gzip:  1.60 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/NotificationsPage-Qv4DXr1r.js           4.54 kB │ gzip:  1.82 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/comboFilterModel-B8xgbi4J.js            4.54 kB │ gzip:  2.03 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/TemplateGallery-DzD5JhUt.js             5.48 kB │ gzip:  2.17 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/serviceDetailsModel-Dntk-hnc.js         5.75 kB │ gzip:  2.33 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ServiceDetails-CJJTxy1P.js              5.82 kB │ gzip:  2.01 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/comboTemplateEditorModel-zk-vFsjQ.js    6.02 kB │ gzip:  2.52 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/OperatingAreasSelect-_-L_dG4Z.js        6.42 kB │ gzip:  2.84 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/PublicInvitationPage-COkE3EQC.js        6.92 kB │ gzip:  2.77 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useNotificationFocus-c4-VafSs.js        7.55 kB │ gzip:  2.82 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useReviews-DxfOvq3g.js                  7.74 kB │ gzip:  2.48 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/useQuery-B2cJ6xl8.js                    7.92 kB │ gzip:  2.92 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ReviewList-DSIjuQFP.js                  8.69 kB │ gzip:  3.08 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/SetupWizard-CRPaUMjL.js                 9.27 kB │ gzip:  3.29 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/RegisterForm-BXHCeI0c.js               10.28 kB │ gzip:  3.74 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/InvitationView-CQDBky4m.js             10.75 kB │ gzip:  4.49 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/LoginForm-D4oV1_Dm.js                  12.44 kB │ gzip:  4.24 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/BrowsePage-BlkXS4qQ.js                 14.80 kB │ gzip:  4.81 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/AccountPage-Bfo81Mzk.js                19.88 kB │ gzip:  6.24 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/OperationsPanels-BnBATJPG.js           20.04 kB │ gzip:  6.52 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/InvitationManage-B9vzL-U2.js           20.55 kB │ gzip:  7.84 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ComboDetailPage-CYNa_Ddp.js            24.07 kB │ gzip:  7.65 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ListingDetailPage-CjI2PEK_.js          39.51 kB │ gzip: 11.07 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/ComboBuilderPage-CMKxwABs.js           56.21 kB │ gzip: 15.39 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/OrderRequestInbox-CdDralGz.js          65.49 kB │ gzip: 16.91 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/bookingApi-CsWOBsRQ.js                 89.85 kB │ gzip: 24.29 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/axiosClient-CQPJorub.js               134.60 kB │ gzip: 46.73 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/AdminDashboard-C4wu0yWe.js            143.37 kB │ gzip: 31.77 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/CustomerDashboard-fD2FUiAg.js         165.91 kB │ gzip: 43.22 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/VendorDashboard-CkwoMQ_O.js           279.27 kB │ gzip: 60.21 kB
+../artifacts/vendor-studio-release-20261030/wedding-match-20261029-190809-ab7ebdcb/build/client/assets/index-DF36lHxR.js                     315.40 kB │ gzip: 97.40 kB
+
+✓ built in 1.13s
+Tool 'dotnet-ef' (version '10.0.13') was restored. Available commands: dotnet-ef
+
+Restore was successful.
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+Build started...
+Build succeeded.
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Wedding.Domain -> D:\Gitgithubhub\Wedding\src\Wedding.Domain\bin\Release\net10.0\Wedding.Domain.dll
+  Wedding.Application -> D:\Gitgithubhub\Wedding\src\Wedding.Application\bin\Release\net10.0\Wedding.Application.dll
+  Wedding.Infrastructure -> D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\bin\Release\net10.0\Wedding.Infrastructure.dll
+  Wedding.WebApi -> D:\Gitgithubhub\Wedding\src\Wedding.WebApi\bin\Release\net10.0\Wedding.WebApi.dll
+  Wedding.WebApi -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-release-20261030\wedding-match-20261029-190809-ab7ebdcb\build\api\
+Verified ZIP: 253 entries, SQL Server, net10.0, no data or production credentials.
+Prepared locally: D:\Gitgithubhub\Wedding\artifacts\vendor-studio-release-20261030\wedding-match-20261029-190809-ab7ebdcb
+Upload WeddingMatch-site.zip only. Review sql/migrate.sql separately; this script did not run it.
+Configure SQL Server/JWT secrets in the host, preserve private uploads, and verify HTTPS before inviting users.

@@ -1,0 +1,20 @@
+{
+  "status": "Migration21AppliedSuccessfully",
+  "targetHost": "sql1004.site4now.net",
+  "targetDatabase": "db_ad0009_weddingmatch",
+  "previousMigrationCount": 20,
+  "currentMigrationCount": 21,
+  "latestMigration": "20261029152219_AdminVendorContactAndOperatingAreas",
+  "hasLoginName": true,
+  "hasOperatingRegions": true,
+  "tableCountsVerified": true,
+  "rowCounts": {
+    "Users": 26,
+    "Vendors": 2,
+    "Categories": 8,
+    "Listings": 0,
+    "Vouchers": 0,
+    "AuditLogs": 256
+  },
+  "appliedUtc": "2026-10-29T20:04:55.3232854Z"
+}

@@ -1,0 +1,44 @@
+{
+  "type": "WeddingMatch.CmsBrand.QA.v1",
+  "ownershipKey": "63bfbd31-3584-4d36-ba3a-56075e8888d0",
+  "database": "WeddingPlanTest_CmsBrand_63bfbd3135844d36ba3a56075e8888d0",
+  "emailDomain": "63bfbd3135844d36ba3a56075e8888d0.cms-brand-qa.example.invalid",
+  "configurationPath": "D:\\Gitgithubhub\\Wedding\\.deployment\\private\\cms-brand-qa-20261029\\63bfbd3135844d36ba3a56075e8888d0\\wedding.qa.json",
+  "runRoot": "D:\\Gitgithubhub\\Wedding\\artifacts\\cms-brand-qa-20261029\\runs\\63bfbd3135844d36ba3a56075e8888d0",
+  "seedActors": [
+    {
+      "role": "SuperAdmin",
+      "id": "9cf490a2-5efa-4bf0-b845-f624fc4b722e",
+      "fullName": "[QA CMS Brand] admin",
+      "email": "admin@63bfbd3135844d36ba3a56075e8888d0.cms-brand-qa.example.invalid",
+      "phoneNumber": "0900000931",
+      "password": "QaOnly-38C0AF6E45FE785D0BE8E7D0FE3CCA699256080A!"
+    },
+    {
+      "role": "Moderator",
+      "id": "80a4445a-52c1-4af6-aa6b-f26c56d84d3f",
+      "fullName": "[QA CMS Brand] moderator",
+      "email": "moderator@63bfbd3135844d36ba3a56075e8888d0.cms-brand-qa.example.invalid",
+      "phoneNumber": "0900000932",
+      "password": "QaOnly-82D3E281B117806ECEB0D047128F5F1DA1488CCD!"
+    },
+    {
+      "role": "Customer",
+      "id": "c548f084-484f-4ef2-a7bd-1f859a5c964d",
+      "fullName": "[QA CMS Brand] customer",
+      "email": "customer@63bfbd3135844d36ba3a56075e8888d0.cms-brand-qa.example.invalid",
+      "phoneNumber": "0900000933",
+      "password": "QaOnly-691E052B8B38C6240D297AF4FD47AD89E3F0FA5F!"
+    },
+    {
+      "role": "VendorOwner",
+      "id": "4cb59005-40b1-4f56-9fbc-da302bc0924a",
+      "fullName": "[QA CMS Brand] vendor",
+      "email": "vendor@63bfbd3135844d36ba3a56075e8888d0.cms-brand-qa.example.invalid",
+      "phoneNumber": "0900000934",
+      "password": "QaOnly-03969C4CF48E70AAE1DD23B5DC18F0321B0A1E6E!"
+    }
+  ],
+  "createdUtc": "2026-10-29T09:30:24.9942874Z",
+  "stage": "Closed"
+}

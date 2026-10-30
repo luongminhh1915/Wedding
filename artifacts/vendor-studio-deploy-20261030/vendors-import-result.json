@@ -1,0 +1,332 @@
+{
+  "status": "Success",
+  "importedCount": 54,
+  "totalUsersInDb": 80,
+  "totalVendorsInDb": 56,
+  "accounts": [
+    {
+      "stt": 1,
+      "brandName": "CTM Palace",
+      "loginName": "ctm-palace",
+      "password": "1234567890"
+    },
+    {
+      "stt": 2,
+      "brandName": "Tr\u1ED1ng \u0110\u1ED3ng Palace",
+      "loginName": "trong-dong-palace",
+      "password": "1234567890"
+    },
+    {
+      "stt": 3,
+      "brandName": "V\u1EA1n Hoa Premium",
+      "loginName": "van-hoa-premium",
+      "password": "1234567890"
+    },
+    {
+      "stt": 4,
+      "brandName": "White Palace",
+      "loginName": "white-palace",
+      "password": "1234567890"
+    },
+    {
+      "stt": 5,
+      "brandName": "H\u1EC7 th\u1ED1ng THE ADORA",
+      "loginName": "he-thong-the-adora",
+      "password": "1234567890"
+    },
+    {
+      "stt": 6,
+      "brandName": "Lek Chi Bridal",
+      "loginName": "lek-chi-bridal",
+      "password": "1234567890"
+    },
+    {
+      "stt": 7,
+      "brandName": "Nicole Bridal",
+      "loginName": "nicole-bridal",
+      "password": "1234567890"
+    },
+    {
+      "stt": 8,
+      "brandName": "Chung Thanh Phong Bridal",
+      "loginName": "chung-thanh-phong-bridal",
+      "password": "1234567890"
+    },
+    {
+      "stt": 9,
+      "brandName": "Cee\u0027s Bridal",
+      "loginName": "cee-s-bridal",
+      "password": "1234567890"
+    },
+    {
+      "stt": 10,
+      "brandName": "Adam Store",
+      "loginName": "adam-store",
+      "password": "1234567890"
+    },
+    {
+      "stt": 11,
+      "brandName": "Tina L\u00EA Make Up",
+      "loginName": "tina-le-make-up",
+      "password": "1234567890"
+    },
+    {
+      "stt": 12,
+      "brandName": "H\u1EA1nh L\u00E2m Makeup \u0026 Academy",
+      "loginName": "hanh-lam-makeup-academy",
+      "password": "1234567890"
+    },
+    {
+      "stt": 13,
+      "brandName": "John Kim Wedding",
+      "loginName": "john-kim-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 14,
+      "brandName": "Mai Phan Makeup Artist",
+      "loginName": "mai-phan-makeup-artist",
+      "password": "1234567890"
+    },
+    {
+      "stt": 15,
+      "brandName": "Tee Le Studio",
+      "loginName": "tee-le-studio",
+      "password": "1234567890"
+    },
+    {
+      "stt": 16,
+      "brandName": "Liti Florist",
+      "loginName": "liti-florist",
+      "password": "1234567890"
+    },
+    {
+      "stt": 17,
+      "brandName": "Hands \u0026 Heart Floral Design",
+      "loginName": "hands-heart-floral-design",
+      "password": "1234567890"
+    },
+    {
+      "stt": 18,
+      "brandName": "M\u00E9taphore Floral",
+      "loginName": "metaphore-floral",
+      "password": "1234567890"
+    },
+    {
+      "stt": 19,
+      "brandName": "L\u00E1 Floral",
+      "loginName": "la-floral",
+      "password": "1234567890"
+    },
+    {
+      "stt": 20,
+      "brandName": "Padma de Fleur",
+      "loginName": "padma-de-fleur",
+      "password": "1234567890"
+    },
+    {
+      "stt": 21,
+      "brandName": "The Planners",
+      "loginName": "the-planners",
+      "password": "1234567890"
+    },
+    {
+      "stt": 22,
+      "brandName": "Lutece Wedding",
+      "loginName": "lutece-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 23,
+      "brandName": "MHs Planner",
+      "loginName": "mhs-planner",
+      "password": "1234567890"
+    },
+    {
+      "stt": 24,
+      "brandName": "Cleo Wedding",
+      "loginName": "cleo-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 25,
+      "brandName": "Phi \u0110i\u1EC7p Wedding",
+      "loginName": "phi-diep-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 26,
+      "brandName": "7799 Wedding Storyteller",
+      "loginName": "7799-wedding-storyteller",
+      "password": "1234567890"
+    },
+    {
+      "stt": 27,
+      "brandName": "L\u1EA1i H\u1EB1ng Wedding",
+      "loginName": "lai-hang-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 28,
+      "brandName": "N\u1EAFng Wedding",
+      "loginName": "nang-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 29,
+      "brandName": "C\u01B0\u1EDBi H\u1ECFi Quang D\u0169ng",
+      "loginName": "cuoi-hoi-quang-dung",
+      "password": "1234567890"
+    },
+    {
+      "stt": 30,
+      "brandName": "Peonies Wedding",
+      "loginName": "peonies-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 31,
+      "brandName": "Traqu\u00E9 Wedding Paper",
+      "loginName": "traque-wedding-paper",
+      "password": "1234567890"
+    },
+    {
+      "stt": 32,
+      "brandName": "2TPRINT",
+      "loginName": "2tprint",
+      "password": "1234567890"
+    },
+    {
+      "stt": 33,
+      "brandName": "Diamond",
+      "loginName": "diamond",
+      "password": "1234567890"
+    },
+    {
+      "stt": 34,
+      "brandName": "The Simple",
+      "loginName": "the-simple",
+      "password": "1234567890"
+    },
+    {
+      "stt": 35,
+      "brandName": "Nupakachi Wedding",
+      "loginName": "nupakachi-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 36,
+      "brandName": "C\u1ED9ng Studio",
+      "loginName": "cong-studio",
+      "password": "1234567890"
+    },
+    {
+      "stt": 37,
+      "brandName": "Thien Tong Photography",
+      "loginName": "thien-tong-photography",
+      "password": "1234567890"
+    },
+    {
+      "stt": 38,
+      "brandName": "Mango Studio",
+      "loginName": "mango-studio",
+      "password": "1234567890"
+    },
+    {
+      "stt": 39,
+      "brandName": "TuArts Wedding",
+      "loginName": "tuarts-wedding",
+      "password": "1234567890"
+    },
+    {
+      "stt": 40,
+      "brandName": "MC H\u1EA1nh Ph\u00FAc",
+      "loginName": "mc-hanh-phuc",
+      "password": "1234567890"
+    },
+    {
+      "stt": 41,
+      "brandName": "MC Quang B\u1EA3o",
+      "loginName": "mc-quang-bao",
+      "password": "1234567890"
+    },
+    {
+      "stt": 42,
+      "brandName": "xFat Sound",
+      "loginName": "xfat-sound",
+      "password": "1234567890"
+    },
+    {
+      "stt": 43,
+      "brandName": "xLaam Band",
+      "loginName": "xlaam-band",
+      "password": "1234567890"
+    },
+    {
+      "stt": 44,
+      "brandName": "Harmony Band",
+      "loginName": "harmony-band",
+      "password": "1234567890"
+    },
+    {
+      "stt": 45,
+      "brandName": "\u0110\u1EE9c Vinh Trans",
+      "loginName": "duc-vinh-trans",
+      "password": "1234567890"
+    },
+    {
+      "stt": 46,
+      "brandName": "Xe C\u01B0\u1EDBi \u0110\u00F4ng A",
+      "loginName": "xe-cuoi-dong-a",
+      "password": "1234567890"
+    },
+    {
+      "stt": 47,
+      "brandName": "\u0110\u00F4ng A",
+      "loginName": "dong-a",
+      "password": "1234567890"
+    },
+    {
+      "stt": 48,
+      "brandName": "V\u00E2n H\u1EA3i",
+      "loginName": "van-hai",
+      "password": "1234567890"
+    },
+    {
+      "stt": 49,
+      "brandName": "Hoa Mai Tour",
+      "loginName": "hoa-mai-tour",
+      "password": "1234567890"
+    },
+    {
+      "stt": 50,
+      "brandName": "Vietravel",
+      "loginName": "vietravel",
+      "password": "1234567890"
+    },
+    {
+      "stt": 51,
+      "brandName": "Saigontourist",
+      "loginName": "saigontourist",
+      "password": "1234567890"
+    },
+    {
+      "stt": 52,
+      "brandName": "BestPrice Travel",
+      "loginName": "bestprice-travel",
+      "password": "1234567890"
+    },
+    {
+      "stt": 53,
+      "brandName": "L\u1EEDa Vi\u1EC7t Tours",
+      "loginName": "lua-viet-tours",
+      "password": "1234567890"
+    },
+    {
+      "stt": 54,
+      "brandName": "PYS Travel",
+      "loginName": "pys-travel",
+      "password": "1234567890"
+    }
+  ]
+}

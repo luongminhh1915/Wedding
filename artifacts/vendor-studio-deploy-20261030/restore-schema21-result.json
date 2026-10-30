@@ -1,0 +1,26 @@
+{
+  "Target": "WeddingPlanTest_StudioRestore_8fcd6a28798d44ae80cd0dcdb165f6fb",
+  "BackupSha256": "4EFA3DA6F37D029C9D96748B407BB92FE03A23CC49572AC6915828439FA715DF",
+  "ReadOnlyProduction": true,
+  "BackupVerified": true,
+  "RestorePassed": true,
+  "CheckDbPassed": true,
+  "Schema21Verified": true,
+  "NoMigrationApplied": true,
+  "CleanupPassed": true,
+  "MigrationCount": 21,
+  "UserTableCount": 62,
+  "TotalRows": 538,
+  "KeyTableCounts": {
+    "Users": 26,
+    "Vendors": 2,
+    "Categories": 8,
+    "Listings": 0,
+    "BookingContracts": 0,
+    "Commissions": 0,
+    "PaymentTransactions": 0,
+    "AuditLogs": 265
+  },
+  "Status": "RestoredSchema21Verified",
+  "CompletedUtc": "2026-10-30T00:46:14.8630762Z"
+}

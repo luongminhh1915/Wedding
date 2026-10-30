@@ -1,0 +1,32 @@
+{"Database":{
+    "SeedDemoData": false,
+    "Provider": "SqlServer",
+    "ApplyMigrations": false
+  },"ConnectionStrings":{
+    "DefaultConnection": "Server=sql1004.site4now.net;Database=db_ad0009_weddingmatch;User Id=db_ad0009_weddingmatch_admin;Password=T@i2101200622122005;Encrypt=true;TrustServerCertificate=true;Max Pool Size=20;Connect Timeout=15"
+  },"JwtSettings":{
+    "Secret": "fHXB826mV/T5ybvlAwOgzy2Xj2kD10pROEN1gZJ0Vzbk3jc3tPvU1/Q8jy\u002B36PfD",
+    "Issuer": "WeddingPlatform",
+    "ExpiryMinutes": 240,
+    "Audience": "WeddingPlatformClient"
+  },"AllowedHosts":"weddingmatch.website","Cors":{
+    "Origins": [
+      "https://weddingmatch.website"
+    ]
+  },"Uploads":{
+    "ListingRoot": "../private/uploads/listings",
+    "InvitationAudioRoot": "../private/uploads/invitation-audio",
+    "InvitationRoot": "../private/uploads/invitations"
+  },"Logging":{
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    }
+  },"Google":{
+    "ClientId": "938936630932-r51om5u109o0f44027546oh0id928vtl.apps.googleusercontent.com"
+  },"Facebook":{
+    "AppId": "1163881512741877",
+    "GraphApiVersion": "v26.0",
+    "AppSecret": "5fa6a8f509cc83a66b30f35cefa79c82"
+  },"Smtp":{"Host":"smtp.gmail.com","Port":"587","From":"weddingmatch.official123@gmail.com","Username":"weddingmatch.official123@gmail.com","Password":"fqobcyrlnkfikzvc"},"Auth":{"PasswordResetBaseUrl":"https://weddingmatch.website"}}

@@ -1,0 +1,12 @@
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Domain\debug\Wedding.Domain.deps.json
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Domain\debug\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Domain\debug\Wedding.Domain.pdb
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.AssemblyInfoInputs.cache
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.AssemblyInfo.cs
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.csproj.CoreCompileInputs.cache
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.sourcelink.json
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\refint\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\Wedding.Domain.pdb
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Domain\debug\ref\Wedding.Domain.dll

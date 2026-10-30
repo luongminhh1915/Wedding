@@ -1,0 +1,21 @@
+{
+  "Database": "WeddingMatch_Dev",
+  "Accounts": [
+    {
+      "Email": "admin@wedding.com",
+      "Role": "SuperAdmin",
+      "Password": "WM!29C9DA3372B54D42415C7298"
+    },
+    {
+      "Email": "finance@wedding.com",
+      "Role": "Finance",
+      "Password": "WM!7B10DE5EA541924F814CE2C9"
+    },
+    {
+      "Email": "moderator@wedding.com",
+      "Role": "Moderator",
+      "Password": "WM!8F48CD51839C2938B9DD5EFA"
+    }
+  ],
+  "Note": "Local study accounts requested by the user. Change passwords after first login. Phone values are unassigned placeholders, not verified numbers."
+}

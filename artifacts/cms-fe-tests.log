@@ -1,0 +1,28 @@
+✔ article image selection rejects unsupported and over-limit files before upload (0.8824ms)
+✔ article image responses require managed paths and public previews keep API origins and legacy HTTPS (0.7436ms)
+✔ CMS editor session is bound to exact permitted actor, token and revision (0.3368ms)
+✔ Vietnamese article slug generation produces stable shareable paths (0.4724ms)
+✔ actual upload picker sends one multipart request and keeps captured CMS authorization (20.4148ms)
+✔ invalid image never reaches preparation or HTTP; failed replace preserves previous cover (1.3248ms)
+✔ stale CMS actor during image preparation prevents network upload (0.4802ms)
+✔ stale upload response or unmounted editor cannot replace another draft cover (0.6333ms)
+✔ unexpected upload response is rejected without changing current image (0.6802ms)
+✔ new article auto-slug follows title until manual change; existing slug never silently changes (3.9257ms)
+✔ actual form blocks save during upload and saves managed cover with publish choice (3.6657ms)
+✔ failed save preserves article text and cover for retry; stale session sends nothing (2.4672ms)
+✔ homepage discovery search is integrated into the marketplace hero (0.791ms)
+✔ service catalog filters stay above the browse introduction (0.117ms)
+✔ the supplied Bé Hý artwork is the shared mascot; previous assets remain unused fallbacks (4.2969ms)
+✔ the second transparent Bé Hý pose appears beside the service marketplace introduction (1.778ms)
+✔ the homepage demo card uses a flat fill and the transparent flower pose (0.242ms)
+✔ browse filters sit in a top toolbar like combo discovery and results stay API-backed (1.2817ms)
+✔ service detail navigation only targets real gallery, overview, portfolio, review and contact sections (2.1359ms)
+✔ editorial page searches and filters only fetched CMS articles (0.5828ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 521.0861

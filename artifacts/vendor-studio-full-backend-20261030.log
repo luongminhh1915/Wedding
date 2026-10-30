@@ -1,0 +1,182 @@
+  Determining projects to restore...
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Domain\Wedding.Domain.csproj (in 92 ms).
+  Restored D:\Gitgithubhub\Wedding\tools\Wedding.LocalDataBackup\Wedding.LocalDataBackup.csproj (in 285 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Application\Wedding.Application.csproj (in 291 ms).
+  Restored D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj (in 341 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.WebApi\Wedding.WebApi.csproj (in 356 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Wedding.Infrastructure.csproj (in 356 ms).
+  Wedding.LocalDataBackup -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.LocalDataBackup\debug\Wedding.LocalDataBackup.dll
+  Wedding.Domain -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.Domain\debug\Wedding.Domain.dll
+  Wedding.Application -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.Application\debug\Wedding.Application.dll
+  Wedding.Infrastructure -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.Infrastructure\debug\Wedding.Infrastructure.dll
+  Wedding.WebApi -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.WebApi\debug\Wedding.WebApi.dll
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(45,65): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(49,24): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(54,21): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(55,22): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+  Wedding.Tests -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.Tests\debug\Wedding.Tests.dll
+Test run for D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\build\bin\Wedding.Tests\debug\Wedding.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:15.50]     Wedding.Tests.FacebookIdentityMigrationSqlTests.OptionalEmailMigrationPreservesOldAccountsAndSupportsDistinctSocialOnlyCustomers [FAIL]
+  Failed Wedding.Tests.FacebookIdentityMigrationSqlTests.OptionalEmailMigrationPreservesOldAccountsAndSupportsDistinctSocialOnlyCustomers [13 s]
+  Error Message:
+   Microsoft.EntityFrameworkCore.DbUpdateException : An error occurred while saving the entity changes. See the inner exception for details.
+---- Microsoft.Data.SqlClient.SqlException : Invalid column name 'LoginName'.
+  Stack Trace:
+     at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Update.Internal.SqlServerModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Wedding.Infrastructure.Persistence.ApplicationDbContext.SaveChangesAsync(CancellationToken cancellationToken) in D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Persistence\ApplicationDbContext.cs:line 217
+   at Wedding.Tests.FacebookIdentityMigrationSqlTests.OptionalEmailMigrationPreservesOldAccountsAndSupportsDistinctSocialOnlyCustomers() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\FacebookIdentityMigrationSqlTests.cs:line 187
+   at Wedding.Tests.FacebookIdentityMigrationSqlTests.OptionalEmailMigrationPreservesOldAccountsAndSupportsDistinctSocialOnlyCustomers() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\FacebookIdentityMigrationSqlTests.cs:line 222
+   at Wedding.Tests.FacebookIdentityMigrationSqlTests.OptionalEmailMigrationPreservesOldAccountsAndSupportsDistinctSocialOnlyCustomers() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\FacebookIdentityMigrationSqlTests.cs:line 224
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+[xUnit.net 00:00:23.30]     Wedding.Tests.FacebookIdentityMigrationSqlTests.UpgradeFromPasswordRecoveryPreservesUsersAndGoogleLinksAndCanReplayWithFacebookLinks [FAIL]
+  Failed Wedding.Tests.FacebookIdentityMigrationSqlTests.UpgradeFromPasswordRecoveryPreservesUsersAndGoogleLinksAndCanReplayWithFacebookLinks [7 s]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'LoginName'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Wedding.Tests.FacebookIdentityMigrationSqlTests.UpgradeFromPasswordRecoveryPreservesUsersAndGoogleLinksAndCanReplayWithFacebookLinks() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\FacebookIdentityMigrationSqlTests.cs:line 74
+   at Wedding.Tests.FacebookIdentityMigrationSqlTests.UpgradeFromPasswordRecoveryPreservesUsersAndGoogleLinksAndCanReplayWithFacebookLinks() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\FacebookIdentityMigrationSqlTests.cs:line 154
+   at Wedding.Tests.FacebookIdentityMigrationSqlTests.UpgradeFromPasswordRecoveryPreservesUsersAndGoogleLinksAndCanReplayWithFacebookLinks() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\FacebookIdentityMigrationSqlTests.cs:line 165
+--- End of stack trace from previous location ---
+  Standard Output Messages:
+ Created owned localhost test database: WeddingPlanTest_FacebookIdentity_e391df2d0c3442a18af85e8711acacfd
+ Removed owned localhost test database: WeddingPlanTest_FacebookIdentity_e391df2d0c3442a18af85e8711acacfd
+
+
+[xUnit.net 00:00:34.38]     Wedding.Tests.IndependentReviewSqlVerificationTests.Phase4CUpgradePreservesLegacyDataReplaysConstraintsAndRefusesUnsafeDowngrades [FAIL]
+  Failed Wedding.Tests.IndependentReviewSqlVerificationTests.Phase4CUpgradePreservesLegacyDataReplaysConstraintsAndRefusesUnsafeDowngrades [9 s]
+  Error Message:
+   Microsoft.EntityFrameworkCore.DbUpdateException : An error occurred while saving the entity changes. See the inner exception for details.
+---- Microsoft.Data.SqlClient.SqlException : Invalid column name 'OperatingRegions'.
+  Stack Trace:
+     at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Update.Internal.SqlServerModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Wedding.Infrastructure.Persistence.ApplicationDbContext.SaveChangesAsync(CancellationToken cancellationToken) in D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Persistence\ApplicationDbContext.cs:line 217
+   at Wedding.Tests.IndependentReviewSqlVerificationTests.SeedLegacyAsync(ApplicationDbContext db) in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\IndependentReviewSqlVerificationTests.cs:line 166
+   at Wedding.Tests.IndependentReviewSqlVerificationTests.Phase4CUpgradePreservesLegacyDataReplaysConstraintsAndRefusesUnsafeDowngrades() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\IndependentReviewSqlVerificationTests.cs:line 28
+   at Wedding.Tests.IndependentReviewSqlVerificationTests.Phase4CUpgradePreservesLegacyDataReplaysConstraintsAndRefusesUnsafeDowngrades() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\IndependentReviewSqlVerificationTests.cs:line 124
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+[xUnit.net 00:00:50.11]     Wedding.Tests.CommissionPhase5SqlVerificationTests.UpgradeIsAdditiveIdempotentAndPreservesExistingFinancialRows [FAIL]
+  Failed Wedding.Tests.CommissionPhase5SqlVerificationTests.UpgradeIsAdditiveIdempotentAndPreservesExistingFinancialRows [6 s]
+  Error Message:
+   Microsoft.EntityFrameworkCore.DbUpdateException : An error occurred while saving the entity changes. See the inner exception for details.
+---- Microsoft.Data.SqlClient.SqlException : Invalid column name 'OperatingRegions'.
+  Stack Trace:
+     at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Update.Internal.SqlServerModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Wedding.Infrastructure.Persistence.ApplicationDbContext.SaveChangesAsync(CancellationToken cancellationToken) in D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Persistence\ApplicationDbContext.cs:line 217
+   at Wedding.Tests.CommissionPhase5SqlVerificationTests.SeedAsync(ApplicationDbContext db, Boolean historicalUserSchema) in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\CommissionPhase5SqlVerificationTests.cs:line 227
+   at Wedding.Tests.CommissionPhase5SqlVerificationTests.UpgradeIsAdditiveIdempotentAndPreservesExistingFinancialRows() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\CommissionPhase5SqlVerificationTests.cs:line 58
+   at Wedding.Tests.CommissionPhase5SqlVerificationTests.UpgradeIsAdditiveIdempotentAndPreservesExistingFinancialRows() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\CommissionPhase5SqlVerificationTests.cs:line 83
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+[xUnit.net 00:01:21.02]     Wedding.Tests.ContractCategorySnapshotTests.SqlMigrationAddsOnlyNullableMetadataAndPreservesOldFinancialRowsThenSnapshotsNewConfirmation [FAIL]
+  Failed Wedding.Tests.ContractCategorySnapshotTests.SqlMigrationAddsOnlyNullableMetadataAndPreservesOldFinancialRowsThenSnapshotsNewConfirmation [4 s]
+  Error Message:
+   Microsoft.EntityFrameworkCore.DbUpdateException : An error occurred while saving the entity changes. See the inner exception for details.
+---- Microsoft.Data.SqlClient.SqlException : Invalid column name 'OperatingRegions'.
+  Stack Trace:
+     at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Update.Internal.SqlServerModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Wedding.Infrastructure.Persistence.ApplicationDbContext.SaveChangesAsync(CancellationToken cancellationToken) in D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Persistence\ApplicationDbContext.cs:line 217
+   at Wedding.Tests.ContractCategorySnapshotTests.Fixture.Create(Nullable`1 originalRate, Decimal shopRate, Boolean confirmed, Boolean sql, Boolean legacySchema) in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\ContractCategorySnapshotTests.cs:line 454
+   at Wedding.Tests.ContractCategorySnapshotTests.Fixture.Create(Nullable`1 originalRate, Decimal shopRate, Boolean confirmed, Boolean sql, Boolean legacySchema) in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\ContractCategorySnapshotTests.cs:line 474
+   at Wedding.Tests.ContractCategorySnapshotTests.SqlMigrationAddsOnlyNullableMetadataAndPreservesOldFinancialRowsThenSnapshotsNewConfirmation() in D:\Gitgithubhub\Wedding\tests\Wedding.Tests\ContractCategorySnapshotTests.cs:line 322
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+Results File: D:\Gitgithubhub\Wedding\artifacts\vendor-studio-fullgate-20261030\results\full-backend.trx
+
+Failed!  - Failed:     5, Passed:  1268, Skipped:     0, Total:  1273, Duration: 1 m 35 s - Wedding.Tests.dll (net10.0)

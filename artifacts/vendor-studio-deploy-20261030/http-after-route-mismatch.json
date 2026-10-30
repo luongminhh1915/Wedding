@@ -1,0 +1,74 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/login",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/browse",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/combo",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/cam-nang",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/health",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/health/ready",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/api/auth/providers",
+    "status": 200,
+    "expected": 200,
+    "pass": true
+  },
+  {
+    "path": "/api/users",
+    "status": 401,
+    "expected": 401,
+    "pass": true
+  },
+  {
+    "path": "/api/governance/articles?includeDrafts=true",
+    "status": 404,
+    "expected": 401,
+    "pass": false
+  },
+  {
+    "path": "/private/wedding.production.json",
+    "status": 404,
+    "expected": 404,
+    "pass": true
+  },
+  {
+    "path": "/uploads/listings/00000000-0000-0000-0000-000000000000.png",
+    "status": 404,
+    "expected": 404,
+    "pass": true
+  }
+]

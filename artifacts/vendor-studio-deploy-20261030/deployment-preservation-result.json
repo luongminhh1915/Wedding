@@ -1,0 +1,15 @@
+{
+  "status": "ExistingRowsPreserved",
+  "readOnlyQueries": true,
+  "beforeUtc": "2026-10-30T00:46:32.3024777Z",
+  "afterUtc": "2026-10-30T00:49:37.9654623Z",
+  "tablesVerified": 62,
+  "rowsVerified": 539,
+  "allowedAddedRows": 1,
+  "ignoredMutableColumns": {
+    "Users": "LastLoginAt",
+    "Notifications": "ReadAt/SentAt/NextAttemptAt/Attempts/DeliveryError/UpdatedAt",
+    "AllTables": "rowversion"
+  },
+  "differences": []
+}

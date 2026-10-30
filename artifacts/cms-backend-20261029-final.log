@@ -1,0 +1,11 @@
+  Wedding.Domain -> D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.Domain\debug\Wedding.Domain.dll
+  Wedding.LocalDataBackup -> D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.LocalDataBackup\debug\Wedding.LocalDataBackup.dll
+  Wedding.Application -> D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.Application\debug\Wedding.Application.dll
+  Wedding.Infrastructure -> D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.Infrastructure\debug\Wedding.Infrastructure.dll
+  Wedding.WebApi -> D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.WebApi\debug\Wedding.WebApi.dll
+  Wedding.Tests -> D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.Tests\debug\Wedding.Tests.dll
+Test run for D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\build\bin\Wedding.Tests\debug\Wedding.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: D:\Gitgithubhub\Wedding\artifacts\cms-backend-20261029\results\cms-backend-final.trx
+
+Passed!  - Failed:     0, Passed:    25, Skipped:     0, Total:    25, Duration: 8 s - Wedding.Tests.dll (net10.0)

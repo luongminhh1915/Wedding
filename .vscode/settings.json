@@ -1,0 +1,32 @@
+{
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/artifacts/**": true,
+    "**/.artifacts/**": true,
+    "**/build-artifacts/**": true,
+    "**/.deployment/**": true,
+    "**/bin/**": true,
+    "**/obj/**": true,
+    "**/.vs/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/artifacts": true,
+    "**/.artifacts": true,
+    "**/build-artifacts": true,
+    "**/.deployment": true,
+    "**/bin": true,
+    "**/obj": true,
+    "**/.vs": true
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.vs": true,
+    "**/.artifacts": true,
+    "**/build-artifacts": true
+  }
+}

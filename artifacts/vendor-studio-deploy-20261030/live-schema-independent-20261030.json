@@ -1,0 +1,22 @@
+{
+  "inspectedUtc": "2026-10-30T00:40:08.0681045Z",
+  "readOnlyQueries": true,
+  "migrationCount": 21,
+  "latestMigration": "20261029152219_AdminVendorContactAndOperatingAreas",
+  "loginNameColumnLength": 160,
+  "operatingRegionsColumnLength": 2000,
+  "loginNameUniqueFilteredIndex": 1,
+  "socialEmailCheckEnabledTrusted": 1,
+  "socialEmailCheckSupportsVendor": 1,
+  "rowsWithLoginName": 0,
+  "rowsWithOperatingRegions": 0,
+  "rowCounts": {
+    "Users": 26,
+    "Vendors": 2,
+    "Categories": 8,
+    "Listings": 0,
+    "Vouchers": 0,
+    "AuditLogs": 265,
+    "BookingContracts": 0
+  }
+}

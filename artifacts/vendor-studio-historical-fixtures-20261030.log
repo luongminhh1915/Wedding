@@ -1,0 +1,22 @@
+  Determining projects to restore...
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Domain\Wedding.Domain.csproj (in 92 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Application\Wedding.Application.csproj (in 315 ms).
+  Restored D:\Gitgithubhub\Wedding\tools\Wedding.LocalDataBackup\Wedding.LocalDataBackup.csproj (in 312 ms).
+  Restored D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj (in 356 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.Infrastructure\Wedding.Infrastructure.csproj (in 369 ms).
+  Restored D:\Gitgithubhub\Wedding\src\Wedding.WebApi\Wedding.WebApi.csproj (in 369 ms).
+  Wedding.Domain -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.Domain\debug\Wedding.Domain.dll
+  Wedding.LocalDataBackup -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.LocalDataBackup\debug\Wedding.LocalDataBackup.dll
+  Wedding.Application -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.Application\debug\Wedding.Application.dll
+  Wedding.Infrastructure -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.Infrastructure\debug\Wedding.Infrastructure.dll
+  Wedding.WebApi -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.WebApi\debug\Wedding.WebApi.dll
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(45,65): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(49,24): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(54,21): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+D:\Gitgithubhub\Wedding\tests\Wedding.Tests\VendorBusinessGroupTests.cs(55,22): warning xUnit2031: Do not use a Where clause to filter before calling Assert.Single. Use the overload of Assert.Single that accepts a filtering function. (https://xunit.net/xunit.analyzers/rules/xUnit2031) [D:\Gitgithubhub\Wedding\tests\Wedding.Tests\Wedding.Tests.csproj]
+  Wedding.Tests -> D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.Tests\debug\Wedding.Tests.dll
+Test run for D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\build\bin\Wedding.Tests\debug\Wedding.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: D:\Gitgithubhub\Wedding\artifacts\vendor-studio-historical-fixtures-20261030\results\historical-fixtures.trx
+
+Passed!  - Failed:     0, Passed:    57, Skipped:     0, Total:    57, Duration: 31 s - Wedding.Tests.dll (net10.0)

@@ -1,0 +1,14 @@
+{
+  "database": "WeddingMatch_Dev",
+  "beforeMigrations": 15,
+  "afterMigrations": 15,
+  "schemaAlreadyApplied": true,
+  "migrationsExecutedByThisScript": false,
+  "businessTables": 55,
+  "originalRowsAndColumnsUnchanged": true,
+  "backup": "D:\\sql\\dev\\MSSQL16.MSSQLSERVER\\MSSQL\\Backup\\WeddingMatch_Dev_schema15_before_runtime_refresh_20261020_0612utc.bak",
+  "backupChecksumVerified": true,
+  "beforeFile": "D:\\Gitgithubhub\\Wedding\\artifacts\\refactor-main-before.txt",
+  "afterFile": "D:\\Gitgithubhub\\Wedding\\artifacts\\refactor-main-after.txt",
+  "performedUtc": "2026-10-20T06:14:40.5114365Z"
+}

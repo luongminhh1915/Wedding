@@ -1,0 +1,9 @@
+{
+  "Database":{"Provider":"SqlServer","ApplyMigrations":false,"SeedDemoData":false,"UnknownDatabaseKey":"keep"},
+  "ConnectionStrings":{"DefaultConnection":"Server=synthetic.invalid;Database=Synthetic;User Id=synthetic;Password=synthetic-only-not-real"},
+  "JwtSettings":{"Secret":"synthetic-only-signing-key-not-a-real-key-123456789","Issuer":"keep-issuer"},
+  "Uploads":{"InvitationRoot":"../private/uploads/keep","UnknownUpload":[1,true,"keep"]},
+  "Google":{"ClientId":"1234567890-originalsmoke.apps.googleusercontent.com","UnknownGoogle":{"keep":true}},
+  "UnknownRoot":{"rawNumber":123456789012345678901234567890,"keep":"yes"},
+  "Facebook":{"AppId":"1234567890003","GraphApiVersion":"v97.0","AppSecret":"synthetic-only-c8b86200c1df423c97de5b5315004f1f"}
+}

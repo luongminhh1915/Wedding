@@ -1,0 +1,16 @@
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Application\debug\Wedding.Application.deps.json
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Application\debug\Wedding.Application.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Application\debug\Wedding.Application.pdb
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Application\debug\Wedding.Domain.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\bin\Wedding.Application\debug\Wedding.Domain.pdb
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.csproj.AssemblyReference.cache
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.AssemblyInfoInputs.cache
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.AssemblyInfo.cs
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.csproj.CoreCompileInputs.cache
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.sourcelink.json
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding..16C2A49E.Up2Date
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\refint\Wedding.Application.dll
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\Wedding.Application.pdb
+D:\Gitgithubhub\Wedding\.deployment\local-staff-provisioner\build\obj\Wedding.Application\debug\ref\Wedding.Application.dll

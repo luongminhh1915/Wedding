@@ -1,0 +1,9 @@
+{
+  "Database":{"Provider":"SqlServer","ApplyMigrations":false,"SeedDemoData":false,"UnknownDatabaseKey":"keep"},
+  "ConnectionStrings":{"DefaultConnection":"Server=synthetic.invalid;Database=Synthetic;User Id=synthetic;Password=synthetic-only-not-real"},
+  "JwtSettings":{"Secret":"synthetic-only-signing-key-not-a-real-key-123456789","Issuer":"keep-issuer"},
+  "Uploads":{"InvitationRoot":"../private/uploads/keep","UnknownUpload":[1,true,"keep"]},
+  "Google":{"ClientId":"1234567890-updatedsmoke.apps.googleusercontent.com","UnknownGoogle":{"keep":true}},
+  "Facebook":{"AppId":"1234567890002","AppSecret":"synthetic-only-a9840765e969467d8e439228630b6480","GraphApiVersion":"v98.0","UnknownFacebook":{"precise":1.2345678901234567890123456789,"list":[1,true,null]}},
+  "UnknownRoot":{"rawNumber":123456789012345678901234567890,"keep":"yes"}
+}

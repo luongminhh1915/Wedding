@@ -1,0 +1,95 @@
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 2248 modules transformed.
+
+(!) outDir D:\Gitgithubhub\Wedding\artifacts\clarity-20261029\client-dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../artifacts/clarity-20261029/client-dist/index.html                                     2.63 kB │ gzip:  1.16 kB
+../artifacts/clarity-20261029/client-dist/assets/Pagination-B2CmXlcH.css                 0.75 kB │ gzip:  0.37 kB
+../artifacts/clarity-20261029/client-dist/assets/CustomerDashboard-DSYKhNcn.css          2.81 kB │ gzip:  0.89 kB
+../artifacts/clarity-20261029/client-dist/assets/ComboBuilderPage-Dp5zopjr.css           3.67 kB │ gzip:  1.09 kB
+../artifacts/clarity-20261029/client-dist/assets/ProvinceSelect-_ZlwSYkc.css             3.77 kB │ gzip:  1.17 kB
+../artifacts/clarity-20261029/client-dist/assets/AccountPage-BsBQK7XY.css                4.40 kB │ gzip:  1.36 kB
+../artifacts/clarity-20261029/client-dist/assets/BrowsePage-BCSfbhxy.css                 8.10 kB │ gzip:  2.07 kB
+../artifacts/clarity-20261029/client-dist/assets/useNotificationFocus-DkB-Cscx.css      10.05 kB │ gzip:  2.48 kB
+../artifacts/clarity-20261029/client-dist/assets/ComboDetailPage-B4d6EpWb.css           10.40 kB │ gzip:  2.58 kB
+../artifacts/clarity-20261029/client-dist/assets/VendorDashboard-C030dpkI.css           11.15 kB │ gzip:  2.63 kB
+../artifacts/clarity-20261029/client-dist/assets/ArticlesPage-F_LPCZdM.css              46.36 kB │ gzip:  8.99 kB
+../artifacts/clarity-20261029/client-dist/assets/index-CohcqqyJ.css                    221.02 kB │ gzip: 39.04 kB
+../artifacts/clarity-20261029/client-dist/assets/chevron-left-BWLdj8AP.js                0.17 kB │ gzip:  0.17 kB
+../artifacts/clarity-20261029/client-dist/assets/chevron-right-DxQUzXO0.js               0.17 kB │ gzip:  0.16 kB
+../artifacts/clarity-20261029/client-dist/assets/plus-DI9LZ8Cw.js                        0.19 kB │ gzip:  0.17 kB
+../artifacts/clarity-20261029/client-dist/assets/x-CPUBqWff.js                           0.19 kB │ gzip:  0.17 kB
+../artifacts/clarity-20261029/client-dist/assets/arrow-left-CRpqD1fk.js                  0.20 kB │ gzip:  0.18 kB
+../artifacts/clarity-20261029/client-dist/assets/loader-circle-Uof4gRwB.js               0.20 kB │ gzip:  0.19 kB
+../artifacts/clarity-20261029/client-dist/assets/user-Dve5xFdQ.js                        0.23 kB │ gzip:  0.20 kB
+../artifacts/clarity-20261029/client-dist/assets/rotate-ccw-DLWN0mVO.js                  0.24 kB │ gzip:  0.21 kB
+../artifacts/clarity-20261029/client-dist/assets/lock-B9jcUauI.js                        0.24 kB │ gzip:  0.22 kB
+../artifacts/clarity-20261029/client-dist/assets/copy-4qa3jPg9.js                        0.27 kB │ gzip:  0.23 kB
+../artifacts/clarity-20261029/client-dist/assets/external-link-BBYcVKnS.js               0.29 kB │ gzip:  0.22 kB
+../artifacts/clarity-20261029/client-dist/assets/circle-alert-DIVql-Va.js                0.31 kB │ gzip:  0.22 kB
+../artifacts/clarity-20261029/client-dist/assets/circle-question-mark-CvqWkO4y.js        0.32 kB │ gzip:  0.25 kB
+../artifacts/clarity-20261029/client-dist/assets/badge-check-B-f-wR1J.js                 0.38 kB │ gzip:  0.26 kB
+../artifacts/clarity-20261029/client-dist/assets/format-nCIvYUS9.js                      0.40 kB │ gzip:  0.26 kB
+../artifacts/clarity-20261029/client-dist/assets/clock-ByeONly8.js                       0.43 kB │ gzip:  0.28 kB
+../artifacts/clarity-20261029/client-dist/assets/sliders-horizontal-DMkgmGPW.js          0.46 kB │ gzip:  0.26 kB
+../artifacts/clarity-20261029/client-dist/assets/eye-off-CD5xmufb.js                     0.47 kB │ gzip:  0.30 kB
+../artifacts/clarity-20261029/client-dist/assets/send-D6Fv9tpB.js                        0.51 kB │ gzip:  0.34 kB
+../artifacts/clarity-20261029/client-dist/assets/calendar-days-BSU56BTm.js               0.53 kB │ gzip:  0.29 kB
+../artifacts/clarity-20261029/client-dist/assets/store-nSw4pjYb.js                       0.53 kB │ gzip:  0.31 kB
+../artifacts/clarity-20261029/client-dist/assets/file-text-CueOC9nJ.js                   0.61 kB │ gzip:  0.35 kB
+../artifacts/clarity-20261029/client-dist/assets/trash-cRAnjB9W.js                       0.63 kB │ gzip:  0.37 kB
+../artifacts/clarity-20261029/client-dist/assets/comboEditing-v1HJ7rHO.js                0.65 kB │ gzip:  0.39 kB
+../artifacts/clarity-20261029/client-dist/assets/qr-code-BwwmxR6v.js                     0.69 kB │ gzip:  0.33 kB
+../artifacts/clarity-20261029/client-dist/assets/useAuth-fbUxzr_Z.js                     0.88 kB │ gzip:  0.47 kB
+../artifacts/clarity-20261029/client-dist/assets/customerOrderApi-Dgtrquvm.js            1.21 kB │ gzip:  0.54 kB
+../artifacts/clarity-20261029/client-dist/assets/facebookSdk-B20Xb-gD.js                 1.25 kB │ gzip:  0.73 kB
+../artifacts/clarity-20261029/client-dist/assets/useInvitations-Shk-0BZ-.js              1.30 kB │ gzip:  0.60 kB
+../artifacts/clarity-20261029/client-dist/assets/Pagination--27Eog9_.js                  1.72 kB │ gzip:  0.86 kB
+../artifacts/clarity-20261029/client-dist/assets/notificationModel-DJLFUsKS.js           1.77 kB │ gzip:  0.90 kB
+../artifacts/clarity-20261029/client-dist/assets/reviewPresentationModel-CHZhLfGI.js     1.86 kB │ gzip:  1.05 kB
+../artifacts/clarity-20261029/client-dist/assets/ui-DmQCq7FK.js                          1.97 kB │ gzip:  0.99 kB
+../artifacts/clarity-20261029/client-dist/assets/useMutation-BY4QwgjH.js                 2.31 kB │ gzip:  0.95 kB
+../artifacts/clarity-20261029/client-dist/assets/ContactPhoneForm-oNdm9nbJ.js            2.42 kB │ gzip:  1.34 kB
+../artifacts/clarity-20261029/client-dist/assets/invitationApi-DKuJaIOv.js               2.67 kB │ gzip:  1.44 kB
+../artifacts/clarity-20261029/client-dist/assets/createLucideIcon-_IxLnpBT.js            3.10 kB │ gzip:  1.49 kB
+../artifacts/clarity-20261029/client-dist/assets/IndependentReviewPanel-B80tzZdb.js      3.54 kB │ gzip:  1.46 kB
+../artifacts/clarity-20261029/client-dist/assets/ArticlesPage-CIOxp5ew.js                3.54 kB │ gzip:  1.45 kB
+../artifacts/clarity-20261029/client-dist/assets/MoneyInput-oJq27Io4.js                  3.85 kB │ gzip:  1.76 kB
+../artifacts/clarity-20261029/client-dist/assets/PasswordResetPage-CJqVEUMt.js           3.85 kB │ gzip:  1.62 kB
+../artifacts/clarity-20261029/client-dist/assets/ComboDialog-P7BqCkZ-.js                 4.05 kB │ gzip:  1.60 kB
+../artifacts/clarity-20261029/client-dist/assets/serviceDetailsModel-Xmvj8Y_v.js         4.13 kB │ gzip:  1.79 kB
+../artifacts/clarity-20261029/client-dist/assets/ServiceDetails-DWWYgkJv.js              4.16 kB │ gzip:  1.58 kB
+../artifacts/clarity-20261029/client-dist/assets/NotificationsPage-CY-6T2jX.js           4.54 kB │ gzip:  1.82 kB
+../artifacts/clarity-20261029/client-dist/assets/comboFilterModel-FDjPsV_W.js            4.55 kB │ gzip:  2.04 kB
+../artifacts/clarity-20261029/client-dist/assets/TemplateGallery-Js5oUCX8.js             5.48 kB │ gzip:  2.17 kB
+../artifacts/clarity-20261029/client-dist/assets/ProvinceSelect-C-iuPnzq.js              5.68 kB │ gzip:  2.75 kB
+../artifacts/clarity-20261029/client-dist/assets/comboTemplateEditorModel-C-bJRX9M.js    6.02 kB │ gzip:  2.52 kB
+../artifacts/clarity-20261029/client-dist/assets/PublicInvitationPage-BY_Yqp8o.js        6.88 kB │ gzip:  2.75 kB
+../artifacts/clarity-20261029/client-dist/assets/useNotificationFocus-CHdBh4CC.js        7.39 kB │ gzip:  2.76 kB
+../artifacts/clarity-20261029/client-dist/assets/useReviews-DWhcmevL.js                  7.75 kB │ gzip:  2.48 kB
+../artifacts/clarity-20261029/client-dist/assets/useQuery-C7PwjJOM.js                    7.92 kB │ gzip:  2.93 kB
+../artifacts/clarity-20261029/client-dist/assets/ReviewList-B0_joRql.js                  8.69 kB │ gzip:  3.08 kB
+../artifacts/clarity-20261029/client-dist/assets/OperationsPanels-C98cRE3U.js            8.79 kB │ gzip:  3.17 kB
+../artifacts/clarity-20261029/client-dist/assets/SetupWizard-DeQAz0lu.js                 9.27 kB │ gzip:  3.29 kB
+../artifacts/clarity-20261029/client-dist/assets/RegisterForm-CY9SDKh1.js               10.08 kB │ gzip:  3.65 kB
+../artifacts/clarity-20261029/client-dist/assets/InvitationView-BBpgZPeI.js             10.71 kB │ gzip:  4.47 kB
+../artifacts/clarity-20261029/client-dist/assets/LoginForm-DJsJhEUL.js                  12.06 kB │ gzip:  4.11 kB
+../artifacts/clarity-20261029/client-dist/assets/BrowsePage-DGXIdtdm.js                 14.81 kB │ gzip:  4.82 kB
+../artifacts/clarity-20261029/client-dist/assets/AccountPage-Hj9pF0Ev.js                20.16 kB │ gzip:  6.37 kB
+../artifacts/clarity-20261029/client-dist/assets/InvitationManage-Dtnnmvg_.js           20.55 kB │ gzip:  7.84 kB
+../artifacts/clarity-20261029/client-dist/assets/ComboDetailPage-CgFrLN6U.js            23.85 kB │ gzip:  7.57 kB
+../artifacts/clarity-20261029/client-dist/assets/ListingDetailPage-tXpyXovk.js          39.84 kB │ gzip: 11.21 kB
+../artifacts/clarity-20261029/client-dist/assets/ComboBuilderPage-DVGYkhCV.js           56.40 kB │ gzip: 15.46 kB
+../artifacts/clarity-20261029/client-dist/assets/OrderRequestInbox-BRqO1MmW.js          63.98 kB │ gzip: 16.33 kB
+../artifacts/clarity-20261029/client-dist/assets/bookingApi-BfW_rrxH.js                 89.68 kB │ gzip: 24.21 kB
+../artifacts/clarity-20261029/client-dist/assets/axiosClient-B6wvHlON.js               131.54 kB │ gzip: 45.48 kB
+../artifacts/clarity-20261029/client-dist/assets/AdminDashboard-BNSusToL.js            141.54 kB │ gzip: 31.45 kB
+../artifacts/clarity-20261029/client-dist/assets/CustomerDashboard-_lWwchiS.js         166.13 kB │ gzip: 43.32 kB
+../artifacts/clarity-20261029/client-dist/assets/VendorDashboard-k-fx3bq8.js           209.11 kB │ gzip: 47.50 kB
+../artifacts/clarity-20261029/client-dist/assets/index-R3sK3s8M.js                     321.47 kB │ gzip: 98.66 kB
+
+✓ built in 1.52s

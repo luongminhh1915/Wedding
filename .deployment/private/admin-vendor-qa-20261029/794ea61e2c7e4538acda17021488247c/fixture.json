@@ -1,0 +1,44 @@
+{
+  "type": "WeddingMatch.AdminVendor.QA.v1",
+  "ownershipKey": "794ea61e-2c7e-4538-acda-17021488247c",
+  "database": "WeddingPlanTest_AdminVendor_794ea61e2c7e4538acda17021488247c",
+  "emailDomain": "794ea61e2c7e4538acda17021488247c.admin-vendor-qa.example.invalid",
+  "configurationPath": "D:\\Gitgithubhub\\Wedding\\.deployment\\private\\admin-vendor-qa-20261029\\794ea61e2c7e4538acda17021488247c\\wedding.qa.json",
+  "runRoot": "D:\\Gitgithubhub\\Wedding\\artifacts\\admin-vendor-qa-20261029\\runs\\794ea61e2c7e4538acda17021488247c",
+  "seedActors": [
+    {
+      "role": "SuperAdmin",
+      "id": "97401cea-9a9f-4ee5-8da1-5481236d2819",
+      "fullName": "[QA Admin Vendor] admin",
+      "email": "admin@794ea61e2c7e4538acda17021488247c.admin-vendor-qa.example.invalid",
+      "phoneNumber": "0900000931",
+      "password": "QaOnly-82FFD5A794B8CA7C4786FD091E7BC6B5F7D4C4E9!"
+    },
+    {
+      "role": "Moderator",
+      "id": "05a7c46c-73dd-4bb2-9af0-8d87dafd8753",
+      "fullName": "[QA Admin Vendor] moderator",
+      "email": "moderator@794ea61e2c7e4538acda17021488247c.admin-vendor-qa.example.invalid",
+      "phoneNumber": "0900000932",
+      "password": "QaOnly-C5936A0EB0B72F62A7D33391CBF88C2B603962ED!"
+    },
+    {
+      "role": "Customer",
+      "id": "235de217-904d-44f8-97f2-c6c68f43230a",
+      "fullName": "[QA Admin Vendor] customer",
+      "email": "customer@794ea61e2c7e4538acda17021488247c.admin-vendor-qa.example.invalid",
+      "phoneNumber": "0900000933",
+      "password": "QaOnly-62ADEE52F0C9CC401B089865FC0B29F16E84356E!"
+    },
+    {
+      "role": "VendorOwner",
+      "id": "d021d8ab-9f80-4855-87ca-84ba25042cb4",
+      "fullName": "[QA Admin Vendor] vendor",
+      "email": "vendor@794ea61e2c7e4538acda17021488247c.admin-vendor-qa.example.invalid",
+      "phoneNumber": "0900000934",
+      "password": "QaOnly-CC8B486FEEEDEE9DB7B125DDAC4DF9A48CF4A7B4!"
+    }
+  ],
+  "createdUtc": "2026-10-29T19:07:45.0381309Z",
+  "stage": "Closed"
+}
