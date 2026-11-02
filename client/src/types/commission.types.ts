@@ -18,7 +18,8 @@ export interface CommissionItem {
   commissionRate: number;
   commissionAmount: number;
   dueDate: string;
-  status: 'Pending' | 'Paid' | 'Overdue';
+  status: 'Pending' | 'Paid' | 'Overdue' | 'Unsettled' | 'EscrowLocked' | 'InSettlement' | 'Settled' | 'Frozen' | 'Cancelled';
+  paidAmount?: number;
   paidAt?: string;
   paymentReferenceCode?: string;
   qrImageUrl?: string;

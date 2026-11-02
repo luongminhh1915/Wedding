@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.WeddingTools.Commands.DeleteChecklistTask;
 
@@ -20,8 +21,8 @@ public class DeleteChecklistTaskCommandHandler : IRequestHandler<DeleteChecklist
 
     public async Task<bool> Handle(DeleteChecklistTaskCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để xóa công việc.");
+        var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
+        var userId = scope.OwnerId;
 
         var task = await _context.ChecklistTasks
             .FirstOrDefaultAsync(t => t.Id == request.Id && t.CustomerId == userId, cancellationToken)

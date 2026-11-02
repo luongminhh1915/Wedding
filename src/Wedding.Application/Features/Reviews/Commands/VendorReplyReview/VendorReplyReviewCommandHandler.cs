@@ -30,6 +30,7 @@ public class VendorReplyReviewCommandHandler : IRequestHandler<VendorReplyReview
             .Include(r => r.Customer)
             .Include(r => r.Vendor)
             .Include(r => r.Listing)
+            .Include(r => r.ComboTemplate)
             .Include(r => r.BookingContract)
             .FirstOrDefaultAsync(r => r.Id == request.ReviewId, cancellationToken)
             ?? throw new DomainException("Bài đánh giá không tồn tại.");
@@ -45,7 +46,7 @@ public class VendorReplyReviewCommandHandler : IRequestHandler<VendorReplyReview
             BookingContractId: review.BookingContractId,
             ContractCode: review.BookingContract?.ContractCode,
             ListingId: review.ListingId,
-            ListingTitle: review.Listing.Title,
+            ListingTitle: review.Listing?.Title ?? review.ComboTemplate?.Name ?? "",
             CustomerId: review.CustomerId,
             CustomerName: review.Customer.FullName,
             VendorId: review.VendorId,
@@ -57,7 +58,10 @@ public class VendorReplyReviewCommandHandler : IRequestHandler<VendorReplyReview
             Status: review.Status.ToString(),
             VendorReply: review.VendorReply,
             VendorRepliedAt: review.VendorRepliedAt,
-            CreatedAt: review.CreatedAt
+            CreatedAt: review.CreatedAt,
+            QualityRating: review.QualityRating, ServiceRating: review.ServiceRating, PunctualityRating: review.PunctualityRating, ValueRating: review.ValueRating, AverageRating: review.AverageRating,
+            TargetType: review.TargetType.ToString(), ComboOrderId: review.ComboOrderId, ComboTemplateId: review.ComboTemplateId,
+            ComboTemplateName: review.ComboTemplate?.Name
         );
     }
 }

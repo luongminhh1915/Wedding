@@ -9,6 +9,15 @@ export interface ContractCommission {
   status: string;
 }
 
+export interface ContractCategorySnapshot {
+  categoryId: string;
+  categoryName: string;
+  businessGroupId?: string | null;
+  businessGroupName?: string | null;
+  rateSource: 'LegacyVendor' | 'CategoryDefault';
+  policyVersion?: string | null;
+}
+
 export interface Contract {
   id: string;
   contractCode: string;
@@ -32,6 +41,12 @@ export interface Contract {
   cancellationReason?: string;
   createdAt: string;
   commissions: ContractCommission[];
+  cancellationPolicySnapshot?: string;
+  commissionRateSnapshot?: number;
+  categorySnapshot?: ContractCategorySnapshot | null;
+  rejectReason?: string;
+  revisionCount?: number;
+  appointmentDepositCredit?: number;
 }
 
 export interface CreateContractRequest {
@@ -41,4 +56,5 @@ export interface CreateContractRequest {
   depositAmount: number;
   contractImageUrl?: string;
   weddingDate?: string;
+  cancellationPolicy?: string;
 }

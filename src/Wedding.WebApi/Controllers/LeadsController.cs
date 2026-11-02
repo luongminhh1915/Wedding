@@ -41,9 +41,9 @@ public class LeadsController : ControllerBase
     /// </summary>
     [HttpGet("vendor-inbox")]
     [Authorize(Roles = "VendorOwner")]
-    public async Task<IActionResult> GetVendorLeads([FromQuery] string? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetVendorLeads([FromQuery] string? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, [FromQuery] Guid? focusId = null)
     {
-        var result = await _mediator.Send(new GetVendorLeadsQuery(status, pageNumber, pageSize));
+        var result = await _mediator.Send(new GetVendorLeadsQuery(status, pageNumber, pageSize, focusId));
         return Ok(result);
     }
 

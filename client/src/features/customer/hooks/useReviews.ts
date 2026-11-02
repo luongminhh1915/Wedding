@@ -1,172 +1,120 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Review, SubmitReviewRequest, EligibleContract } from '../../../types/review.types';
+import type { SubmitComboReviewRequest, SubmitReviewRequest, SubmitShopReviewRequest } from '../../../types/review.types';
+import { useAuthStore } from '../../../store/authStore';
+import axiosClient from '../../../services/axiosClient';
+import { canRequestReviews, createReviewTransport, reviewQueryKey, type ReviewSession } from '../reviewTransport';
+import { invalidateReviewQueries } from '../reviewCacheModel';
+
+function currentSession(): ReviewSession {
+  const state = useAuthStore.getState();
+  return { userId: state.user?.id ?? null, role: state.user?.role ?? null, token: state.token, revision: state.sessionRevision };
+}
+function useReviewSession(): ReviewSession {
+  const userId = useAuthStore(state => state.user?.id ?? null);
+  const role = useAuthStore(state => state.user?.role ?? null);
+  const token = useAuthStore(state => state.token);
+  const revision = useAuthStore(state => state.sessionRevision);
+  return { userId, role, token, revision };
+}
+const transport = createReviewTransport(axiosClient, currentSession);
 
 export function useListingReviews(listingId?: string) {
-  return useQuery({
-    queryKey: ['listing-reviews', listingId],
-    queryFn: async (): Promise<Review[]> => {
-      if (!listingId) return [];
-      const res = await fetch(`/api/reviews/listing/${listingId}`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!listingId
-  });
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('listing-reviews', session, listingId ?? ''),
+    queryFn: ({ signal }) => transport.listing(session, listingId!, signal), enabled: !!listingId, retry: false });
 }
-
 export function useVendorReviews(vendorId?: string) {
-  return useQuery({
-    queryKey: ['vendor-reviews', vendorId],
-    queryFn: async (): Promise<Review[]> => {
-      if (!vendorId) return [];
-      const res = await fetch(`/api/reviews/vendor/${vendorId}`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!vendorId
-  });
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('vendor-reviews', session, vendorId ?? ''),
+    queryFn: ({ signal }) => transport.vendor(session, vendorId!, signal), enabled: !!vendorId, retry: false });
 }
-
-export function useEligibleContracts() {
-  return useQuery({
-    queryKey: ['eligible-contracts'],
-    queryFn: async (): Promise<EligibleContract[]> => {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/reviews/eligible-contracts', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-      if (!res.ok) return [];
-      return res.json();
-    }
-  });
+export function useEligibleContracts(enabled = true) {
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('eligible-contracts', session),
+    queryFn: ({ signal }) => transport.eligible(session, signal), enabled: enabled && canRequestReviews('customer', session), retry: false });
 }
-
-export function useSubmitReview() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (payload: SubmitReviewRequest): Promise<Review> => {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Không thể gửi đánh giá.');
-      }
-
-      return res.json();
-    },
-    onSuccess: (saved) => {
-      queryClient.invalidateQueries({ queryKey: ['listing-reviews', saved.listingId] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-reviews', saved.vendorId] });
-      queryClient.invalidateQueries({ queryKey: ['moderation-reviews'] });
-    }
-  });
+export function useEligibleReviewTargets(enabled = true) {
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('eligible-targets', session),
+    queryFn: ({ signal }) => transport.eligibleTargets(session, signal),
+    enabled: enabled && canRequestReviews('customer', session), retry: false });
 }
-
+export function useMyReviews(enabled = true) {
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('my-reviews', session),
+    queryFn: ({ signal }) => transport.mine(session, signal),
+    enabled: enabled && canRequestReviews('customer', session), retry: false });
+}
+export function useIndependentReviews(targetType?: string, targetId?: string, options?: {
+  page?: number; pageSize?: number; rating?: number | null; verifiedOnly?: boolean | null; sort?: string;
+}) {
+  const session = useReviewSession();
+  const page = options?.page ?? 1; const pageSize = options?.pageSize ?? 10;
+  const rating = options?.rating ?? null; const verifiedOnly = options?.verifiedOnly ?? null;
+  const sort = options?.sort ?? 'newest';
+  return useQuery({ queryKey: [...reviewQueryKey('target-reviews', session, `${targetType ?? ''}:${targetId ?? ''}`),
+    page, pageSize, rating, verifiedOnly, sort],
+    queryFn: ({ signal }) => transport.target(session, targetType!, targetId!, page, pageSize, rating, verifiedOnly, sort, signal),
+    enabled: !!targetType && !!targetId, retry: false });
+}
 export function useModerationReviews() {
-  return useQuery({
-    queryKey: ['moderation-reviews'],
-    queryFn: async (): Promise<Review[]> => {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/reviews/moderation/pending', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-      if (!res.ok) return [];
-      return res.json();
-    }
-  });
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('moderation-reviews', session),
+    queryFn: ({ signal }) => transport.moderation(session, signal), enabled: canRequestReviews('moderator', session), retry: false });
 }
-
+export function usePendingReviewEdits() {
+  const session = useReviewSession();
+  return useQuery({ queryKey: reviewQueryKey('moderation-edits', session),
+    queryFn: ({ signal }) => transport.pendingEdits(session, signal),
+    enabled: canRequestReviews('moderator', session), retry: false });
+}
+export function useSubmitReview() {
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('eligible-contracts', session), 'submit'],
+    mutationFn: (payload: SubmitReviewRequest) => transport.submit(session, payload),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'submit') });
+}
+export function useSubmitShopReview() {
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('eligible-targets', session), 'shop-submit'],
+    mutationFn: (payload: SubmitShopReviewRequest) => transport.submitShop(session, payload),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'submit') });
+}
+export function useSubmitComboReview() {
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('eligible-targets', session), 'combo-submit'],
+    mutationFn: (payload: SubmitComboReviewRequest) => transport.submitCombo(session, payload),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'submit') });
+}
+export function useSubmitReviewEdit() {
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('my-reviews', session), 'edit'],
+    mutationFn: ({ reviewId, payload }: { reviewId: string; payload: Omit<SubmitReviewRequest, 'listingId' | 'bookingContractId'> }) =>
+      transport.submitEdit(session, reviewId, payload),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'edit') });
+}
 export function useApproveReview() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (reviewId: string) => {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/reviews/${reviewId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error('Không thể duyệt đánh giá.');
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['moderation-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['listing-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-reviews'] });
-    }
-  });
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('moderation-reviews', session), 'approve'],
+    mutationFn: (reviewId: string) => transport.approve(session, reviewId),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'approve') });
 }
-
 export function useRejectReview() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ reviewId, reason }: { reviewId: string; reason?: string }) => {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/reviews/${reviewId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ reason })
-      });
-
-      if (!res.ok) {
-        throw new Error('Không thể từ chối đánh giá.');
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['moderation-reviews'] });
-    }
-  });
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('moderation-reviews', session), 'reject'],
+    mutationFn: ({ reviewId, reason }: { reviewId: string; reason?: string }) => transport.reject(session, reviewId, reason),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'reject') });
 }
-
+export function useModerateReviewEdit() {
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('moderation-edits', session), 'decision'],
+    mutationFn: ({ editRequestId, approve, reason }: { editRequestId: string; approve: boolean; reason?: string }) =>
+      approve ? transport.approveEdit(session, editRequestId) : transport.rejectEdit(session, editRequestId, reason ?? ''),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'moderate-edit') });
+}
 export function useVendorReplyReview() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ reviewId, reply }: { reviewId: string; reply: string }) => {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/reviews/${reviewId}/reply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ reply })
-      });
-
-      if (!res.ok) {
-        throw new Error('Không thể gửi phản hồi.');
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listing-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-reviews'] });
-    }
-  });
+  const queryClient = useQueryClient(); const session = useReviewSession();
+  return useMutation({ mutationKey: [...reviewQueryKey('vendor-reviews', session), 'reply'],
+    mutationFn: ({ reviewId, reply }: { reviewId: string; reply: string }) => transport.reply(session, reviewId, reply),
+    onSuccess: () => invalidateReviewQueries(queryClient, 'reply') });
 }

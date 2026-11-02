@@ -27,9 +27,7 @@ public class GetVendorListingsQueryHandler : IRequestHandler<GetVendorListingsQu
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Không xác định được người dùng.");
 
-        var vendor = await _context.Vendors
-            .FirstOrDefaultAsync(v => v.UserId == userId, cancellationToken)
-            ?? throw new DomainException("Hồ sơ nhà cung cấp không tồn tại.");
+        var vendor = await ListingPublication.RequireOwner(_context, _currentUserService, cancellationToken);
 
         var listings = await _context.Listings
             .Include(l => l.Category)
@@ -38,6 +36,11 @@ public class GetVendorListingsQueryHandler : IRequestHandler<GetVendorListingsQu
             .Where(l => l.VendorId == vendor.Id)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync(cancellationToken);
+
+        var ids = listings.Select(listing => listing.Id).ToList();
+        var pricing = await _context.ServiceItems.AsNoTracking().Where(item => ids.Contains(item.ListingId) &&
+            item.Listing.PricingServiceItemId == item.Id && item.VendorId == vendor.Id && item.CategoryId == item.Listing.CategoryId)
+            .ToDictionaryAsync(item => item.ListingId, cancellationToken);
 
         return listings.Select(l => new ListingSummaryDto(
             l.Id,
@@ -52,7 +55,9 @@ public class GetVendorListingsQueryHandler : IRequestHandler<GetVendorListingsQu
             l.Vendor.BrandName,
             l.ViewCount,
             l.CreatedAt,
-            l.Media.FirstOrDefault(m => m.IsFeatured)?.MediaUrl ?? l.Media.FirstOrDefault()?.MediaUrl
+            l.Media.FirstOrDefault(m => m.IsFeatured)?.MediaUrl ?? l.Media.FirstOrDefault()?.MediaUrl,
+            l.UpdatedAt, l.IsActive, CategoryId: l.CategoryId, PricingServiceItemId: l.PricingServiceItemId,
+            BasePrice: pricing.GetValueOrDefault(l.Id)?.BasePrice, PriceUnit: pricing.GetValueOrDefault(l.Id)?.Unit
         )).ToList();
     }
 }

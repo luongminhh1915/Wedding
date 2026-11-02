@@ -4,6 +4,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Domain.Enums;
+using Wedding.Domain.Entities;
+using Wedding.Application.Features.CustomerOrders;
 
 namespace Wedding.Infrastructure.Services;
 
@@ -49,24 +51,32 @@ public class ContractVerificationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
-        var now = DateTime.UtcNow;
-
-        // BR-005: Quét các hợp đồng PendingVerification đã vượt quá thời hạn 72h
-        var expiredContracts = await context.BookingContracts
-            .Where(c => c.Status == ContractStatus.PendingVerification && c.VerificationDeadline <= now)
-            .ToListAsync(cancellationToken);
-
-        if (expiredContracts.Any())
-        {
-            _logger.LogWarning("Phát hiện {Count} hợp đồng quá hạn 72h chưa được khách hàng xác nhận. Hủy tự động theo BR-005.", expiredContracts.Count);
-
-            foreach (var contract in expiredContracts)
-            {
-                contract.Cancel("Quá hạn 72h khách hàng không xác nhận hợp đồng (BR-005).");
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Đã cập nhật trạng thái hủy {Count} hợp đồng quá hạn 72h.", expiredContracts.Count);
-        }
+        var count = await ExpirePendingAsync(context, DateTime.UtcNow, cancellationToken);
+        if (count > 0) _logger.LogInformation("Đã cập nhật trạng thái hủy {Count} hợp đồng quá hạn chưa có giao dịch cần đối soát.", count);
     }
+
+    public static Task<int> ExpirePendingAsync(IApplicationDbContext context, DateTime now, CancellationToken cancellationToken)
+        => context.ExecuteSerializableAsync(async ct =>
+        {
+            var expired = await context.BookingContracts.Where(c => c.Status == ContractStatus.PendingVerification && c.VerificationDeadline <= now).ToListAsync(ct);
+            var cancelled = 0;
+            foreach (var contract in expired)
+            {
+                if (await CustomerOrderJourney.HasMoneyAsync(context, new[] { contract.LeadId }, ct))
+                {
+                    var key = contract.Id.ToString();
+                    if (!await context.AuditLogs.AnyAsync(a => a.Action == "Contract.ExpiryNeedsFinance" && a.EntityId == key, ct))
+                    {
+                        context.AuditLogs.Add(AuditLog.Create(null, "System", "Contract.ExpiryNeedsFinance", "BookingContract", key));
+                        var vendorUserId = await context.Vendors.Where(v => v.Id == contract.VendorId).Select(v => v.UserId).SingleAsync(ct);
+                        var recipients = await context.Users.Where(u => u.Role == UserRole.Finance || u.Role == UserRole.SuperAdmin).Select(u => u.Id).ToListAsync(ct);
+                        recipients.Add(contract.CustomerId); recipients.Add(vendorUserId);
+                        foreach (var id in recipients.Distinct()) context.Notifications.Add(Notification.Create(id, "InApp", "", $"Hợp đồng {contract.ContractCode} quá hạn duyệt nhưng có cọc/chuyển khoản cần đối soát. Hệ thống giữ nguyên hợp đồng và ngân sách; NCC/Tài chính cần phối hợp, không tự hủy hoặc hoàn tiền."));
+                    }
+                    continue;
+                }
+                contract.Cancel("Quá hạn 72h khách hàng không xác nhận hợp đồng (BR-005)."); cancelled++;
+            }
+            await context.SaveChangesAsync(ct); return cancelled;
+        }, cancellationToken);
 }

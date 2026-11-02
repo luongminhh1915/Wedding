@@ -1,51 +1,63 @@
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
   CheckCheck,
   Circle,
-  Compass,
   FileCheck2,
   Heart,
-  LayoutDashboard,
   Mail,
   Users,
   Wallet,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { MyContracts } from "./components/MyContracts";
-import { CustomerLeads } from "./components/CustomerLeads";
+import { ContractWorkspace } from "./components/ContractWorkspace";
 import { InvitationBuilder } from "./components/invitation/InvitationBuilder";
 import { WeddingBudgetPlanner } from "./components/tools/WeddingBudgetPlanner";
 import { WeddingChecklist } from "./components/tools/WeddingChecklist";
 import { useMyInvitation } from "./hooks/useInvitations";
 import { useWeddingBudget, useWeddingChecklist } from "./hooks/useWeddingTools";
-
-const tabs = [
-  { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "checklist", label: "Công việc", icon: CheckCheck },
-  { id: "budget", label: "Ngân sách", icon: Wallet },
-  { id: "invitations", label: "Thiệp & RSVP", icon: Heart },
-  { id: "contracts", label: "Hợp đồng & tư vấn", icon: FileCheck2 },
-] as const;
-type CustomerTab = (typeof tabs)[number]["id"];
+import { CustomerJourney } from "./CustomerJourney";
+import { usePlannerOverview } from "../journey/api";
+import { PremiumUpgrade } from "../journey/planner/PremiumUpgrade";
+import { MyAppointments } from "../journey/appointments/MyAppointments";
+import { MyCombos } from "../journey/combo/MyCombos";
+import { GuestsPlanner } from "../journey/planner/GuestsPlanner";
+import { WeddingMembers } from "../journey/planner/WeddingMembers";
+import { useMembers } from "../journey/planner/plannerApi";
+import InvitationManage from "../journey/invitations/InvitationManage";
+import { ContinueIntent } from "../journey/planner/ContinueIntent";
+import { CustomerToolNavigation } from "./CustomerToolNavigation";
+import CustomerReviewCenter from "./CustomerReviewCenter";
+import { customerTab, customerTabHref, type CustomerTab } from "./customerNavigationModel";
 
 export default function CustomerDashboard() {
   const { user } = useAuthStore();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
   const location = useLocation();
-  const requestedTab =
-    params.get("tab") ||
-    (location.pathname.endsWith("/contracts") ? "contracts" : "overview");
-  const activeTab = tabs.some((tab) => tab.id === requestedTab)
-    ? (requestedTab as CustomerTab)
-    : "overview";
-  const selectTab = (tab: CustomerTab) =>
-    setParams(tab === "overview" ? {} : { tab });
+  const activeTab = customerTab(location.pathname, params);
+  const selectTab = (tab: CustomerTab) => {
+    navigate(customerTabHref(tab, params));
+  };
   const { invitation } = useMyInvitation();
   const [today] = useState(() => Date.now());
-  const date = invitation?.eventDate ? new Date(invitation.eventDate) : null;
+  const plannerQuery = usePlannerOverview();
+  const planner = plannerQuery.data;
+  const profile = planner?.profile;
+  const members = useMembers();
+  const viewer = members.data?.myRole === "Viewer";
+  const dateIso = profile?.weddingDate || invitation?.eventDate;
+  const date = dateIso ? new Date(dateIso) : null;
+  const coupleName =
+    profile?.groomName && profile?.brideName
+      ? `${profile.groomName} & ${profile.brideName}`
+      : invitation
+        ? `${invitation.groomName} & ${invitation.brideName}`
+        : user?.fullName && user.fullName !== "Cặp đôi mới"
+          ? user.fullName
+          : "Ngày cưới của chúng mình";
   const daysLeft = date
     ? Math.max(0, Math.ceil((date.getTime() - today) / 86400000))
     : null;
@@ -56,9 +68,7 @@ export default function CustomerDashboard() {
         <div>
           <h1>
             <em>
-              {invitation
-                ? `${invitation.groomName} & ${invitation.brideName}`
-                : user?.fullName || "Ngày cưới của chúng mình"}
+              {coupleName}
             </em>{" "}
             <Heart
               className="inline ml-2 text-rose-300"
@@ -75,7 +85,7 @@ export default function CustomerDashboard() {
           <CalendarDays size={17} />
           {date ? (
             <>
-              <span>{date.toLocaleDateString("vi-VN")}</span>
+              <span>{date.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}</span>
               <span>· Còn {daysLeft} ngày</span>
             </>
           ) : (
@@ -83,34 +93,35 @@ export default function CustomerDashboard() {
           )}
         </button>
       </div>
-      <nav className="planner-tabs" aria-label="Công cụ của cặp đôi">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            className={activeTab === id ? "active" : ""}
-            onClick={() => selectTab(id)}
-            aria-current={activeTab === id ? "page" : undefined}
-          >
-            <Icon size={17} />
-            {label}
-          </button>
-        ))}
-        <Link to="/browse">
-          <Compass size={17} />
-          Tìm dịch vụ
-        </Link>
-      </nav>
-      <div className="feature-content">
-        {activeTab === "overview" && <PlannerOverview onSelect={selectTab} />}
-        {activeTab === "contracts" && (
+      <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
+      <CustomerToolNavigation pathname={location.pathname} search={location.search} />
+      <div className="feature-content min-w-0">
+        <CustomerJourney active={activeTab} data={planner} isLoading={plannerQuery.isPending} isError={plannerQuery.isError} retry={() => void plannerQuery.refetch()} />
+        {activeTab === "overview" && (
           <>
-            <CustomerLeads />
-            <MyContracts />
+            <ContinueIntent />
+            <PlannerOverview onSelect={selectTab} />
+            <details className="planner-members" open={params.get("join") ? true : undefined}><summary>Cùng nhau lên kế hoạch · Thành viên & chia sẻ</summary><WeddingMembers /></details>
           </>
         )}
-        {activeTab === "invitations" && <InvitationBuilder />}
-        {activeTab === "budget" && <WeddingBudgetPlanner />}
-        {activeTab === "checklist" && <WeddingChecklist />}
+        {activeTab === "appointments" && <MyAppointments />}
+        {activeTab === "guests" && <GuestsPlanner />}
+        {activeTab === "combos" && <MyCombos />}
+        {activeTab === "contracts" && (
+          <ContractWorkspace />
+        )}
+        {activeTab === "reviews" && <CustomerReviewCenter />}
+        {activeTab === "invitations" && (
+          <>
+            <InvitationManage embedded />
+            {invitation && <PremiumUpgrade key={String(invitation.isPremium)} isPremium={invitation.isPremium} />}
+            <fieldset className="min-w-0" disabled={viewer}><legend className="sr-only">Thiết kế thiệp</legend><InvitationBuilder /></fieldset>
+          </>
+        )}
+        {viewer && ["budget", "checklist", "invitations"].includes(activeTab) && <p role="status" className="p-3 text-sm">Bạn đang xem hồ sơ với quyền chỉ xem.</p>}
+        {activeTab === "budget" && <fieldset className="min-w-0" disabled={viewer}><legend className="sr-only">Ngân sách</legend><WeddingBudgetPlanner /></fieldset>}
+        {activeTab === "checklist" && <fieldset className="min-w-0" disabled={viewer}><legend className="sr-only">Công việc</legend><WeddingChecklist /></fieldset>}
+      </div>
       </div>
     </main>
   );
@@ -257,8 +268,9 @@ function PlannerOverview({
         <aside className="overview-panel overview-milo">
           <span className="wm-eyebrow">Gợi ý dành cho bạn</span>
           <img
-            src="/wedding-match/milo.png"
-            alt="Milo đồng hành cùng hai bạn"
+            src="/wedding-match/be-hy-mascot.png"
+            alt="Bé Hý đồng hành cùng hai bạn"
+            className="wm-mascot-image"
           />
           <h2>
             Từ từ thôi,

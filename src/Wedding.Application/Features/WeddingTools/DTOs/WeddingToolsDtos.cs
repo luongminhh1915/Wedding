@@ -7,7 +7,8 @@ public record BudgetItemDto(
     decimal ActualCost,
     string? Notes,
     bool IsPaid,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string Owner = "Shared", Guid? WeddingProfileId = null, Guid? ContractId = null
 );
 
 public record BudgetSummaryDto(
@@ -32,7 +33,8 @@ public record ChecklistTaskDto(
     DateTime? DueDate,
     bool IsCompleted,
     string? Notes,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string Owner = "Shared", Guid? WeddingProfileId = null, Guid? ContractId = null
 );
 
 public record CreateChecklistTaskRequest(

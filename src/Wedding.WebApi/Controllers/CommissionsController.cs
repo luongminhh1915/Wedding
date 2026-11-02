@@ -27,7 +27,7 @@ public class CommissionsController : ControllerBase
     /// [SuperAdmin/Admin] Bảng kiểm kê tài chính toàn hệ thống: xem hoa hồng, cọc của từng Vendor.
     /// </summary>
     [HttpGet("admin/overview")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Finance")]
     public async Task<IActionResult> GetAdminFinancialOverview([FromQuery] int? month, [FromQuery] int? year)
     {
         var result = await _mediator.Send(new GetAdminFinancialOverviewQuery(month, year));
@@ -38,7 +38,7 @@ public class CommissionsController : ControllerBase
     /// [SuperAdmin/Admin] Lấy danh sách tất cả thông báo chuyển tiền / yêu cầu thanh toán trước của Vendor.
     /// </summary>
     [HttpGet("admin/advance-requests")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Finance")]
     public async Task<IActionResult> GetAdvanceRequests()
     {
         var list = await _advancePaymentService.GetAllAsync();
@@ -47,9 +47,10 @@ public class CommissionsController : ControllerBase
 
     /// <summary>
     /// [Vendor/Admin] Lấy danh sách thông báo chuyển tiền / yêu cầu thanh toán trước.
+    /// Nhà cung cấp chỉ nhận thông báo của shop mình; Finance/SuperAdmin nhận toàn bộ.
     /// </summary>
     [HttpGet("advance-requests")]
-    [Authorize]
+    [Authorize(Roles = "VendorOwner,Finance,SuperAdmin")]
     public async Task<IActionResult> GetAllAdvanceRequests()
     {
         var list = await _advancePaymentService.GetAllAsync();
@@ -61,7 +62,7 @@ public class CommissionsController : ControllerBase
     /// Tự động gạch nợ hoa hồng của hợp đồng và đổi trạng thái sang Approved.
     /// </summary>
     [HttpPost("admin/advance-requests/{id:guid}/confirm")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Finance")]
     public async Task<IActionResult> ConfirmAdvancePayment(Guid id, [FromBody] ConfirmAdvanceNoticeRequest? request)
     {
         var notice = await _advancePaymentService.GetByIdAsync(id);
@@ -75,9 +76,8 @@ public class CommissionsController : ControllerBase
             return BadRequest(new { success = false, message = $"Thông báo này đã ở trạng thái {notice.Status}." });
         }
 
-        var refCode = !string.IsNullOrWhiteSpace(request?.PaymentReference)
-            ? request.PaymentReference.Trim()
-            : $"UNC-XACNHAN-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        if (string.IsNullOrWhiteSpace(request?.PaymentReference)) return BadRequest(new { message = "Cần mã giao dịch ngân hàng thật, không tự sinh mã xác nhận." });
+        var refCode = request.PaymentReference.Trim();
 
         var paymentResult = await _mediator.Send(new RecordAdminPaymentCommand(
             ContractId: notice.ContractId,
@@ -107,7 +107,7 @@ public class CommissionsController : ControllerBase
     /// [SuperAdmin/Admin] Báo chưa nhận được tiền hoặc từ chối thông báo chuyển tiền của Vendor.
     /// </summary>
     [HttpPost("admin/advance-requests/{id:guid}/reject")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Finance")]
     public async Task<IActionResult> RejectAdvancePayment(Guid id, [FromBody] RejectAdvanceNoticeRequest? request)
     {
         var notice = await _advancePaymentService.GetByIdAsync(id);
@@ -131,7 +131,7 @@ public class CommissionsController : ControllerBase
     /// [SuperAdmin/Admin] Ghi nhận số tiền hoa hồng mà Vendor đã trả thực tế.
     /// </summary>
     [HttpPost("admin/record-payment")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Finance")]
     public async Task<IActionResult> RecordAdminPayment([FromBody] RecordAdminPaymentCommand command)
     {
         var result = await _mediator.Send(command);
@@ -159,12 +159,8 @@ public class CommissionsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ProcessBankWebhook([FromBody] ProcessBankWebhookCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        await Task.CompletedTask;
+        return StatusCode(410, new { message = "Webhook cũ đã ngừng. Dùng /api/billing/webhook/bank-transfer với chữ ký HMAC X-Wedding-Signature." });
     }
 }
 

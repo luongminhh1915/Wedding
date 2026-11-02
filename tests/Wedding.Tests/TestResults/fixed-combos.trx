@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="23c091e2-91bf-406e-8af8-117419b80dde" name="Admin@DESKTOP-J8HGH6B 2026-10-20 07:44:04" runUser="DESKTOP-J8HGH6B\Admin" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-20T07:44:04.1883015+07:00" queuing="2026-10-20T07:44:04.1883019+07:00" start="2026-10-20T07:43:57.8844329+07:00" finish="2026-10-20T07:44:12.0099247+07:00" />
+  <TestSettings name="default" id="667adfa4-6dc9-4b82-91a2-7d6c3ecde0af">
+    <Deployment runDeploymentRoot="Admin_DESKTOP-J8HGH6B_2026-10-20_07_44_04" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="652c277d-25c3-4eee-b33a-7817313796ee" testId="d6aa898c-039a-074c-ad2b-b12d9fde94c2" testName="Wedding.Tests.FixedComboPackageTests.SqlAdditiveUpgradePreservesLegacyModeAndRunsFixedSameCategoryOrderWithoutModelDrift" computerName="DESKTOP-J8HGH6B" duration="00:00:04.3822679" startTime="2026-10-20T07:44:09.8111421+07:00" endTime="2026-10-20T07:44:09.8111422+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="652c277d-25c3-4eee-b33a-7817313796ee" />
+    <UnitTestResult executionId="772877d1-1039-442e-8011-0f1860d484a6" testId="7c8ef4f8-9b64-55cd-fb27-2ab61bdbb890" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;one&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1624780" startTime="2026-10-20T07:44:04.3244652+07:00" endTime="2026-10-20T07:44:04.3244654+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="772877d1-1039-442e-8011-0f1860d484a6" />
+    <UnitTestResult executionId="51a8810f-69a0-4fe6-bbb7-8f181368fdbe" testId="85f475cc-ef26-0e2e-6f0a-ce07c65178a7" testName="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;missing&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1142742" startTime="2026-10-20T07:44:10.4851326+07:00" endTime="2026-10-20T07:44:10.4851328+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="51a8810f-69a0-4fe6-bbb7-8f181368fdbe" />
+    <UnitTestResult executionId="b2d7b57a-2e72-4f5e-a355-25f88c4311c9" testId="8eb5e4a7-f45a-cbe6-0a56-ea7244b3ffd1" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;alternative&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1050196" startTime="2026-10-20T07:44:04.8379956+07:00" endTime="2026-10-20T07:44:04.8379958+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b2d7b57a-2e72-4f5e-a355-25f88c4311c9" />
+    <UnitTestResult executionId="8b898fa6-ea2a-4825-ac72-e57d1de14ad2" testId="3960efa3-96eb-8562-1d33-6e61fb278d90" testName="Wedding.Tests.FixedComboPackageTests.SameCategoryServicesCanBeReusedInSeveralModeratedPackagesWithoutCopyingServices" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1661991" startTime="2026-10-20T07:44:11.8037062+07:00" endTime="2026-10-20T07:44:11.8037064+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8b898fa6-ea2a-4825-ac72-e57d1de14ad2" />
+    <UnitTestResult executionId="40b3c548-281a-4864-938f-0bd9948577a6" testId="192a3b62-8e2a-54a1-0fb2-bb07908c4c73" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;nested-id&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1889641" startTime="2026-10-20T07:44:04.5135223+07:00" endTime="2026-10-20T07:44:04.5135225+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="40b3c548-281a-4864-938f-0bd9948577a6" />
+    <UnitTestResult executionId="50f00652-a103-4217-8544-6ac70941357f" testId="445ba51f-8c28-1bda-bb48-06ddf279caf9" testName="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;variant&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1107780" startTime="2026-10-20T07:44:10.2533597+07:00" endTime="2026-10-20T07:44:10.2533599+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="50f00652-a103-4217-8544-6ac70941357f" />
+    <UnitTestResult executionId="2f85ae13-5c23-40a1-9f71-8d8017e63f85" testId="89ac3eda-86bc-86a1-6c8d-5ac57be00162" testName="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;hours&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1118903" startTime="2026-10-20T07:44:10.5971226+07:00" endTime="2026-10-20T07:44:10.5971227+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2f85ae13-5c23-40a1-9f71-8d8017e63f85" />
+    <UnitTestResult executionId="87cebfff-08b7-437c-a238-8d037b1737a0" testId="bca26770-3fcf-c94c-f36e-d656f0408fca" testName="Wedding.Tests.FixedComboPackageTests.ApprovedSourceRevisionHoldsPublicPackageAndDoesNotRepriceOldOrderSnapshots" computerName="DESKTOP-J8HGH6B" duration="00:00:00.6705544" startTime="2026-10-20T07:44:11.5262586+07:00" endTime="2026-10-20T07:44:11.5262587+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="87cebfff-08b7-437c-a238-8d037b1737a0" />
+    <UnitTestResult executionId="a824f4e4-a06f-4150-a058-d204a0a76359" testId="d0e97485-e49e-3c53-6baa-cd2594ba736c" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;inactive&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.0949038" startTime="2026-10-20T07:44:05.4259448+07:00" endTime="2026-10-20T07:44:05.4259450+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a824f4e4-a06f-4150-a058-d204a0a76359" />
+    <UnitTestResult executionId="60361b3a-52a2-4139-abfa-5c0e21bef705" testId="8fc6ab79-87b7-de03-ef14-755f1861cec7" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;draft&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:03.2992282" startTime="2026-10-20T07:44:04.1626549+07:00" endTime="2026-10-20T07:44:04.1626892+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="60361b3a-52a2-4139-abfa-5c0e21bef705" />
+    <UnitTestResult executionId="1b042285-2197-44e7-b378-705e2c715c94" testId="baa718d6-eee4-45dc-157a-b22e598baedc" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;optional&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.0881724" startTime="2026-10-20T07:44:05.0237649+07:00" endTime="2026-10-20T07:44:05.0237650+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1b042285-2197-44e7-b378-705e2c715c94" />
+    <UnitTestResult executionId="20db6f14-5229-40ba-b8dc-a014f05a23ab" testId="29c16d81-a195-08ac-7b5a-f8b174e8710c" testName="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;extra&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1173085" startTime="2026-10-20T07:44:10.3707693+07:00" endTime="2026-10-20T07:44:10.3707694+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="20db6f14-5229-40ba-b8dc-a014f05a23ab" />
+    <UnitTestResult executionId="bce4939d-aa0c-47a8-9e10-d407e4320f21" testId="5fd3d3cb-08d4-7375-0abe-573626f76293" testName="Wedding.Tests.FixedComboPackageTests.MarkupPackageShowsFixedPriceWithoutSavingsButRequiresSeparateQuote" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1150851" startTime="2026-10-20T07:44:11.9189064+07:00" endTime="2026-10-20T07:44:11.9189067+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bce4939d-aa0c-47a8-9e10-d407e4320f21" />
+    <UnitTestResult executionId="d9a23b07-db9c-4db7-ac12-bfe30186bb95" testId="444b6972-d4ed-9914-7d74-4fb6b46fa2aa" testName="Wedding.Tests.FixedComboPackageTests.ComponentContentChangesAfterSubmissionRequireANewReviewedSnapshot" computerName="DESKTOP-J8HGH6B" duration="00:00:00.2582818" startTime="2026-10-20T07:44:10.8555843+07:00" endTime="2026-10-20T07:44:10.8555844+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d9a23b07-db9c-4db7-ac12-bfe30186bb95" />
+    <UnitTestResult executionId="183d8ca0-0ca4-4d14-b2c4-b052ddcfa029" testId="575ee0ba-ac34-49a9-e7b4-16ed587620dc" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;same-listing&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1075069" startTime="2026-10-20T07:44:05.1314406+07:00" endTime="2026-10-20T07:44:05.1314408+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="183d8ca0-0ca4-4d14-b2c4-b052ddcfa029" />
+    <UnitTestResult executionId="734a331a-3497-4dab-ba0b-fd54ed15311b" testId="d45d5066-2918-89e5-30a1-17c942c70037" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;foreign&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.0973714" startTime="2026-10-20T07:44:04.9355345+07:00" endTime="2026-10-20T07:44:04.9355347+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="734a331a-3497-4dab-ba0b-fd54ed15311b" />
+    <UnitTestResult executionId="da8a06fd-7136-41e9-a8e3-b2bfd5528e66" testId="b9635398-900b-96c9-7b28-bef001dd9988" testName="Wedding.Tests.FixedComboPackageTests.AStaffAuthorCannotApproveTheirOwnFixedProposal" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1110724" startTime="2026-10-20T07:44:11.6374593+07:00" endTime="2026-10-20T07:44:11.6374595+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="da8a06fd-7136-41e9-a8e3-b2bfd5528e66" />
+    <UnitTestResult executionId="ad5ecbdd-cae4-490e-9b4b-04a6fe27a2d7" testId="931811f8-044f-6fde-ce13-de474e68f86a" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;guest-unit&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1194767" startTime="2026-10-20T07:44:04.6332243+07:00" endTime="2026-10-20T07:44:04.6332246+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ad5ecbdd-cae4-490e-9b4b-04a6fe27a2d7" />
+    <UnitTestResult executionId="96c886a7-4105-47e2-94c7-fed7f5410106" testId="5e37f1ac-d8ca-a172-116b-d35949a9bc1c" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;dynamic-bypass&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.0995119" startTime="2026-10-20T07:44:04.7328593+07:00" endTime="2026-10-20T07:44:04.7328596+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="96c886a7-4105-47e2-94c7-fed7f5410106" />
+    <UnitTestResult executionId="50ff3205-6cb2-40c2-b452-6753b61a3baf" testId="219448bf-3099-4a01-7579-5464dd923b65" testName="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;addon&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.3301655" startTime="2026-10-20T07:44:10.1424996+07:00" endTime="2026-10-20T07:44:10.1424998+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="50ff3205-6cb2-40c2-b452-6753b61a3baf" />
+    <UnitTestResult executionId="8d4de1b5-1b59-45ca-9f18-a4bf17091fcf" testId="dac882af-3581-8bba-6b08-fa8e27d702a3" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;noncanonical&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.1034144" startTime="2026-10-20T07:44:05.2349175+07:00" endTime="2026-10-20T07:44:05.2349177+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8d4de1b5-1b59-45ca-9f18-a4bf17091fcf" />
+    <UnitTestResult executionId="7ce35fc3-e53f-496b-9550-6d44348e9fd5" testId="0c69e1d9-1218-9d32-5bcd-422f2a60a61e" testName="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;duplicate&quot;)" computerName="DESKTOP-J8HGH6B" duration="00:00:00.0958267" startTime="2026-10-20T07:44:05.3309109+07:00" endTime="2026-10-20T07:44:05.3309115+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7ce35fc3-e53f-496b-9550-6d44348e9fd5" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.ApprovedSourceRevisionHoldsPublicPackageAndDoesNotRepriceOldOrderSnapshots" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="bca26770-3fcf-c94c-f36e-d656f0408fca">
+      <Execution id="87cebfff-08b7-437c-a238-8d037b1737a0" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="ApprovedSourceRevisionHoldsPublicPackageAndDoesNotRepriceOldOrderSnapshots" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;missing&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="85f475cc-ef26-0e2e-6f0a-ce07c65178a7">
+      <Execution id="51a8810f-69a0-4fe6-bbb7-8f181368fdbe" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="PublicFixedPriceCannotBeUsedForModifiedComposition" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;hours&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="89ac3eda-86bc-86a1-6c8d-5ac57be00162">
+      <Execution id="2f85ae13-5c23-40a1-9f71-8d8017e63f85" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="PublicFixedPriceCannotBeUsedForModifiedComposition" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;dynamic-bypass&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="5e37f1ac-d8ca-a172-116b-d35949a9bc1c">
+      <Execution id="96c886a7-4105-47e2-94c7-fed7f5410106" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;nested-id&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="192a3b62-8e2a-54a1-0fb2-bb07908c4c73">
+      <Execution id="40b3c548-281a-4864-938f-0bd9948577a6" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;extra&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="29c16d81-a195-08ac-7b5a-f8b174e8710c">
+      <Execution id="20db6f14-5229-40ba-b8dc-a014f05a23ab" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="PublicFixedPriceCannotBeUsedForModifiedComposition" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;alternative&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="8eb5e4a7-f45a-cbe6-0a56-ea7244b3ffd1">
+      <Execution id="b2d7b57a-2e72-4f5e-a355-25f88c4311c9" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;noncanonical&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="dac882af-3581-8bba-6b08-fa8e27d702a3">
+      <Execution id="8d4de1b5-1b59-45ca-9f18-a4bf17091fcf" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;draft&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="8fc6ab79-87b7-de03-ef14-755f1861cec7">
+      <Execution id="60361b3a-52a2-4139-abfa-5c0e21bef705" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.MarkupPackageShowsFixedPriceWithoutSavingsButRequiresSeparateQuote" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="5fd3d3cb-08d4-7375-0abe-573626f76293">
+      <Execution id="bce4939d-aa0c-47a8-9e10-d407e4320f21" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="MarkupPackageShowsFixedPriceWithoutSavingsButRequiresSeparateQuote" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.ComponentContentChangesAfterSubmissionRequireANewReviewedSnapshot" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="444b6972-d4ed-9914-7d74-4fb6b46fa2aa">
+      <Execution id="d9a23b07-db9c-4db7-ac12-bfe30186bb95" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="ComponentContentChangesAfterSubmissionRequireANewReviewedSnapshot" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;one&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="7c8ef4f8-9b64-55cd-fb27-2ab61bdbb890">
+      <Execution id="772877d1-1039-442e-8011-0f1860d484a6" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;inactive&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="d0e97485-e49e-3c53-6baa-cd2594ba736c">
+      <Execution id="a824f4e4-a06f-4150-a058-d204a0a76359" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;addon&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="219448bf-3099-4a01-7579-5464dd923b65">
+      <Execution id="50ff3205-6cb2-40c2-b452-6753b61a3baf" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="PublicFixedPriceCannotBeUsedForModifiedComposition" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.SameCategoryServicesCanBeReusedInSeveralModeratedPackagesWithoutCopyingServices" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="3960efa3-96eb-8562-1d33-6e61fb278d90">
+      <Execution id="8b898fa6-ea2a-4825-ac72-e57d1de14ad2" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="SameCategoryServicesCanBeReusedInSeveralModeratedPackagesWithoutCopyingServices" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;optional&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="baa718d6-eee4-45dc-157a-b22e598baedc">
+      <Execution id="1b042285-2197-44e7-b378-705e2c715c94" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.PublicFixedPriceCannotBeUsedForModifiedComposition(change: &quot;variant&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="445ba51f-8c28-1bda-bb48-06ddf279caf9">
+      <Execution id="50f00652-a103-4217-8544-6ac70941357f" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="PublicFixedPriceCannotBeUsedForModifiedComposition" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;foreign&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="d45d5066-2918-89e5-30a1-17c942c70037">
+      <Execution id="734a331a-3497-4dab-ba0b-fd54ed15311b" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;same-listing&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="575ee0ba-ac34-49a9-e7b4-16ed587620dc">
+      <Execution id="183d8ca0-0ca4-4d14-b2c4-b052ddcfa029" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;guest-unit&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="931811f8-044f-6fde-ce13-de474e68f86a">
+      <Execution id="ad5ecbdd-cae4-490e-9b4b-04a6fe27a2d7" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.AStaffAuthorCannotApproveTheirOwnFixedProposal" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="b9635398-900b-96c9-7b28-bef001dd9988">
+      <Execution id="da8a06fd-7136-41e9-a8e3-b2bfd5528e66" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="AStaffAuthorCannotApproveTheirOwnFixedProposal" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.NewFixedFlowRejectsInvalidComponentsOnServer(invalid: &quot;duplicate&quot;)" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="0c69e1d9-1218-9d32-5bcd-422f2a60a61e">
+      <Execution id="7ce35fc3-e53f-496b-9550-6d44348e9fd5" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="NewFixedFlowRejectsInvalidComponentsOnServer" />
+    </UnitTest>
+    <UnitTest name="Wedding.Tests.FixedComboPackageTests.SqlAdditiveUpgradePreservesLegacyModeAndRunsFixedSameCategoryOrderWithoutModelDrift" storage="d:\gitgithubhub\wedding\artifacts\fixed-combo-tests\wedding.tests.dll" id="d6aa898c-039a-074c-ad2b-b12d9fde94c2">
+      <Execution id="652c277d-25c3-4eee-b33a-7817313796ee" />
+      <TestMethod codeBase="D:\Gitgithubhub\Wedding\artifacts\fixed-combo-tests\Wedding.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Wedding.Tests.FixedComboPackageTests" name="SqlAdditiveUpgradePreservesLegacyModeAndRunsFixedSameCategoryOrderWithoutModelDrift" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="d6aa898c-039a-074c-ad2b-b12d9fde94c2" executionId="652c277d-25c3-4eee-b33a-7817313796ee" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7c8ef4f8-9b64-55cd-fb27-2ab61bdbb890" executionId="772877d1-1039-442e-8011-0f1860d484a6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="85f475cc-ef26-0e2e-6f0a-ce07c65178a7" executionId="51a8810f-69a0-4fe6-bbb7-8f181368fdbe" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8eb5e4a7-f45a-cbe6-0a56-ea7244b3ffd1" executionId="b2d7b57a-2e72-4f5e-a355-25f88c4311c9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3960efa3-96eb-8562-1d33-6e61fb278d90" executionId="8b898fa6-ea2a-4825-ac72-e57d1de14ad2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="192a3b62-8e2a-54a1-0fb2-bb07908c4c73" executionId="40b3c548-281a-4864-938f-0bd9948577a6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="445ba51f-8c28-1bda-bb48-06ddf279caf9" executionId="50f00652-a103-4217-8544-6ac70941357f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="89ac3eda-86bc-86a1-6c8d-5ac57be00162" executionId="2f85ae13-5c23-40a1-9f71-8d8017e63f85" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bca26770-3fcf-c94c-f36e-d656f0408fca" executionId="87cebfff-08b7-437c-a238-8d037b1737a0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d0e97485-e49e-3c53-6baa-cd2594ba736c" executionId="a824f4e4-a06f-4150-a058-d204a0a76359" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8fc6ab79-87b7-de03-ef14-755f1861cec7" executionId="60361b3a-52a2-4139-abfa-5c0e21bef705" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="baa718d6-eee4-45dc-157a-b22e598baedc" executionId="1b042285-2197-44e7-b378-705e2c715c94" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="29c16d81-a195-08ac-7b5a-f8b174e8710c" executionId="20db6f14-5229-40ba-b8dc-a014f05a23ab" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5fd3d3cb-08d4-7375-0abe-573626f76293" executionId="bce4939d-aa0c-47a8-9e10-d407e4320f21" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="444b6972-d4ed-9914-7d74-4fb6b46fa2aa" executionId="d9a23b07-db9c-4db7-ac12-bfe30186bb95" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="575ee0ba-ac34-49a9-e7b4-16ed587620dc" executionId="183d8ca0-0ca4-4d14-b2c4-b052ddcfa029" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d45d5066-2918-89e5-30a1-17c942c70037" executionId="734a331a-3497-4dab-ba0b-fd54ed15311b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b9635398-900b-96c9-7b28-bef001dd9988" executionId="da8a06fd-7136-41e9-a8e3-b2bfd5528e66" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="931811f8-044f-6fde-ce13-de474e68f86a" executionId="ad5ecbdd-cae4-490e-9b4b-04a6fe27a2d7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5e37f1ac-d8ca-a172-116b-d35949a9bc1c" executionId="96c886a7-4105-47e2-94c7-fed7f5410106" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="219448bf-3099-4a01-7579-5464dd923b65" executionId="50ff3205-6cb2-40c2-b452-6753b61a3baf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dac882af-3581-8bba-6b08-fa8e27d702a3" executionId="8d4de1b5-1b59-45ca-9f18-a4bf17091fcf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0c69e1d9-1218-9d32-5bcd-422f2a60a61e" executionId="7ce35fc3-e53f-496b-9550-6d44348e9fd5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="23" executed="23" passed="23" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.12)&#xD;
+[xUnit.net 00:00:01.11]   Discovering: Wedding.Tests&#xD;
+[xUnit.net 00:00:01.31]   Discovered:  Wedding.Tests&#xD;
+[xUnit.net 00:00:01.32]   Starting:    Wedding.Tests&#xD;
+[xUnit.net 00:00:12.42]   Finished:    Wedding.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

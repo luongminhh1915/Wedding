@@ -54,7 +54,7 @@ public class MonthlySettlementBackgroundService : BackgroundService
 
         // 1. Quét các khoản hoa hồng Pending đã quá hạn thanh toán
         var overdueCommissions = await context.Commissions
-            .Where(c => c.Status == CommissionStatus.Pending && c.DueDate < now)
+            .Where(c => c.SettlementId != null && (c.Status == CommissionStatus.Pending || c.Status == CommissionStatus.Unsettled || c.Status == CommissionStatus.InSettlement) && c.DueDate < now && c.Contract.Status != ContractStatus.Disputed)
             .ToListAsync(cancellationToken);
 
         foreach (var c in overdueCommissions)

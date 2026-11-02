@@ -8,6 +8,8 @@ public class BudgetItemConfiguration : IEntityTypeConfiguration<BudgetItem>
 {
     public void Configure(EntityTypeBuilder<BudgetItem> builder)
     {
+        builder.Property(x => x.PlanTemplateKey).HasMaxLength(100);
+        builder.Property(x => x.UpdatedAt).IsConcurrencyToken();
         builder.ToTable("BudgetItems");
         builder.HasKey(b => b.Id);
 

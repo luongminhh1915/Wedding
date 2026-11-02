@@ -16,6 +16,10 @@ public class CommissionConfiguration : IEntityTypeConfiguration<Commission>
 
         builder.Property(c => c.CommissionRate).HasPrecision(5, 4);
         builder.Property(c => c.CommissionAmount).HasPrecision(18, 2);
+        builder.Property(c => c.PaidAmount).HasPrecision(18, 2);
+        builder.Property(c => c.Version).IsConcurrencyToken();
+        builder.Ignore(c => c.EffectivePaidAmount);
+        builder.Ignore(c => c.OutstandingAmount);
 
         builder.Property(c => c.PaymentReferenceCode).HasMaxLength(100);
         builder.Property(c => c.VietQrPayload).HasMaxLength(2000);

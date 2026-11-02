@@ -19,6 +19,12 @@ public class WeddingInvitation : BaseEntity
     public string TemplateStyle { get; private set; } = "ClassicRose";
     public string? BankInfo { get; private set; } // Thông tin mừng cưới online / STK
     public bool IsPublished { get; private set; } = true;
+    public Guid? TemplateId { get; private set; }
+    public string Lang { get; private set; } = "vi";
+    public string ContentJson { get; private set; } = "{}";
+    public bool IsPremium { get; private set; } // P2: gói Premium 130.000đ (thanh toán mock)
+    public DateTime? PremiumActivatedAt { get; private set; }
+    public string? PremiumPaymentRef { get; private set; }
 
     // Navigation Properties
     public User Customer { get; private set; } = null!;
@@ -42,7 +48,7 @@ public class WeddingInvitation : BaseEntity
             Slug = slug.Trim().ToLowerInvariant(),
             GroomName = groomName.Trim(),
             BrideName = brideName.Trim(),
-            EventDate = eventDate,
+            EventDate = VietnamWallTime(eventDate),
             VenueName = venueName.Trim(),
             VenueAddress = venueAddress.Trim(),
             MapUrl = mapUrl,
@@ -60,7 +66,7 @@ public class WeddingInvitation : BaseEntity
     {
         GroomName = groomName.Trim();
         BrideName = brideName.Trim();
-        EventDate = eventDate;
+        EventDate = VietnamWallTime(eventDate);
         VenueName = venueName.Trim();
         VenueAddress = venueAddress.Trim();
         MapUrl = mapUrl;
@@ -71,4 +77,16 @@ public class WeddingInvitation : BaseEntity
         BankInfo = bankInfo;
         SetUpdated();
     }
+
+    public void ActivatePremium(string paymentRef)
+    {
+        IsPremium = true; PremiumActivatedAt = DateTime.UtcNow; PremiumPaymentRef = paymentRef; SetUpdated();
+    }
+
+    public void SetPublished(bool published) { IsPublished = published; SetUpdated(); }
+    public void Configure(string slug, Guid? templateId, string lang, string contentJson, bool published)
+    { Slug = slug; TemplateId = templateId; Lang = lang; ContentJson = contentJson; IsPublished = published; SetUpdated(); }
+    // SQL datetime2 does not retain DateTime.Kind. Store event wall time in the wedding's Vietnam timezone and emit an explicit offset.
+    public DateTimeOffset GetEventDateWithOffset() => new(DateTime.SpecifyKind(EventDate, DateTimeKind.Unspecified), TimeSpan.FromHours(7));
+    private static DateTime VietnamWallTime(DateTime value) => value.Kind == DateTimeKind.Unspecified ? value : DateTime.SpecifyKind(value.ToUniversalTime().AddHours(7), DateTimeKind.Unspecified);
 }

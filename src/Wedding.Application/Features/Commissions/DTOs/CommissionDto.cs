@@ -15,7 +15,8 @@ public record CommissionItemDto(
     string Status,
     DateTime? PaidAt,
     string? PaymentReferenceCode,
-    string? QrImageUrl
+    string? QrImageUrl,
+    decimal PaidAmount = 0
 );
 
 public record MonthlySettlementStatementDto(

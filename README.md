@@ -1,6 +1,6 @@
 ##  THIẾT KẾ CẤU TRÚC DỰ ÁN (SOLUTION & FOLDER STRUCTURE)
 
-### 1. Backend: .NET 8 Clean Architecture
+### 1. Backend: .NET 10 Clean Architecture
 
 Cấu trúc Solution gồm 4 project chính tuân thủ quy tắc phụ thuộc:  
 `Domain` $\leftarrow$ `Application` $\leftarrow$ `Infrastructure` $\leftarrow$ `WebApi` (Presentation)
@@ -89,16 +89,39 @@ client/ (hoặc wedding-client/)
 
 ---
 
-### 3. Lưu trữ dữ liệu và triển khai
+### 3. Lưu trữ dữ liệu và chạy local
 
-- Mặc định local dùng SQLite tại `WeddingPlatformDb.db`. File này được tạo một lần và được giữ nguyên khi API khởi động lại.
-- Dữ liệu mẫu chỉ được nạp trong môi trường `Development`, khi database hoàn toàn trống. Khi deploy, `Database:SeedDemoData` mặc định là `false`.
-- Có thể chuyển sang SQL Server khi triển khai bằng biến môi trường:
+- Source hiện tại dùng **.NET 10 / EF Core 10, React 19 + Vite 8**. Các cây thư mục trên là tổng quan kiến trúc, không phải cam kết mọi tích hợp minh họa đã được cài đặt.
+- Local mặc định dùng **SQL Server `localhost`, DB `WeddingMatch_Dev`, Windows Authentication**, theo `src/Wedding.WebApi/appsettings.Development.json`. SQL Server phải đang chạy; không đổi tên DB để né lỗi kết nối.
+- API không xóa/tạo lại DB khi khởi động. Development có thể áp dụng migration; **demo seed đang tắt**. SQLite chỉ là lựa chọn Development tường minh cho test, không phải DB của người dùng đang chạy local hoặc DB production.
+- Không dùng `EnsureDeleted`, reset/reseed, hoặc mật khẩu demo để xử lý lỗi đăng nhập trên DB có dữ liệu thật.
+
+Mở hai terminal tại thư mục repo:
+
+```powershell
+# Terminal 1: backend (build lại code mới; Ctrl+C để dừng)
+dotnet run --project .\src\Wedding.WebApi --launch-profile http
+```
+
+```powershell
+# Terminal 2: frontend; npm.cmd tránh vướng npm.ps1/ExecutionPolicy
+cd .\client
+npm.cmd run dev
+```
+
+Frontend: `http://localhost:5173`; API: `http://localhost:5008`; SQL readiness: `http://localhost:5008/health/ready`.
+
+### 4. Deploy và kế hoạch nâng cấp
+
+Production bắt buộc SQL Server, không tự seed/migrate lúc API chạy. Cấu hình connection string và JWT secret trong private config/biến môi trường, không commit secret:
 
 ```text
 Database__Provider=SqlServer
 ConnectionStrings__DefaultConnection=<production SQL Server connection string>
 Database__SeedDemoData=false
+Database__ApplyMigrations=false
 ```
 
-Khi dùng SQLite trên hosting, đặt `ConnectionStrings__DefaultConnection` trỏ tới một persistent volume (ví dụ `Data Source=/data/WeddingPlatformDb.db`); không lưu SQLite trong filesystem tạm của container.
+Áp dụng SQL migration đã review trước khi phát hành, giữ uploads ngoài package, backup và thử restore. `tools/Test-ReadyToDeploy.ps1` kiểm tra package trên DB QA dùng một lần; không thay thế kiểm tra hosting thật. Gate không tự bật/dừng dịch vụ SQL và không đổi cấu hình bộ nhớ chung của instance.
+
+Theo dõi yêu cầu Master Prompt, hiện trạng và điều kiện chuyển phase tại [checklist nâng cấp](docs/master-upgrade-checklist.md). Không đánh dấu chức năng hoàn thành chỉ vì có giao diện hoặc entity.

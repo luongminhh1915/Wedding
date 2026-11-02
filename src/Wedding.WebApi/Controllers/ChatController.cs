@@ -6,6 +6,7 @@ using Wedding.Application.Features.Chat.Commands.SendMessage;
 using Wedding.Application.Features.Chat.DTOs;
 using Wedding.Application.Features.Chat.Queries.GetLeadMessages;
 using Wedding.WebApi.Hubs;
+using Wedding.Infrastructure.Services;
 
 namespace Wedding.WebApi.Controllers;
 
@@ -16,11 +17,13 @@ public class ChatController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IHubContext<ChatHub> _hubContext;
+    private readonly ChatRoomAccess _roomAccess;
 
-    public ChatController(IMediator mediator, IHubContext<ChatHub> hubContext)
+    public ChatController(IMediator mediator, IHubContext<ChatHub> hubContext, ChatRoomAccess roomAccess)
     {
         _mediator = mediator;
         _hubContext = hubContext;
+        _roomAccess = roomAccess;
     }
 
     /// <summary>
@@ -42,9 +45,9 @@ public class ChatController : ControllerBase
         var command = new SendMessageCommand(leadId, request.Content, request.IsQuote, request.QuoteAmount, request.QuoteDescription);
         var messageDto = await _mediator.Send(command);
 
-        // Broadcast realtime qua SignalR tới các client đang mở phòng chat
-        var groupName = $"lead-{leadId}";
-        await _hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", messageDto);
+        // Only current, active, authorized sessions receive realtime messages.
+        var groups = await _roomAccess.GetCurrentRecipientGroupsAsync(leadId, HttpContext.RequestAborted);
+        await _hubContext.Clients.Groups(groups).SendAsync("ReceiveMessage", messageDto, HttpContext.RequestAborted);
 
         return Ok(messageDto);
     }

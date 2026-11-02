@@ -19,7 +19,8 @@ public class AcceptLeadCommandHandler : IRequestHandler<AcceptLeadCommand, bool>
         _currentUserService = currentUserService;
     }
 
-    public async Task<bool> Handle(AcceptLeadCommand request, CancellationToken cancellationToken)
+    public Task<bool> Handle(AcceptLeadCommand request, CancellationToken cancellationToken) => _context.ExecuteSerializableAsync(ct => AcceptAsync(request, ct), cancellationToken);
+    private async Task<bool> AcceptAsync(AcceptLeadCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Bạn cần đăng nhập để thực hiện thao tác này.");

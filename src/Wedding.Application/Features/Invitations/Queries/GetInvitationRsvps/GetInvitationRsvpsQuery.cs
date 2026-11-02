@@ -4,6 +4,7 @@ using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.Invitations.DTOs;
 using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.Invitations.Queries.GetInvitationRsvps;
 
@@ -22,13 +23,12 @@ public class GetInvitationRsvpsQueryHandler : IRequestHandler<GetInvitationRsvps
 
     public async Task<List<GuestRsvpDto>> Handle(GetInvitationRsvpsQuery request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để xem danh sách khách mời phản hồi.");
+        var userId = (await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken)).OwnerId;
 
         var invitation = await _context.WeddingInvitations
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.CustomerId == userId, cancellationToken)
-            ?? throw new DomainException("Bạn chưa tạo thiệp cưới nào.");
+            .FirstOrDefaultAsync(w => w.CustomerId == userId, cancellationToken);
+        if (invitation == null) return [];
 
         var query = _context.GuestRSVPs
             .Where(g => g.InvitationId == invitation.Id);

@@ -1,0 +1,7 @@
+.wm-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 20px 0 8px; color: #53637b; font-size: 12px; }
+.wm-pagination > div { display: flex; align-items: center; gap: 12px; }
+.wm-pagination button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 42px; padding: 9px 12px; border: 1px solid #d9d9ce; border-radius: 12px; background: #fcf6ea; color: #233a42; font: inherit; cursor: pointer; }
+.wm-pagination button:hover:not(:disabled) { background: #ebe8dc; }
+.wm-pagination button:disabled { opacity: .4; cursor: default; }
+.wm-pagination button:focus-visible { outline: 2px solid #233a42; outline-offset: 3px; }
+@media (max-width: 600px) { .wm-pagination { justify-content: center; } .wm-pagination-count { width: 100%; text-align: center; } }

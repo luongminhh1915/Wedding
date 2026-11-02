@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Wedding.Application.Common.Interfaces;
@@ -16,25 +15,34 @@ public static class DbInitializer
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var logger = scope.ServiceProvider.GetService<ILogger<ApplicationDbContext>>();
-        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        var seedDemoData = configuration.GetValue<bool>("Database:SeedDemoData");
+        var policy = scope.ServiceProvider.GetRequiredService<DatabaseStartupPolicy>();
 
         try
         {
-            // SQLite is used for local development. EnsureCreated creates the schema only on the
-            // first run and, unlike the previous implementation, never deletes existing data.
+            // NEVER delete/recreate a database at startup. Local SQLite is an explicit opt-in;
+            // EnsureCreated only initializes an empty database and leaves an existing schema alone.
             if (context.Database.IsSqlite())
             {
-                await context.Database.EnsureCreatedAsync();
+                if (policy.ApplyMigrations) await context.Database.EnsureCreatedAsync();
+                // A stale development schema is an error to fix deliberately, not a reason to
+                // destroy user records. Querying a known table also rejects an empty schema.
+                await context.Users.AsNoTracking().Take(1).ToListAsync();
+            }
+            else if (policy.ApplyMigrations)
+            {
+                await context.Database.MigrateAsync();
             }
             else
             {
-                await context.Database.MigrateAsync();
+                if (!await context.Database.CanConnectAsync())
+                    throw new InvalidOperationException("Cannot connect to the configured SQL Server database. Provision it and apply the reviewed deployment migrations first.");
+                if ((await context.Database.GetPendingMigrationsAsync()).Any())
+                    throw new InvalidOperationException("Database schema has pending migrations. Apply the reviewed deployment migration step before starting this API; existing data has not been changed.");
             }
 
             // Demo accounts and sample transactions must never be injected into a deployment.
             // Even in development, only seed an entirely new database and leave user data intact.
-            if (!seedDemoData)
+            if (!policy.SeedDemoData)
             {
                 logger?.LogInformation("Database initialized. Demo seed is disabled.");
                 return;
@@ -520,6 +528,7 @@ public static class DbInitializer
             }
 
             await context.SaveChangesAsync();
+            await WeddyJourneySeeder.SeedAsync(context, hasher);
             logger?.LogInformation("===> [DB Seeder] Đã nạp thành công bộ dữ liệu mẫu với mật khẩu mặc định 123456 cho toàn bộ users!");
         }
         catch (Exception ex)

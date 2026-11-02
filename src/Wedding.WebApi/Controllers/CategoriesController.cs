@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Wedding.Application.Features.Categories;
 using Wedding.Application.Features.Categories.Queries.GetPublicCategories;
 
 namespace Wedding.WebApi.Controllers;
@@ -16,7 +18,7 @@ public class CategoriesController : ControllerBase
     }
 
     /// <summary>
-    /// [Public] Lấy 7 ngành hàng dịch vụ cưới kèm số lượng bài đăng Active.
+    /// [Public] Lấy ngành hàng đang hoạt động kèm nhóm kinh doanh và số lượng bài đăng công khai.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetCategories()
@@ -24,4 +26,9 @@ public class CategoriesController : ControllerBase
         var result = await _mediator.Send(new GetPublicCategoriesQuery());
         return Ok(result);
     }
+
+    [HttpGet("my")]
+    [Authorize(Roles = "VendorOwner")]
+    public async Task<ActionResult<VendorCategoryEligibilityDto>> My(CancellationToken ct)
+        => Ok(await _mediator.Send(new GetMyCategoriesQuery(), ct));
 }

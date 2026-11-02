@@ -63,7 +63,8 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
         {
             var isPeriod1 = c.Period == CommissionPeriod.Period1_Deposit;
             var periodName = isPeriod1 ? "Kỳ 1 (50% lúc cọc)" : "Kỳ 2 (50% sau cưới)";
-            var qr = _vietQrService.GenerateQrImageUrl("MB", "0338889999", "WEDDING PLATFORM VN", c.CommissionAmount, $"HH {c.Id.ToString("N")[..6].ToUpper()}");
+            // Collection is per closed statement, not an ad hoc QR for a locked individual commission.
+            var qr = "";
 
             return new CommissionItemDto(
                 Id: c.Id,
@@ -78,7 +79,8 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
                 Status: c.Status.ToString(),
                 PaidAt: c.PaidAt,
                 PaymentReferenceCode: c.PaymentReferenceCode,
-                QrImageUrl: qr
+                QrImageUrl: qr,
+                PaidAmount: c.EffectivePaidAmount
             );
         }).ToList();
 
@@ -88,9 +90,9 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
             .Select(cid => commissions.First(x => x.ContractId == cid).Contract.ContractValue)
             .Sum();
         var totalCommissionVal = commissions.Sum(c => c.CommissionAmount);
-        var totalPending = commissions.Where(c => c.Status == CommissionStatus.Pending).Sum(c => c.CommissionAmount);
-        var totalOverdue = commissions.Where(c => c.Status == CommissionStatus.Overdue).Sum(c => c.CommissionAmount);
-        var totalPaid = commissions.Where(c => c.Status == CommissionStatus.Paid).Sum(c => c.CommissionAmount);
+        var totalPending = commissions.Where(c => c.Status is CommissionStatus.Pending or CommissionStatus.Unsettled or CommissionStatus.InSettlement).Sum(c => c.OutstandingAmount);
+        var totalOverdue = commissions.Where(c => c.Status == CommissionStatus.Overdue).Sum(c => c.OutstandingAmount);
+        var totalPaid = commissions.Sum(c => c.EffectivePaidAmount);
 
         var totalNeedPay = totalPending + totalOverdue;
 
@@ -105,10 +107,7 @@ public class GetVendorSettlementStatementQueryHandler : IRequestHandler<GetVendo
         var transferContent = $"HH {vendorShortCode} T{targetMonth:D2}";
 
         VietQrInfo? vietQr = null;
-        if (totalNeedPay > 0)
-        {
-            vietQr = _vietQrService.GenerateVietQr(totalNeedPay, transferContent);
-        }
+        // Payment QR is exposed by /api/settlements with its immutable unique reference.
 
         var allAdvances = await _advancePaymentService.GetAllAsync();
         var vendorAdvances = allAdvances

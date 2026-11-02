@@ -1,0 +1,80 @@
+/* Customer journeys and shared dialogs use the Wedding Match ivory/champagne/blush palette. */
+.wd {
+  --brand: #233a42;
+  --brand-2: #66758b;
+  --gold: #e38c82;
+  --gold-2: #f1dba2;
+  --cream: #fcf6ea;
+  --paper: #fffcf5;
+  --line: #eadbd4;
+  --muted: #66758b;
+  color: var(--brand);
+  font-family: Inter, sans-serif;
+}
+.wd-page { background: var(--cream); min-height: 100vh; padding: 28px 0 80px; }
+.wd .serif { font-family: "Playfair Display", Georgia, serif; }
+.wd .script { font-family: "Dancing Script", "Brush Script MT", cursive; }
+.wd .eyebrow { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; font-weight: 700; }
+.wd .container { max-width: 1150px; margin: 0 auto; padding: 0 20px; }
+.wd .card { background: #fffcf5; border-radius: 24px; box-shadow: 0 10px 30px -18px rgba(35,58,66,.16); border: 1px solid var(--line); }
+.wd .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 12px 24px; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; transition: transform .15s, box-shadow .15s, background .15s; }
+.wd .btn:hover:not(:disabled) { transform: translateY(-1px); }
+.wd .btn:disabled { opacity: .45; }
+.wd .btn-primary { background: linear-gradient(135deg, #e38c82, #d49587); color: #233a42; box-shadow: 0 12px 24px -12px rgba(184,102,97,.35); }
+.wd .btn-outline { background: #fffcf5; color: var(--brand); border: 1px solid var(--line); }
+.wd .btn.btn-facebook { background: #1877f2; color: #fff; border: 1px solid #1877f2; box-shadow: 0 5px 16px #1877f226; }
+.wd .btn.btn-facebook:hover:not(:disabled) { background: #166fe5; border-color: #166fe5; }
+.wd .btn.btn-facebook:focus-visible { outline: 3px solid #1877f2; outline-offset: 3px; }
+.wd .btn-gold { background: linear-gradient(135deg, #f1dba2, #e4b7a6 58%, #e38c82); color: #233a42; box-shadow: 0 12px 24px -12px rgba(184,102,97,.28); }
+.wd .btn-ghost { background: var(--paper); color: var(--brand); }
+.wd .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700; border: 1px solid var(--line); background: #fffcf5; white-space: nowrap; }
+.wd .chip.active { background: #f1dba2; color: #233a42; border-color: #d49587; }
+.wd .input { width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 11px 14px; background: #fffcf5; font-size: 14px; color: var(--brand); }
+.wd .input:focus { outline: 2px solid var(--gold); outline-offset: 0; }
+.wd .label { display: block; font-size: 10px; letter-spacing: .18em; font-weight: 800; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+.wd .badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 9px; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.wd .badge-premium { background: linear-gradient(135deg, #f1dba2, #e4b7a6); color: #233a42; }
+.wd .badge-free { background: #e4efe6; color: #2f6b47; }
+.wd .badge-navy { background: var(--brand); color: #fff; }
+.wd .badge-soft { background: var(--paper); color: var(--brand-2); border: 1px solid var(--line); }
+.wd-header { position: sticky; top: 14px; z-index: 40; margin: 14px auto 0; max-width: 1150px; padding: 0 20px; }
+.wd-header-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 999px; padding: 10px 14px 10px 26px; background: linear-gradient(105deg, #f1dba2 0%, #e4b7a6 52%, #e38c82 100%); box-shadow: 0 18px 40px -20px rgba(184,102,97,.3); color: #233a42; }
+.wd-nav a, .wd-nav button { position: relative; padding: 9px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #233a42; }
+.wd-nav .active { background: #fffcf5; color: var(--brand); }
+.wd-nav .dot::after { content: ""; position: absolute; top: 6px; right: 8px; width: 6px; height: 6px; border-radius: 99px; background: var(--gold); }
+.wd-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(35,58,66,.48); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+.wd-modal { position: relative; background: #fffcf5; border-radius: 28px; width: 100%; max-width: 480px; padding: 32px; box-shadow: 0 40px 80px -30px rgba(35,58,66,.28); }
+.wd-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 99px; display: grid; place-items: center; background: var(--paper); z-index: 2; }
+.wd-gradient-text { background: linear-gradient(90deg, var(--brand), #b86661); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wd-phone { border-radius: 42px; border: 10px solid #233a42; background: #fffcf5; overflow: hidden; box-shadow: 0 30px 60px -25px rgba(35,58,66,.24); }
+.wd-fade { animation: wdFade .6s ease both; }
+@keyframes wdFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.wd-toast { position: fixed; top: 92px; left: 50%; transform: translateX(-50%); z-index: 80; background: var(--brand); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; display: flex; gap: 12px; align-items: center; box-shadow: 0 20px 40px -20px rgba(0,0,0,.6); animation: wdFade .3s ease both; }
+.wd-feedback { position: fixed; right: 0; top: 45%; z-index: 30; writing-mode: vertical-rl; background: #e38c82; color: #233a42; padding: 14px 8px; border-radius: 12px 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: .2em; }
+.wd-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
+.wd-confetti i { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; animation: wdFall 2.8s ease-in forwards; }
+@keyframes wdFall { to { transform: translateY(110vh) rotate(720deg); opacity: .8; } }
+.wd-tpl:hover .wd-tpl-overlay { opacity: 1; }
+.wd-tpl-overlay { opacity: 0; transition: opacity .2s; }
+.wd-scroll-x { overflow-x: auto; scrollbar-width: none; }
+.wd-dark { filter: invert(.92) hue-rotate(180deg); }
+.wd-dark img { filter: invert(1) hue-rotate(180deg); }
+.wd .grid-auto { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.wd .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; background: var(--paper); border: 1px solid var(--line); color: var(--brand-2); }
+.wd .pill.ok { background: #e4efe6; color: #2f6b47; border-color: #c8e0cd; }
+.wd .pill.warn { background: #fbf3dc; color: #8a6a12; border-color: #efdca5; }
+.wd .pill.bad { background: #f8e4e4; color: #9b2c2c; border-color: #efc9c9; }
+.wd .pill.info { background: #edf1ed; color: var(--brand); border-color: #cbd9cc; }
+.wd .muted { color: var(--muted); }
+.wd .kiosk-option { text-align: left; border: 2px solid var(--line); border-radius: 18px; background: #fffcf5; padding: 12px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.wd .kiosk-option:hover { transform: translateY(-2px); }
+.wd .kiosk-option.selected { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(241,219,162,.4); }
+.wd .kiosk-cart { position: sticky; bottom: 16px; z-index: 30; background: var(--brand); color: #fff; border-radius: 24px; padding: 14px 18px; box-shadow: 0 24px 50px -20px rgba(20,28,43,.7); }
+.wd .slot { border: 1px solid var(--line); border-radius: 12px; padding: 8px 0; font-size: 13px; font-weight: 700; background: #fffcf5; }
+.wd .slot.selected { background: #e38c82; color: #233a42; border-color: #d49587; }
+.wd .slot:disabled { opacity: .35; text-decoration: line-through; }
+.wd .step-dot { width: 30px; height: 30px; border-radius: 99px; display: grid; place-items: center; font-weight: 800; font-size: 12px; border: 1px solid var(--line); background: #fffcf5; }
+.wd .step-dot.on { background: var(--gold); color: #233a42; border-color: #d49587; }
+.wd table.wd-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+.wd table.wd-table th { text-align: left; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line); }
+.wd table.wd-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }

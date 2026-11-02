@@ -1,24 +1,19 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './services/queryClient'
 import './index.css'
 import AppRoutes from './routes/AppRoutes'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-})
+import AuthSessionBoundary from './features/auth/components/AuthSessionBoundary'
+import RouteSeoMetadata from './components/RouteSeoMetadata'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes />
+        <RouteSeoMetadata />
+        <AuthSessionBoundary><AppRoutes /></AuthSessionBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

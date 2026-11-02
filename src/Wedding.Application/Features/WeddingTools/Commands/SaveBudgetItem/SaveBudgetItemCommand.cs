@@ -4,6 +4,7 @@ using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.WeddingTools.DTOs;
 using Wedding.Domain.Entities;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.WeddingTools.Commands.SaveBudgetItem;
 
@@ -12,7 +13,8 @@ public record SaveBudgetItemCommand(
     string ItemName,
     decimal PlannedCost,
     decimal ActualCost = 0,
-    string? Notes = null
+    string? Notes = null,
+    string? Owner = null
 ) : IRequest<BudgetItemDto>;
 
 public class SaveBudgetItemCommandHandler : IRequestHandler<SaveBudgetItemCommand, BudgetItemDto>
@@ -28,8 +30,8 @@ public class SaveBudgetItemCommandHandler : IRequestHandler<SaveBudgetItemComman
 
     public async Task<BudgetItemDto> Handle(SaveBudgetItemCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để thao tác ngân sách.");
+        var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken, write: true);
+        var userId = scope.OwnerId;
 
         BudgetItem item;
 
@@ -40,6 +42,7 @@ public class SaveBudgetItemCommandHandler : IRequestHandler<SaveBudgetItemComman
                 ?? throw new DomainException("Không tìm thấy hạng mục ngân sách.");
 
             item.UpdateCosts(request.PlannedCost, request.ActualCost, request.Notes, request.ActualCost > 0);
+            item.Rename(request.ItemName);
         }
         else
         {
@@ -55,6 +58,8 @@ public class SaveBudgetItemCommandHandler : IRequestHandler<SaveBudgetItemComman
             _context.BudgetItems.Add(item);
         }
 
+        item.AssignOwner(request.Owner ?? item.Owner);
+        if (scope.ProfileId.HasValue) item.AttachToWedding(scope.ProfileId.Value, item.Owner);
         await _context.SaveChangesAsync(cancellationToken);
 
         return new BudgetItemDto(
@@ -64,7 +69,7 @@ public class SaveBudgetItemCommandHandler : IRequestHandler<SaveBudgetItemComman
             ActualCost: item.ActualCost,
             Notes: item.Notes,
             IsPaid: item.IsPaid,
-            CreatedAt: item.CreatedAt
+            CreatedAt: item.CreatedAt, Owner: item.Owner, WeddingProfileId: item.WeddingProfileId, ContractId: item.ContractId
         );
     }
 }

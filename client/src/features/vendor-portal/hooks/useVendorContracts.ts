@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Contract, CreateContractRequest } from '../../../types/contract.types';
 
-export function useVendorContracts(status?: string) {
+export function useVendorContracts(status?: string, focusId?: string) {
   const queryClient = useQueryClient();
 
   const contractsQuery = useQuery({
-    queryKey: ['vendor-contracts', status],
+    queryKey: ['vendor-contracts', status, focusId],
     queryFn: async (): Promise<Contract[]> => {
       const token = localStorage.getItem('token');
-      const url = status ? `/api/contracts/vendor?status=${status}` : `/api/contracts/vendor`;
+      const url = focusId ? `/api/contracts/vendor?focusId=${encodeURIComponent(focusId)}` : status ? `/api/contracts/vendor?status=${status}` : `/api/contracts/vendor`;
       const res = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',

@@ -6,48 +6,21 @@ using Wedding.Domain.Enums;
 
 namespace Wedding.Application.Features.Listings.Queries.GetPendingListings;
 
-/// <summary>
-/// Query lấy danh sách bài đăng đang chờ kiểm duyệt — chỉ dành cho Moderator (BR-008).
-/// </summary>
 public record GetPendingListingsQuery : IRequest<List<ListingDto>>;
-
-public class GetPendingListingsQueryHandler : IRequestHandler<GetPendingListingsQuery, List<ListingDto>>
+public class GetPendingListingsQueryHandler(IApplicationDbContext db, ICurrentUserService actor) : IRequestHandler<GetPendingListingsQuery, List<ListingDto>>
 {
-    private readonly IApplicationDbContext _context;
-
-    public GetPendingListingsQueryHandler(IApplicationDbContext context)
+    public async Task<List<ListingDto>> Handle(GetPendingListingsQuery request, CancellationToken ct)
     {
-        _context = context;
-    }
-
-    public async Task<List<ListingDto>> Handle(GetPendingListingsQuery request, CancellationToken cancellationToken)
-    {
-        var listings = await _context.Listings
-            .Include(l => l.Category)
-            .Include(l => l.Vendor)
-            .Include(l => l.Media)
-            .Where(l => l.Status == ListingStatus.PendingApproval)
-            .OrderBy(l => l.UpdatedAt) // SLA 24h: ưu tiên bài nộp sớm nhất
-            .ToListAsync(cancellationToken);
-
-        return listings.Select(l => new ListingDto(
-            l.Id,
-            l.Title,
-            l.Slug,
-            l.MinPrice,
-            l.MaxPrice,
-            l.Description,
-            l.Location,
-            l.Status.ToString(),
-            l.RejectionReason,
-            l.CategoryId,
-            l.Category.Name,
-            l.VendorId,
-            l.Vendor.BrandName,
-            l.ViewCount,
-            l.CreatedAt,
-            l.ModeratedAt,
-            l.Media.Select(m => new ListingMediaDto(m.Id, m.MediaUrl, m.ThumbnailUrl, m.IsFeatured, m.DisplayOrder)).ToList()
-        )).ToList();
+        await ListingPublication.RequireStaff(db, actor, ct);
+        var pending = await db.ListingRevisions.AsNoTracking().Where(x => x.Status == "Pending")
+            .OrderBy(x => x.SubmittedAt).ToListAsync(ct);
+        var ids = pending.Select(x => x.ListingId).ToList();
+        var listings = await db.Listings.AsNoTracking().Include(x => x.Category).Include(x => x.Vendor).Include(x => x.Media)
+            .Where(x => x.Status == ListingStatus.PendingApproval || ids.Contains(x.Id)).OrderBy(x => x.UpdatedAt).ToListAsync(ct);
+        return listings.Select(listing =>
+        {
+            var revision = pending.Where(x => x.ListingId == listing.Id).OrderByDescending(x => x.Sequence).FirstOrDefault();
+            return revision == null ? ListingPublication.ToDto(listing) : ListingPublication.Preview(listing, revision);
+        }).ToList();
     }
 }

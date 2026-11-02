@@ -1,6 +1,6 @@
 import type { User } from "../types/auth";
+import { actorDashboard } from "../features/auth/authNavigation";
 
 export function dashboardPath(user: User | null) {
-  if (!user || user.role === "Customer") return "/customer/dashboard";
-  return user.role === "VendorOwner" ? "/vendor/dashboard" : "/admin/dashboard";
+  return user ? actorDashboard(user.role) : "/login";
 }

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
 using Wedding.Application.Features.WeddingTools.DTOs;
 using Wedding.Domain.Exceptions;
+using Wedding.Application.Features.Planner;
 
 namespace Wedding.Application.Features.WeddingTools.Queries.GetBudget;
 
@@ -21,8 +22,8 @@ public class GetBudgetQueryHandler : IRequestHandler<GetBudgetQuery, BudgetSumma
 
     public async Task<BudgetSummaryDto> Handle(GetBudgetQuery request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Bạn cần đăng nhập để quản lý ngân sách cưới.");
+        var scope = await WeddingAccess.ResolveAsync(_context, _currentUserService, cancellationToken);
+        var userId = scope.OwnerId;
 
         var items = await _context.BudgetItems
             .Where(b => b.CustomerId == userId)
@@ -31,8 +32,10 @@ public class GetBudgetQueryHandler : IRequestHandler<GetBudgetQuery, BudgetSumma
             .ToListAsync(cancellationToken);
 
         // Mặc định tổng ngân sách ban đầu nếu có items thì là tổng PlannedCost, hoặc ít nhất 200 triệu
-        var totalPlanned = items.Sum(b => b.PlannedCost);
-        if (totalPlanned <= 0) totalPlanned = 250000000;
+        // Ưu tiên tổng ngân sách cặp đôi đã khai ở hồ sơ cưới (wizard); không có thì lấy tổng các khoản dự kiến.
+        var profileBudget = await _context.WeddingProfiles.AsNoTracking().Where(p => p.CustomerId == userId)
+            .Select(p => (decimal?)p.TotalBudget).FirstOrDefaultAsync(cancellationToken) ?? 0m;
+        var totalPlanned = profileBudget > 0 ? profileBudget : items.Sum(b => b.PlannedCost);
 
         // FM-006: Remaining_Budget = Total_Planned_Budget - Sum(Actual_Spent)
         var totalActual = items.Sum(b => b.ActualCost);
@@ -46,7 +49,7 @@ public class GetBudgetQueryHandler : IRequestHandler<GetBudgetQuery, BudgetSumma
             ActualCost: b.ActualCost,
             Notes: b.Notes,
             IsPaid: b.IsPaid,
-            CreatedAt: b.CreatedAt
+            CreatedAt: b.CreatedAt, Owner: b.Owner, WeddingProfileId: b.WeddingProfileId, ContractId: b.ContractId
         )).ToList();
 
         return new BudgetSummaryDto(

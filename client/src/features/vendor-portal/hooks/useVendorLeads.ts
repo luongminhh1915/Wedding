@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Lead } from '../../../types/lead.types';
 
-export function useVendorLeads(status?: string) {
+export function useVendorLeads(status?: string, focusId?: string) {
   const queryClient = useQueryClient();
 
   const leadsQuery = useQuery({
-    queryKey: ['vendor-leads', status],
+    queryKey: ['vendor-leads', status, focusId],
     queryFn: async (): Promise<Lead[]> => {
       const token = localStorage.getItem('token');
-      const url = status 
+      const url = focusId ? `/api/leads/vendor-inbox?focusId=${encodeURIComponent(focusId)}` : status
         ? `/api/leads/vendor-inbox?status=${status}` 
         : `/api/leads/vendor-inbox`;
       

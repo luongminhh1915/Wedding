@@ -1,0 +1,40 @@
+.combo-discovery-filters { margin-bottom: 22px; }
+.combo-service-discovery { margin: 18px 0 30px; padding-bottom: 24px; border-bottom: 1px solid #deddd5; }
+.combo-service-category-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 18px; }
+.combo-service-category-links button { gap: 7px; font-size: 11px; max-width: 100%; }
+.combo-service-category-links small { border-radius: 20px; background: #f1dba2; padding: 2px 6px; color: #233a42; }
+.combo-service-discovery > .combo-text-button { margin-top: 14px; }
+.combo-discovery-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.combo-discovery-search { display: flex; flex: 1 1 250px; min-width: 0; border: 1px solid #deddd5; border-radius: 11px; background: white; overflow: hidden; }
+.combo-discovery-search label { display: flex; align-items: center; flex: 1; min-width: 0; gap: 8px; padding: 0 12px; }
+.combo-discovery-search label svg { flex-shrink: 0; color: #718096; }
+.combo-discovery-search input { width: 100%; min-width: 0; border: 0; background: transparent; padding: 13px 0; font-size: 12px; color: #233a42; }
+.combo-discovery-search button { padding: 0 13px; font-size: 12px; font-weight: 600; border: 0; background: #233a42; color: white; }
+.combo-discovery-open { font-size: 12px; gap: 6px; white-space: nowrap; }
+.combo-discovery-open > span { border-radius: 50%; width: 19px; height: 19px; background: #f1dba2; display: grid; place-items: center; font-size: 10px; }
+.combo-discovery-sort { flex: 0 1 180px; max-width: 100%; }
+.combo-discovery-sort select { max-width: 100%; width: 100%; font-size: 11px; background: white; border: 1px solid #deddd5; border-radius: 10px; color: #233a42; padding: 12px 7px; }
+.combo-discovery-price-note { font-size: 11px; color: #68788c; line-height: 1.7; margin-top: 10px; }
+.combo-discovery-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.combo-discovery-chips > button { display: flex; align-items: center; gap: 5px; border: 1px solid #dedacb; background: white; color: #233a42; padding: 6px 10px; border-radius: 20px; font-size: 10px; text-align: left; overflow-wrap: anywhere; max-width: 100%; }
+.combo-discovery-chips button > svg { flex-shrink: 0; }
+.combo-discovery-chips > button.combo-discovery-reset { border: 0; background: transparent; color: #68788c; text-decoration: underline; text-underline-offset: 3px; }
+.combo-advanced-form { padding-top: 12px; }
+.combo-advanced-copy { color: #68788c; font-size: 12px; line-height: 1.7; margin-bottom: 16px; }
+.combo-advanced-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 12px; }
+.combo-advanced-grid > label { display: grid; align-content: start; min-width: 0; gap: 7px; font-size: 12px; font-weight: 600; color: #233a42; }
+.combo-advanced-grid input, .combo-advanced-grid select { width: 100%; min-width: 0; padding: 11px; border: 1px solid #deddd5; background: white; border-radius: 10px; font-size: 12px; color: #233a42; }
+.combo-advanced-grid small { font-size: 10px; color: #68788c; font-weight: 400; line-height: 1.6; }
+.combo-advanced-wide { grid-column: 1 / -1; }
+.combo-advanced-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid #e6e1d2; }
+.combo-preset-estimate { border-radius: 12px; background: #f4f1e6; padding: 12px; margin: 12px 0; }
+.combo-preset-estimate > small { color: #68788c; font-size: 10px; }
+.combo-preset-estimate > strong { display: block; font-size: 19px; color: #233a42; margin: 5px 0; }
+.combo-preset-estimate > p { color: #776627; font-size: 11px; margin: 0; }
+.combo-preset-estimate > span { display: block; color: #68788c; font-size: 10px; margin-top: 5px; }
+@media (max-width: 640px) {
+  .combo-discovery-search { flex-basis: 100%; }
+  .combo-discovery-sort { margin-left: auto; flex-basis: 160px; }
+  .wm-combo-dialog:has(.combo-advanced-form) { position: fixed; inset: auto 0 0; margin: 0; width: 100%; max-width: none; max-height: 88dvh; border-radius: 22px 22px 0 0; padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+  .combo-advanced-actions { position: sticky; bottom: 0; background: #fcf6ea; padding-bottom: 5px; }
+}

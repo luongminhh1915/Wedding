@@ -6,6 +6,9 @@ namespace Wedding.Domain.Entities;
 public class ChecklistTask : BaseEntity
 {
     public Guid CustomerId { get; private set; }
+    public Guid? WeddingProfileId { get; private set; }
+    public Guid? ContractId { get; private set; }
+    public string Owner { get; private set; } = "Shared";
     public string Title { get; private set; } = string.Empty;
     public string Milestone { get; private set; } = "Trước 6 tháng";
     public DateTime? DueDate { get; private set; }
@@ -55,4 +58,10 @@ public class ChecklistTask : BaseEntity
         Notes = notes;
         SetUpdated();
     }
+
+    public void AttachToWedding(Guid weddingProfileId, string owner = "Shared")
+    { WeddingProfileId = weddingProfileId; AssignOwner(owner); }
+    public void AssignOwner(string owner)
+    { if (owner is not ("Shared" or "Bride" or "Groom")) throw new DomainException("Người phụ trách không hợp lệ."); Owner = owner; SetUpdated(); }
+    public void LinkContract(Guid contractId) { ContractId = contractId; SetUpdated(); }
 }

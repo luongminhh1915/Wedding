@@ -1,41 +1,34 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Wedding.Application.Common.Interfaces;
+using Wedding.Domain.Enums;
 using Wedding.Domain.Exceptions;
 
 namespace Wedding.Application.Features.Listings.Commands.SubmitForApproval;
 
 public record SubmitForApprovalCommand(Guid ListingId) : IRequest;
-
-public class SubmitForApprovalCommandHandler : IRequestHandler<SubmitForApprovalCommand>
+public class SubmitForApprovalCommandHandler(IApplicationDbContext db, ICurrentUserService actor) : IRequestHandler<SubmitForApprovalCommand>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUserService _currentUserService;
-
-    public SubmitForApprovalCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
+    public Task Handle(SubmitForApprovalCommand request, CancellationToken ct) => db.ExecuteSerializableAsync(async token =>
     {
-        _context = context;
-        _currentUserService = currentUserService;
-    }
-
-    public async Task Handle(SubmitForApprovalCommand request, CancellationToken cancellationToken)
-    {
-        var userId = _currentUserService.UserId
-            ?? throw new DomainException("Không xác định được người dùng.");
-
-        var vendor = await _context.Vendors
-            .FirstOrDefaultAsync(v => v.UserId == userId, cancellationToken)
-            ?? throw new DomainException("Hồ sơ nhà cung cấp không tồn tại.");
-
-        var listing = await _context.Listings
-            .FirstOrDefaultAsync(l => l.Id == request.ListingId && l.VendorId == vendor.Id, cancellationToken)
-            ?? throw new NotFoundException("Bài đăng", request.ListingId);
-
-        // Chỉ cho phép nộp khi đang ở Draft hoặc Rejected
-        if (listing.Status != Domain.Enums.ListingStatus.Draft && listing.Status != Domain.Enums.ListingStatus.Rejected)
-            throw new DomainException("Bài đăng đã được nộp duyệt hoặc đang hoạt động, không thể nộp lại.");
-
-        listing.SubmitForApproval();
-        await _context.SaveChangesAsync(cancellationToken);
-    }
+        var vendor = await ListingPublication.RequireOwner(db, actor, token);
+        var listing = await db.Listings.Include(x => x.Media).SingleOrDefaultAsync(x => x.Id == request.ListingId && x.VendorId == vendor.Id, token)
+            ?? throw new NotFoundException("Dịch vụ không tồn tại.");
+        await ListingPublication.CheckSubmission(db, listing, token);
+        var latest = await db.ListingRevisions.Where(x => x.ListingId == listing.Id).OrderByDescending(x => x.Sequence).FirstOrDefaultAsync(token);
+        if (listing.Status is ListingStatus.Active or ListingStatus.Hidden)
+        {
+            if (latest?.Status is not ("Draft" or "Rejected")) throw new DomainException("Chỉ gửi duyệt bản sửa nháp hoặc bị từ chối. Bản đang công khai được giữ nguyên.");
+            await ListingPublication.Append(db, listing, actor.UserId!.Value, ListingPublication.Read(latest), true, token);
+        }
+        else
+        {
+            if (listing.Status is not (ListingStatus.Draft or ListingStatus.Rejected)) throw new DomainException("Dịch vụ đã được gửi duyệt.");
+            var content = ListingPublication.Capture(listing) with { Pricing = await ListingServicePricing.Current(db, listing, token) };
+            await ListingPublication.Append(db, listing, actor.UserId!.Value, content, true, token);
+            listing.SubmitForApproval();
+            await ListingServicePricing.Synchronize(db, listing, "Pending", token);
+        }
+        await db.SaveChangesAsync(token); return Unit.Value;
+    }, ct);
 }

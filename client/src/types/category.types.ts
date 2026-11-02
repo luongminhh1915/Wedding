@@ -3,6 +3,11 @@ export interface CategoryDto {
   name: string;
   slug: string;
   listingCount: number;
+  icon?: string | null;
+  businessGroupId?: string | null;
+  businessGroupName?: string | null;
+  defaultCommissionRate?: number;
+  requiresCommissionBasisApproval?: boolean;
 }
 
 export interface PublicListingsResult {
@@ -18,6 +23,7 @@ export interface PublicListingsFilter {
   location?: string;
   minPrice?: number;
   maxPrice?: number;
+  minRating?: number;
   keyword?: string;
   sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
   page?: number;

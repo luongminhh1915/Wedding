@@ -1,15 +1,21 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import axiosClient from '../../../services/axiosClient';
 import { useAuthStore } from '../../../store/authStore';
-import type { AuthResponse, LoginRequest, RegisterCustomerRequest, RegisterVendorRequest, User } from '../../../types/auth';
+import type { AuthResponse, LoginRequest, RegisterCustomerRequest, RegisterVendorRequest } from '../../../types/auth';
+
+async function authenticate(path: string, input: unknown): Promise<AuthResponse> {
+  const revision = useAuthStore.getState().sessionRevision;
+  const response = await axiosClient.post<AuthResponse>(path, input);
+  if (useAuthStore.getState().sessionRevision !== revision) throw new Error('Phiên đã thay đổi. Vui lòng đăng nhập lại.');
+  return response.data;
+}
 
 export const useAuth = () => {
   const { setAuth, logout, user, token } = useAuthStore();
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginRequest): Promise<AuthResponse> => {
-      const response = await axiosClient.post<AuthResponse>('/api/auth/login', credentials);
-      return response.data;
+      return authenticate('/api/auth/login', credentials);
     },
     onSuccess: (data) => {
       setAuth(data.user, data.token);
@@ -18,8 +24,7 @@ export const useAuth = () => {
 
   const registerCustomerMutation = useMutation({
     mutationFn: async (data: RegisterCustomerRequest): Promise<AuthResponse> => {
-      const response = await axiosClient.post<AuthResponse>('/api/auth/register-customer', data);
-      return response.data;
+      return authenticate('/api/auth/register-customer', data);
     },
     onSuccess: (data) => {
       setAuth(data.user, data.token);
@@ -28,21 +33,11 @@ export const useAuth = () => {
 
   const registerVendorMutation = useMutation({
     mutationFn: async (data: RegisterVendorRequest): Promise<AuthResponse> => {
-      const response = await axiosClient.post<AuthResponse>('/api/auth/register-vendor', data);
-      return response.data;
+      return authenticate('/api/auth/register-vendor', data);
     },
     onSuccess: (data) => {
       setAuth(data.user, data.token);
     },
-  });
-
-  const currentUserQuery = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async (): Promise<User> => {
-      const response = await axiosClient.get<User>('/api/auth/me');
-      return response.data;
-    },
-    enabled: !!token,
   });
 
   return {
@@ -57,6 +52,6 @@ export const useAuth = () => {
     registerVendor: registerVendorMutation.mutateAsync,
     isRegisteringVendor: registerVendorMutation.isPending,
     logout,
-    currentUser: currentUserQuery.data,
+    currentUser: user,
   };
 };

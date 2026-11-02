@@ -22,28 +22,23 @@ public class GetPublicInvitationQueryHandler : IRequestHandler<GetPublicInvitati
         var cleanSlug = request.Slug.Trim().ToLowerInvariant();
 
         var invitation = await _context.WeddingInvitations
-            .Include(w => w.Guests)
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Slug == cleanSlug, cancellationToken)
+            .FirstOrDefaultAsync(w => w.Slug == cleanSlug && w.IsPublished, cancellationToken)
             ?? throw new DomainException("Thiệp cưới không tồn tại hoặc đã bị ngừng chia sẻ.");
 
-        var recentWishes = invitation.Guests
-            .Where(g => !string.IsNullOrWhiteSpace(g.Wishes))
+        var recentWishes = await _context.GuestRSVPs.AsNoTracking()
+            .Where(g => g.InvitationId == invitation.Id && g.Wishes != null && g.Wishes != "")
             .OrderByDescending(g => g.CreatedAt)
             .Take(20)
-            .Select(g => new PublicWishItemDto(
-                GuestName: g.GuestName,
-                Wishes: g.Wishes!,
-                CreatedAt: g.CreatedAt
-            ))
-            .ToList();
+            .Select(g => new PublicWishItemDto(g.GuestName, g.Wishes!, g.CreatedAt))
+            .ToListAsync(cancellationToken);
 
         return new PublicInvitationDto(
             Id: invitation.Id,
             Slug: invitation.Slug,
             GroomName: invitation.GroomName,
             BrideName: invitation.BrideName,
-            EventDate: invitation.EventDate,
+            EventDate: invitation.GetEventDateWithOffset(),
             VenueName: invitation.VenueName,
             VenueAddress: invitation.VenueAddress,
             MapUrl: invitation.MapUrl,
@@ -52,7 +47,8 @@ public class GetPublicInvitationQueryHandler : IRequestHandler<GetPublicInvitati
             MusicUrl: invitation.MusicUrl,
             TemplateStyle: invitation.TemplateStyle,
             BankInfo: invitation.BankInfo,
-            RecentWishes: recentWishes
+            RecentWishes: recentWishes,
+            TemplateId: invitation.TemplateId, Lang: invitation.Lang, ContentJson: invitation.ContentJson
         );
     }
 }

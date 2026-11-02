@@ -6,6 +6,7 @@ using Wedding.Application.Features.Invitations.Commands.SubmitRsvp;
 using Wedding.Application.Features.Invitations.Queries.GetInvitationRsvps;
 using Wedding.Application.Features.Invitations.Queries.GetMyInvitation;
 using Wedding.Application.Features.Invitations.Queries.GetPublicInvitation;
+using Wedding.Application.Features.Invitations.Commands;
 
 namespace Wedding.WebApi.Controllers;
 
@@ -19,6 +20,15 @@ public class InvitationsController : ControllerBase
     {
         _mediator = mediator;
     }
+
+    [HttpPut("{id:guid}/publish"), Authorize(Roles = "Customer")]
+    public async Task<IActionResult> Publish(Guid id, [FromBody] PublishInvitationRequest request) => Ok(await _mediator.Send(new ManageInvitationCommand(id, request.Published)));
+
+    [HttpDelete("{id:guid}"), Authorize(Roles = "Customer")]
+    public async Task<IActionResult> Delete(Guid id) => Ok(await _mediator.Send(new ManageInvitationCommand(id, null, true)));
+
+    [HttpGet("{slug}/wishes"), AllowAnonymous]
+    public async Task<IActionResult> Wishes(string slug) => Ok((await _mediator.Send(new GetPublicInvitationQuery(slug))).RecentWishes);
 
     /// <summary>
     /// [Customer] Lấy thông tin thiệp cưới của chính mình (bao gồm thống kê RSVP).
@@ -35,7 +45,7 @@ public class InvitationsController : ControllerBase
     /// [Customer] Tạo mới hoặc cập nhật thiệp cưới điện tử (E-Invitation Builder).
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SaveInvitation([FromBody] SaveInvitationCommand command)
     {
         var result = await _mediator.Send(command);
@@ -78,7 +88,8 @@ public class InvitationsController : ControllerBase
             Status: request.Status,
             CompanionCount: request.CompanionCount,
             Wishes: request.Wishes,
-            DietaryPreference: request.DietaryPreference
+            DietaryPreference: request.DietaryPreference,
+            Type: request.Type, SubmissionKey: request.SubmissionKey
         );
 
         var result = await _mediator.Send(command);
@@ -92,5 +103,7 @@ public record SubmitRsvpRequest(
     string Status,
     int CompanionCount = 0,
     string? Wishes = null,
-    string? DietaryPreference = null
+    string? DietaryPreference = null,
+    string Type = "Attend", string? SubmissionKey = null
 );
+public record PublishInvitationRequest(bool Published);

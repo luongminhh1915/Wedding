@@ -11,14 +11,17 @@ public record GetAdminListingsQuery(ListingStatus? Status = null) : IRequest<Lis
 public class GetAdminListingsQueryHandler : IRequestHandler<GetAdminListingsQuery, List<ListingDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _actor;
 
-    public GetAdminListingsQueryHandler(IApplicationDbContext context)
+    public GetAdminListingsQueryHandler(IApplicationDbContext context, ICurrentUserService actor)
     {
         _context = context;
+        _actor = actor;
     }
 
     public async Task<List<ListingDto>> Handle(GetAdminListingsQuery request, CancellationToken cancellationToken)
     {
+        await ListingPublication.RequireStaff(_context, _actor, cancellationToken);
         var query = _context.Listings
             .Include(l => l.Category)
             .Include(l => l.Vendor)
@@ -51,7 +54,9 @@ public class GetAdminListingsQueryHandler : IRequestHandler<GetAdminListingsQuer
             l.ViewCount,
             l.CreatedAt,
             l.ModeratedAt,
-            l.Media.Select(m => new ListingMediaDto(m.Id, m.MediaUrl, m.ThumbnailUrl, m.IsFeatured, m.DisplayOrder)).ToList()
+            l.Media.Select(m => new ListingMediaDto(m.Id, m.MediaUrl, m.ThumbnailUrl, m.IsFeatured, m.DisplayOrder)).ToList(),
+            ListingServiceDetails.Read(l.ServiceDetailsJson), l.CancellationPolicy,
+            l.Category.RequiresCommissionBasisApproval, l.IsActive
         )).ToList();
     }
 }

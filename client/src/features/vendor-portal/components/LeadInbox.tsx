@@ -7,6 +7,9 @@ import { useVendorLeads } from '../hooks/useVendorLeads';
 import { ChatRoomModal } from '../../chat/components/ChatRoomModal';
 import { CreateContractModal } from './CreateContractModal';
 import type { Lead } from '../../../types/lead.types';
+import { useSearchParams } from 'react-router-dom';
+import { requestedNotificationFocus, useNotificationFocus } from '../../notifications/useNotificationFocus';
+import { PrivateServiceAgreementPanel } from '../../private-agreements/PrivateServiceAgreementPanel';
 
 // Component đếm ngược SLA 2h realtime BR-003
 function SlaCountdown({ deadline }: { deadline: string }) {
@@ -57,7 +60,10 @@ function SlaCountdown({ deadline }: { deadline: string }) {
 
 export function LeadInbox() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const { data: leads = [], isLoading, isError, refetch, acceptLead, isAccepting } = useVendorLeads(selectedStatus || undefined);
+  const [params] = useSearchParams();
+  const requestedFocus = requestedNotificationFocus(params, 'lead');
+  const { data: leads = [], isLoading, isError, refetch, acceptLead, isAccepting } = useVendorLeads(selectedStatus || undefined, requestedFocus ?? undefined);
+  const { focusId, missing, clearFocus } = useNotificationFocus('lead', leads.map(lead => lead.id), !isLoading && !isError);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeChatLead, setActiveChatLead] = useState<Lead | null>(null);
   const [activeContractLead, setActiveContractLead] = useState<Lead | null>(null);
@@ -123,9 +129,9 @@ export function LeadInbox() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setSelectedStatus(tab.id)}
+            onClick={() => { setSelectedStatus(tab.id); clearFocus(); }}
             className={`px-3.5 py-2 rounded-xl transition ${
-              selectedStatus === tab.id
+              (requestedFocus ? '' : selectedStatus) === tab.id
                 ? 'bg-rose-500 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -143,6 +149,7 @@ export function LeadInbox() {
       )}
 
       {/* Content list */}
+      {focusId && <p role="status" className="text-sm text-slate-500">{missing ? 'Yêu cầu trong thông báo không còn khả dụng trong tài khoản của bạn.' : 'Đang xem yêu cầu liên quan đến thông báo.'} <button type="button" className="underline" onClick={clearFocus}>Xem lại hộp thư</button></p>}
       {isLoading ? (
         <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
           <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-3" />
@@ -165,6 +172,9 @@ export function LeadInbox() {
           {leads.map((lead: Lead) => (
             <div
               key={lead.id}
+              id={`notification-lead-${lead.id}`}
+              tabIndex={-1}
+              data-notification-focus={focusId === lead.id}
               className="bg-white rounded-2xl border border-slate-100 hover:border-rose-100 transition shadow-sm p-5 space-y-4"
             >
               {/* Header row */}
@@ -273,6 +283,7 @@ export function LeadInbox() {
               )}
 
               {/* Actions */}
+              {lead.comboOrderId && <PrivateServiceAgreementPanel kind="combo" id={lead.comboOrderId} leadId={lead.id} partnerName={lead.customerName} title={lead.listingTitle || 'Combo đã gửi'} />}
               <div className="flex items-center justify-end gap-3 pt-2">
                 {lead.status === 'New' ? (
                   <button

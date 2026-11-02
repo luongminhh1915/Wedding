@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Trash2, CheckCircle2, RotateCw, Loader2, X } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, RotateCw, Loader2, X, Pencil } from "lucide-react";
 import { useWeddingChecklist } from "../../hooks/useWeddingTools";
 import type { SaveChecklistTaskPayload } from "../../../../types/wedding-tools.types";
+import { useNotificationFocus } from "../../../notifications/useNotificationFocus";
 
 const MILESTONES = [
   "9 - 12 Tháng",
@@ -19,6 +20,9 @@ const MILESTONE_LABELS: Record<string, string> = {
   "1_MONTH": "1 - 2 Tháng",
   "1_WEEK": "1 Tuần & Ngày Cưới",
   WEDDING_DAY: "1 Tuần & Ngày Cưới",
+  "12 tháng trước": "9 - 12 Tháng", "9 tháng trước": "9 - 12 Tháng", "6 tháng trước": "6 - 9 Tháng",
+  "4 tháng trước": "3 - 6 Tháng", "3 tháng trước": "3 - 6 Tháng", "2 tháng trước": "1 - 2 Tháng",
+  "1 tháng trước": "1 - 2 Tháng", "1 tuần trước": "1 Tuần & Ngày Cưới",
 };
 const milestoneLabel = (value: string) => MILESTONE_LABELS[value] || value;
 
@@ -33,6 +37,7 @@ export function WeddingChecklist() {
     isSaving,
     deleteTask,
   } = useWeddingChecklist();
+  const { focusId, missing } = useNotificationFocus("task", tasks.map(t => t.id), !isLoading && !isError);
 
   const [selectedMilestone, setSelectedMilestone] = useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -50,7 +55,7 @@ export function WeddingChecklist() {
   const filteredTasks =
     selectedMilestone === "all"
       ? tasks
-      : tasks.filter((t) => milestoneLabel(t.milestone) === selectedMilestone);
+      : tasks.filter((t) => t.id === focusId || milestoneLabel(t.milestone) === selectedMilestone);
 
   const handleToggle = async (id: string) => {
     try {
@@ -135,7 +140,7 @@ export function WeddingChecklist() {
             <RotateCw className="w-4 h-4" />
           </button>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setNewTaskForm({ title: "", milestone: "3 - 6 Tháng", owner: "Shared", notes: "" }); setIsAddModalOpen(true); }}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition"
           >
             <Plus className="w-4 h-4" />
@@ -222,6 +227,7 @@ export function WeddingChecklist() {
 
       {/* Tasks List */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+        {missing && <p role="status" className="text-sm text-slate-500">Công việc trong thông báo không còn khả dụng trong kế hoạch của bạn.</p>}
         {filteredTasks.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs">
             Không có công việc nào trong mốc này. Bấm [+ Thêm Việc Mới] để thêm
@@ -232,6 +238,9 @@ export function WeddingChecklist() {
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
+                id={`notification-task-${task.id}`}
+                tabIndex={-1}
+                data-notification-focus={focusId === task.id}
                 className="py-3.5 flex items-center justify-between gap-3 group hover:bg-slate-50/60 px-3 rounded-2xl transition"
               >
                 <div className="flex items-center gap-3 flex-1">
@@ -261,6 +270,8 @@ export function WeddingChecklist() {
                           • Phụ trách: <strong>{task.notes}</strong>
                         </span>
                       )}
+                      <span>· {task.owner === "Bride" ? "Cô dâu" : task.owner === "Groom" ? "Chú rể" : "Cả hai"}</span>
+                      {task.dueDate && <span>· Hạn {new Date(task.dueDate).toLocaleDateString("vi-VN")}</span>}
                     </div>
                   </div>
                 </div>
@@ -276,6 +287,10 @@ export function WeddingChecklist() {
                     </span>
                   )}
 
+                  <button
+                    onClick={() => { setNewTaskForm({ ...task, milestone: milestoneLabel(task.milestone), dueDate: task.dueDate?.slice(0, 10) }); setIsAddModalOpen(true); }}
+                    className="p-1.5 text-slate-400 hover:text-slate-800" title="Sửa công việc"
+                  ><Pencil className="w-4 h-4" /></button>
                   <button
                     onClick={() => handleDelete(task.id)}
                     className="p-1.5 text-slate-300 hover:text-red-600 rounded-lg transition sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
@@ -296,7 +311,7 @@ export function WeddingChecklist() {
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900">
-                Thêm Công Việc Mới Vào Checklist
+                {newTaskForm.id ? "Chỉnh Sửa Công Việc" : "Thêm Công Việc Mới Vào Checklist"}
               </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -307,6 +322,7 @@ export function WeddingChecklist() {
             </div>
 
             <form onSubmit={handleAddTask} className="space-y-4 my-4 text-xs">
+              <label className="block font-bold text-slate-700">Hạn hoàn thành<input type="date" className="block w-full border border-slate-300 rounded-xl p-2 mt-1" value={newTaskForm.dueDate || ""} onChange={e => setNewTaskForm(f => ({ ...f, dueDate: e.target.value || undefined }))} /></label>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
                   Nội Dung Công Việc:
@@ -347,15 +363,15 @@ export function WeddingChecklist() {
                   Phân Công Phụ Trách:
                 </label>
                 <select
-                  value={newTaskForm.notes || "Cả hai"}
+                  value={newTaskForm.owner || "Shared"}
                   onChange={(e) =>
-                    setNewTaskForm((f) => ({ ...f, notes: e.target.value }))
+                    setNewTaskForm((f) => ({ ...f, owner: e.target.value }))
                   }
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
                 >
-                  <option value="Cả hai">Cả hai cùng làm</option>
-                  <option value="Chú Rể">Chú Rể phụ trách</option>
-                  <option value="Cô Dâu">Cô Dâu phụ trách</option>
+                  <option value="Shared">Cả hai cùng làm</option>
+                  <option value="Groom">Chú Rể phụ trách</option>
+                  <option value="Bride">Cô Dâu phụ trách</option>
                 </select>
               </div>
 
@@ -372,7 +388,7 @@ export function WeddingChecklist() {
                   disabled={isSaving}
                   className="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition disabled:opacity-50"
                 >
-                  {isSaving ? "Đang lưu..." : "Thêm Vào Kế Hoạch"}
+                  {isSaving ? "Đang lưu..." : newTaskForm.id ? "Lưu thay đổi" : "Thêm Vào Kế Hoạch"}
                 </button>
               </div>
             </form>

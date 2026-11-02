@@ -33,6 +33,10 @@ public interface IAdvancePaymentService
         string? note = null
     );
 
+    /// <summary>
+    /// Lists notices accessible to the authenticated actor: own shop only for VendorOwner,
+    /// all shops for Finance/SuperAdmin. Other roles and missing/inactive actors are denied.
+    /// </summary>
     Task<List<AdvancePaymentNoticeDto>> GetAllAsync();
     Task<List<AdvancePaymentNoticeDto>> GetByContractIdAsync(Guid contractId);
     Task<AdvancePaymentNoticeDto?> GetPendingByContractIdAsync(Guid contractId);
