@@ -14,6 +14,7 @@ import ListingCard from "../customer/components/ListingCard";
 import { serviceCategoryLabel, serviceFilterSearch } from "../customer/serviceFilterModel";
 import { marketplaceSearchFilters, type MarketplaceSearchDraft } from "./marketplaceSearchModel";
 import "./home-romantic.css";
+import { FallingPetals } from "./components/FallingPetals";
 
 const features: { title: string; description: string; preview: PreviewKind; to: string; tone: string; icon: LucideIcon; action: string }[] = [
   { title: "Lên plan, không lên stress", description: "Từng công việc và khoản chi đều có nơi. Cùng nhau chuẩn bị, từng chút một.", preview: "checklist", to: "/customer/dashboard?tab=checklist", tone: "peach", icon: CheckCheck, action: "Mở checklist cưới" },
@@ -56,11 +57,12 @@ export default function HomePage() {
     navigate({ pathname: "/browse", search: serviceFilterSearch(filters) });
   };
   return <main className="wm-home wm-home-romantic">
+    <FallingPetals />
     <section className="wm-hero marketplace-hero">
       <div className="marketplace-hero-top">
         <div className="home-hero-copy">
           <span className="home-eyebrow"><Flower2 size={15} strokeWidth={1.6} aria-hidden="true" />WEDDING MATCH · MARKETPLACE DỊCH VỤ CƯỚI</span>
-          <h1><span>Tìm đúng dịch vụ.</span><em>Chọn đúng người đồng hành.</em></h1>
+          <h1><span>Tìm đúng dịch vụ.</span><em>Chọn đúng, cưới yên tâm.</em></h1>
           <p>Khám phá dịch vụ cưới theo phong cách, khu vực và ngân sách của hai bạn. Bắt đầu từ một lựa chọn hợp gu, để ngày vui nhẹ nhàng hơn.</p>
           <div className="home-hero-actions"><Link to="/browse" className="home-primary-action">Khám phá dịch vụ <ArrowUpRight size={18} aria-hidden="true" /></Link><a href="#cong-cu" className="home-intro-action">Wedding Match có gì? <ArrowDown size={16} aria-hidden="true" /></a></div>
           <div className="home-hero-note"><span><Check size={13} aria-hidden="true" />Xem dịch vụ theo nhu cầu</span><span><Check size={13} aria-hidden="true" />Trao đổi trước khi đặt</span></div>
@@ -68,8 +70,7 @@ export default function HomePage() {
         <figure className="home-hero-photo">
           <span className="home-photo-flower flower-one" aria-hidden="true"><Flower2 size={54} strokeWidth={1} /></span>
           <span className="home-photo-flower flower-two" aria-hidden="true"><Sparkles size={30} strokeWidth={1} /></span>
-          <div className="home-hero-photo-frame"><img src="/wedding-match/homepage/hero-romantic-couple.png" alt="Ảnh minh họa cặp đôi giữa hoa tươi trong khu vườn cưới" width={1086} height={1448} fetchPriority="high" /><span className="home-photo-note">Một ngày thật đẹp,<br />theo cách của hai bạn.</span></div>
-          <figcaption>Ảnh minh họa phong cách cưới ngoài trời.</figcaption>
+          <div className="home-hero-photo-frame"><img src="/wedding-match/homepage/hero-romantic-couple.png" alt="Ảnh minh họa cặp đôi giữa hoa tươi trong khu vườn cưới" width={1086} height={1448} fetchPriority="high" /></div>
         </figure>
       </div>
       <section id="kham-pha-dich-vu" className="marketplace-search-at-top home-marketplace-search" aria-label="Khám phá dịch vụ cưới">

@@ -173,7 +173,7 @@ export default function CommissionPolicyManager() {
         expectedVersion: rule.version,
         approve: true,
       });
-      setActionSuccess(`Đã phê duyệt chính sách ${rule.policyVersion}.`);
+      setActionSuccess(`Đã phê duyệt hồ sơ chính sách ${rule.policyVersion}. Chính sách chưa được kích hoạt cho giao dịch.`);
     } catch (err: any) {
       setActionError(err.response?.data?.message || err.message || "Lỗi phê duyệt chính sách.");
     }
@@ -256,7 +256,7 @@ export default function CommissionPolicyManager() {
       case CommissionPolicyStatus.Submitted:
         return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">Chờ duyệt</span>;
       case CommissionPolicyStatus.Approved:
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle2 size={12} /> Đã duyệt</span>;
+        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle2 size={12} /> Đã duyệt · Chưa kích hoạt</span>;
       case CommissionPolicyStatus.Rejected:
         return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-200"><XCircle size={12} /> Từ chối</span>;
       default:
@@ -292,8 +292,8 @@ export default function CommissionPolicyManager() {
             <h2 className="text-xl font-bold text-slate-800">Chính sách hoa hồng & Điều chỉnh</h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Cơ chế phân giải 5 tầng: Dịch vụ → NCC theo danh mục → Toàn NCC → Ngành hàng → Toàn sàn.
-            Chính sách chỉ có hiệu lực khi được SuperAdmin duyệt và không bị chồng lấn thời gian.
+            Quản lý hồ sơ theo phạm vi: Dịch vụ → NCC theo danh mục → Toàn NCC → Ngành hàng → Toàn sàn.
+            Phê duyệt chưa làm thay đổi hoa hồng giao dịch. Chỉ kích hoạt sau khi đủ phê duyệt, ngày hiệu lực và hồ sơ đã ký phù hợp; luồng kích hoạt hiện chưa mở.
           </p>
         </div>
 

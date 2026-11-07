@@ -289,9 +289,9 @@ function ComboDetail({
             <section id="dich-vu-trong-combo" className="cd-section">
               <div className="cd-section-title">
                 <p className="cd-eyebrow">BIẾT RÕ TRƯỚC KHI CHỌN</p>
-                <h2>Trong combo có những gì?</h2>
+                <h2>Gói bao gồm {required.length} dịch vụ con của nhà cung cấp</h2>
                 <p>
-                  {fixed ? "Đây là các dịch vụ của nguyên gói đã duyệt. Muốn thay đổi, hãy gửi yêu cầu rồi trao đổi với NCC trong chat; đề xuất riêng chỉ áp dụng khi bạn xác nhận." : "Các hạng mục dưới đây được thêm sẵn. Bạn có thể đổi dịch vụ trong cùng NCC ở bước tùy chỉnh."}
+                  {fixed ? "Đây là các dịch vụ con của nguyên gói đã duyệt. Muốn thay đổi, hãy gửi yêu cầu rồi trao đổi với NCC trong chat; đề xuất riêng chỉ áp dụng khi bạn xác nhận." : "Các hạng mục dưới đây được thêm sẵn vào combo. Bạn có thể đổi dịch vụ trong cùng NCC ở bước tùy chỉnh."}
                 </p>
               </div>
               <div className="cd-service-list">

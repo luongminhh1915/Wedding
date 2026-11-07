@@ -21,7 +21,12 @@ const apiStub = `data:text/javascript,${encodeURIComponent(`
     useResolveDispute = mutation, useReviewVerification = mutation;
 `)}`;
 const authStub = `data:text/javascript,${encodeURIComponent(`
-  export const useAuthStore = selector => selector({ user: { role: globalThis[Symbol.for("wedding.tests.admin-read-query")].role } });
+  const session = () => ({ user: { id: "qa-staff", role: globalThis[Symbol.for("wedding.tests.admin-read-query")].role }, token: "qa-only-token", sessionRevision: 1 });
+  export const useAuthStore = selector => selector ? selector(session()) : session();
+  useAuthStore.getState = session;
+`)}`;
+const axiosStub = `data:text/javascript,${encodeURIComponent(`
+  export default { get: () => { throw new Error("SSR read-state fixtures must not make document network requests"); } };
 `)}`;
 async function moduleUrl(file, aliases = {}) {
   const source = await readFile(new URL(file, import.meta.url), "utf8");
@@ -29,18 +34,23 @@ async function moduleUrl(file, aliases = {}) {
     target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText;
   for (const dependency of ["react", "react/jsx-runtime", "lucide-react"])
-    javascript = javascript.replaceAll(`from "${dependency}"`, `from "${import.meta.resolve(dependency)}"`);
+    for (const quote of ['"', "'"]) javascript = javascript.replaceAll(`from ${quote}${dependency}${quote}`, `from "${import.meta.resolve(dependency)}"`);
   for (const [dependency, target] of Object.entries(aliases))
-    javascript = javascript.replaceAll(`from "${dependency}"`, `from "${target}"`);
+    for (const quote of ['"', "'"]) javascript = javascript.replaceAll(`from ${quote}${dependency}${quote}`, `from "${target}"`);
   return `data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}`;
 }
 const statusUrl = await moduleUrl("../src/features/journey/admin/AdminQueryReadState.tsx", { "../api": apiStub });
 const uiUrl = await moduleUrl("../src/features/journey/ui.tsx");
+const verificationDocumentUrl = await moduleUrl("../src/features/journey/VerificationDocumentLink.tsx", {
+  "../../services/axiosClient": axiosStub, "../../store/authStore": authStub, "./api": apiStub,
+  "./verificationDocumentModel": new URL("../src/features/journey/verificationDocumentModel.ts", import.meta.url).href,
+});
 const { AdminQueryReadState } = await import(statusUrl);
 const panels = await import(await moduleUrl("../src/features/journey/admin/AdminJourneyPanels.tsx", {
   "../api": apiStub, "../ui": uiUrl, "./AdminQueryReadState": statusUrl,
   "../format": new URL("../src/features/journey/format.ts", import.meta.url).href,
   "../../../store/authStore": authStub,
+  "../VerificationDocumentLink": verificationDocumentUrl,
 }));
 const query = (extra = {}) => ({ data: [], isPending: false, isError: false, isFetching: false,
   error: null, refetch: () => { state.readRetries++; }, ...extra });
@@ -143,4 +153,38 @@ test("audit read failure is visible independently without hiding successful KPI 
   const moderator = render(panels.AdminKpiPanel);
   assert.match(moderator, /GMV hợp đồng/); assert.doesNotMatch(moderator, /Nhật ký thao tác|Thử lại/);
   assert.equal(state.auditEnabled, false);
+});
+test("audit log renders target account info and view account action", () => {
+  reset();
+  state.kpi = query({ data: kpi() });
+  state.audit = query({
+    data: [
+      {
+        id: "log-1",
+        createdAt: "2026-11-02T18:38:00Z",
+        actorRole: "SuperAdmin",
+        action: "Listing.Approve",
+        entityType: "Listing",
+        entityId: "85bfb2e5-0000-0000-0000-000000000000",
+        entityTitle: "Gói trang trí Rustic",
+        targetAccount: {
+          userId: "user-1",
+          fullName: "Nguyễn Văn A",
+          loginName: "vendor_rustic",
+          brandName: "Rustic Wedding Studio",
+          role: "VendorOwner",
+          email: "rustic@example.com",
+          phoneNumber: "0901234567",
+          isActive: true,
+          city: "Hà Nội",
+        },
+      },
+    ],
+  });
+  const html = render(panels.AdminKpiPanel);
+  assert.match(html, /Listing\.Approve/);
+  assert.match(html, /Rustic Wedding Studio/);
+  assert.match(html, /vendor_rustic/);
+  assert.match(html, /Xem tài khoản/);
+  assert.match(html, /Gói trang trí Rustic/);
 });

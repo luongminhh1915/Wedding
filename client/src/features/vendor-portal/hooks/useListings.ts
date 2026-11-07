@@ -47,9 +47,9 @@ export const useMyListingsPage = (params: VendorListingsPageParams) => {
 };
 
 /** Tạo bài đăng mới */
-function studioHeaders(actor?: ListingStudioActor) {
+function studioHeaders(actor?: ListingStudioActor, allowStaff = false) {
   if (!actor) return undefined;
-  if (!listingStudioActorIsCurrent(actor, useAuthStore.getState())) throw new Error('Phiên nhà cung cấp đã thay đổi. Vui lòng mở lại trình soạn thảo.');
+  if (!listingStudioActorIsCurrent(actor, useAuthStore.getState(), allowStaff)) throw new Error('Phiên chỉnh sửa đã thay đổi. Vui lòng mở lại trình soạn thảo.');
   return { Authorization: `Bearer ${actor.token}` };
 }
 
@@ -73,7 +73,7 @@ export const useUpdateListing = (actor?: ListingStudioActor) => {
   const qc = useQueryClient();
   return useMutation<void, Error, { id: string } & UpdateListingRequest>({
     mutationFn: async ({ id, ...data }) => {
-      await axiosClient.put(`/api/listings/${id}`, data, { headers: studioHeaders(actor) });
+      await axiosClient.put(`/api/listings/${id}`, data, { headers: studioHeaders(actor, true) });
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: listingKeys.myListings });
@@ -92,7 +92,7 @@ export const useSubmitListing = (actor?: ListingStudioActor) => {
   const qc = useQueryClient();
   return useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      await axiosClient.post(`/api/listings/${id}/submit`, null, { headers: studioHeaders(actor) });
+      await axiosClient.post(`/api/listings/${id}/submit`, null, { headers: studioHeaders(actor, true) });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: listingKeys.myListings }); qc.invalidateQueries({ queryKey: ['combo-catalog'] }); },
   });
@@ -114,15 +114,19 @@ export const usePendingListings = (enabled = true) =>
 /** Chi tiết bài đăng */
 export const useListingDetail = (id: string, editorSession?: string) => {
   const user = useAuthStore(state => state.user);
+  const token = useAuthStore(state => state.token);
+  const revision = useAuthStore(state => state.sessionRevision);
+  const actor = { id: user?.id, role: user?.role, token, revision };
   return useQuery<ListingDto>({
-    queryKey: [...listingKeys.detail(id), 'editor', user?.id, user?.role, editorSession],
+    queryKey: [...listingKeys.detail(id), 'editor', user?.id, user?.role, revision, editorSession],
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    queryFn: async () => {
-      const res = await axiosClient.get(`/api/listings/${id}/edit`);
+    queryFn: async ({ signal }) => {
+      const res = await axiosClient.get(`/api/listings/${id}/edit`, { signal, headers: studioHeaders(actor, true) });
+      studioHeaders(actor, true);
       return res.data;
     },
-    enabled: !!id && ['VendorOwner', 'Moderator', 'SuperAdmin'].includes(user?.role ?? ''),
+    enabled: !!id && !!token && ['VendorOwner', 'Moderator', 'SuperAdmin'].includes(user?.role ?? ''),
   });
 };
 

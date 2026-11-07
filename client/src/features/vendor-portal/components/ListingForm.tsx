@@ -3,9 +3,10 @@ import {
   X, PlusCircle, Loader2, AlertCircle, Send, CheckCircle2,
   Sparkles, UploadCloud, Image as ImageIcon, Trash2, Star, Plus,
   Layers, Type, Coins, MapPin, FileText, PanelLeftClose, PanelLeftOpen,
-  FolderPlus, LayoutGrid, Check
+  FolderPlus, LayoutGrid, Check, Save
 } from 'lucide-react';
 import { useCreateListing, useUpdateListing, useSubmitListing, useListingDetail } from '../hooks/useListings';
+import { listingCanSubmit } from '../listingLifecycle';
 import axiosClient from '../../../services/axiosClient';
 import type { ListingSummaryDto } from '../../../types/listing.types';
 import { EMPTY_LISTING_FORM, hydrateListingEditor, isListingImageReference, listingImagePreview, listingUpdatePayload, moveListingCover, type ListingEditorState, type ListingImageItem } from './listingEditModel';
@@ -54,14 +55,19 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
   const currentUser = useAuthStore(state => state.user);
   const currentRevision = useAuthStore(state => state.sessionRevision);
   const currentToken = useAuthStore(state => state.token);
-  const [actor] = useState(() => { const session = useAuthStore.getState(); return { id: session.user?.id, token: session.token, revision: session.sessionRevision }; });
+  const [actor] = useState(() => { const session = useAuthStore.getState(); return { id: session.user?.id, role: session.user?.role, token: session.token, revision: session.sessionRevision }; });
   const mounted = useRef(true);
   const uploadFlight = useRef(false);
   const saveFlight = useRef(false);
   const uploadController = useRef<AbortController | null>(null);
-  const isCurrentActor = () => mounted.current && listingStudioActorIsCurrent(actor, useAuthStore.getState());
+  const isCurrentActor = () => {
+    if (!mounted.current) return false;
+    const session = useAuthStore.getState();
+    return listingStudioActorIsCurrent(actor, session, !!editing);
+  };
   const categoryQuery = useVendorCategories();
   const policyQuery = useVendorBusinessGroupPolicy();
+  const isStaff = currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Moderator';
   const selectableCategories = categoryQuery.isError ? [] : categoryQuery.data?.categories ?? [];
   const published = editing?.status === 'Active' || editing?.status === 'Hidden';
   // The keyed editor mounts only after a complete detail response. Never hydrate through an effect:
@@ -73,7 +79,8 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
   const originalServiceDetails = useRef(initial?.serviceDetails ?? null);
   const [pricing, setPricing] = useState(() => listingPricingValues(initial?.pricing));
   const [pricingChanged, setPricingChanged] = useState(!editing);
-  const selectedCategory = [...selectableCategories, ...(categoryQuery.data?.existingCategories ?? [])].find(category => category.id === form.categoryId);
+  const policyCategory = [...selectableCategories, ...(categoryQuery.data?.existingCategories ?? [])].find(category => category.id === form.categoryId);
+  const selectedCategory = isStaff ? categories.find(category => category.id === form.categoryId) : policyCategory;
   const fullServiceEnabled = !!initial?.categoryRequiresCommissionBasisApproval || !!selectedCategory?.requiresCommissionBasisApproval || !!categories.find(category => category.id === form.categoryId)?.requiresCommissionBasisApproval;
   const previewUrls = useRef(new Set<string>());
   const [isUploading, setIsUploading] = useState(false);
@@ -83,9 +90,7 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
   const [apiError, setApiError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sau khi tạo: lưu id để hỏi có nộp duyệt không
-  const [createdId, setCreatedId] = useState<string | null>(null);
-  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [savingAction, setSavingAction] = useState<'draft' | 'submit' | null>(null);
   const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
   const [formCollapsed, setFormCollapsed] = useState(false);
 
@@ -228,8 +233,10 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
   const createMutation = useCreateListing(actor);
   const updateMutation = useUpdateListing(actor);
   const submitMutation = useSubmitListing(actor);
-  const actorIsActive = currentUser?.id === actor.id && currentUser?.role === 'VendorOwner' && currentRevision === actor.revision && currentToken === actor.token;
-  const isLoading = createMutation.isPending || updateMutation.isPending || isUploading || isUploadingAux || !actorIsActive;
+  const isAllowedRole = currentUser?.role === 'VendorOwner' || !!editing && (currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Moderator');
+  const actorIsActive = currentUser?.id === actor.id && currentUser?.role === actor.role && isAllowedRole && currentRevision === actor.revision && currentToken === actor.token;
+  const isLoading = createMutation.isPending || updateMutation.isPending || submitMutation.isPending || isUploading || isUploadingAux || !actorIsActive || savingAction !== null;
+  const canSubmitForApproval = !editing || listingCanSubmit(editing) || isStaff && published;
 
   useEffect(() => {
     mounted.current = true;
@@ -248,7 +255,7 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
   const validate = () => {
     const e: Record<string, string> = {};
     if (!editing) {
-      const categoryError = vendorCategoryError(form.categoryId, categoryQuery.data?.categories, categoryQuery.isPending, categoryQuery.isError);
+      const categoryError = isStaff ? (!form.categoryId ? "Vui lòng chọn danh mục." : null) : vendorCategoryError(form.categoryId, categoryQuery.data?.categories, categoryQuery.isPending, categoryQuery.isError);
       if (categoryError) e.categoryId = categoryError;
     }
     if (!form.title.trim()) e.title = 'Tiêu đề không được để trống';
@@ -313,11 +320,11 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (submitForApproval: boolean) => {
     if (isLoading || uploadFlight.current || saveFlight.current || !isCurrentActor()) return;
     if (!validate()) return;
     saveFlight.current = true;
+    setSavingAction(submitForApproval ? 'submit' : 'draft');
     setApiError('');
 
     try {
@@ -327,9 +334,11 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
           ...listingUpdatePayload(form, images, originalImages.current, currentDetails(), originalServiceDetails.current),
           ...(pricingChanged ? { pricing: listingPricingPayload(pricing) } : {}),
         });
+        if (submitForApproval && canSubmitForApproval) {
+          await submitMutation.mutateAsync(editing.id);
+        }
         if (isCurrentActor()) onClose();
       } else {
-        // Tạo bài mới kèm danh sách ảnh → hiện modal xác nhận nộp duyệt
         const result = await createMutation.mutateAsync({
           categoryId: form.categoryId,
           title: form.title,
@@ -341,7 +350,10 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
           serviceDetails: currentDetails(),
           pricing: listingPricingPayload(pricing),
         });
-        if (isCurrentActor()) { setCreatedId(result.listingId); setShowSubmitConfirm(true); }
+        if (submitForApproval) {
+          await submitMutation.mutateAsync(result.listingId);
+        }
+        if (isCurrentActor()) onClose();
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -350,23 +362,15 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
         || (err as Error).message
         || 'Đã xảy ra lỗi. Vui lòng thử lại.';
       if (isCurrentActor()) setApiError(msg);
-    } finally { saveFlight.current = false; }
+    } finally {
+      saveFlight.current = false;
+      if (mounted.current) setSavingAction(null);
+    }
   };
 
-  const handleSubmitNow = async () => {
-    if (!createdId || saveFlight.current || !isCurrentActor()) return;
-    saveFlight.current = true;
-    try {
-      await submitMutation.mutateAsync(createdId);
-      if (isCurrentActor()) onClose();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      if (isCurrentActor()) setApiError(error.response?.data?.message || 'Không thể nộp duyệt. Vui lòng thử lại.');
-    } finally { saveFlight.current = false; }
-  };
-
-  const handleSaveDraft = () => {
-    closeEditor();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void handleSave(false);
   };
 
   const set = (field: keyof typeof EMPTY_LISTING_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -374,76 +378,7 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  // ── Modal xác nhận nộp duyệt (hiện sau khi tạo bài thành công) ────────────
-  if (showSubmitConfirm) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in fade-in zoom-in-95 duration-150">
-          {/* Success icon */}
-          <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-          </div>
-
-          {/* Error in confirm modal */}
-          {apiError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2 text-left">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{apiError}</span>
-            </div>
-          )}
-
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Tạo Bài Đăng Thành Công!</h2>
-          <p className="text-sm text-slate-500 mb-6">
-            Bài đăng đã được lưu cùng {images.length} hình ảnh ở trạng thái <span className="font-semibold text-amber-600">Nháp</span>.{' '}
-            Bạn có muốn{' '}
-            <span className="font-semibold text-rose-600">nộp duyệt ngay</span>{' '}
-            để gửi bài lên hàng đợi kiểm duyệt của Admin không?
-          </p>
-
-          {/* Info box */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800">Sau khi nộp duyệt (BR-008):</p>
-                <ul className="text-xs text-amber-700 mt-1.5 space-y-1">
-                  <li>• Moderator / Admin sẽ xem xét nội dung và danh mục; theo dõi trạng thái trong shop</li>
-                  <li>• Bài được duyệt → hiển thị công khai cho khách hàng</li>
-                  <li>• Bị từ chối → bạn nhận được lý do và có thể chỉnh sửa lại</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={handleSubmitNow}
-              disabled={submitMutation.isPending}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-semibold text-sm shadow-md shadow-rose-200 transition disabled:opacity-60"
-            >
-              {submitMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-              {submitMutation.isPending ? 'Đang gửi duyệt...' : '📨 Nộp Duyệt Ngay (Gửi Admin)'}
-            </button>
-
-            <button
-              onClick={handleSaveDraft}
-              disabled={submitMutation.isPending}
-              className="w-full py-3 px-5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-sm transition disabled:opacity-60"
-            >
-              Lưu Nháp — Nộp Sau
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Form tạo / chỉnh sửa ──────────────────────────────────────────────────
+    // ── Form tạo / chỉnh sửa ──────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex h-dvh w-full max-w-full flex-col overflow-hidden bg-slate-100" role="dialog" aria-modal="true" aria-label={editing ? 'Chỉnh sửa dịch vụ' : 'Tạo dịch vụ mới'}>
       {/* Top Header */}
@@ -468,7 +403,7 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
               </span>
             </div>
             <p className="text-xs text-slate-500 hidden sm:block mt-0.5">
-              Sau khi tạo, bạn có thể nộp duyệt ngay cho Admin hoặc lưu Nháp
+              Lưu bản nháp khi chưa ưng ý, hoặc gửi đề xuất duyệt lên Admin khi đã hoàn thiện
             </p>
           </div>
         </div>
@@ -515,24 +450,43 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
           <button
             type="button"
             onClick={closeEditor}
-            className="hidden sm:inline-flex px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 transition"
+            disabled={isLoading}
+            className="hidden sm:inline-flex px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 transition disabled:opacity-50"
           >
             Thoát
           </button>
 
           <button
-            type="submit"
-            form="vendor-listing-form"
+            type="button"
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs sm:text-sm font-semibold shadow-sm transition disabled:opacity-60"
+            onClick={() => void handleSave(false)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition disabled:opacity-60 shadow-2xs"
+            title="Lưu bản nháp để tiếp tục hoàn thiện sau"
           >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {savingAction === 'draft' ? (
+              <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
             ) : (
-              <PlusCircle className="w-4 h-4" />
+              <Save className="w-4 h-4 text-slate-500" />
             )}
-            <span>{published ? 'Lưu bản sửa' : editing ? 'Lưu Thay Đổi' : 'Tạo Bài Đăng'}</span>
+            <span>{savingAction === 'draft' ? 'Đang lưu...' : 'Lưu bản nháp'}</span>
           </button>
+
+          {canSubmitForApproval && (
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => void handleSave(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs sm:text-sm font-semibold shadow-sm transition disabled:opacity-60"
+              title="Gửi đề xuất duyệt lên Admin (trạng thái: Đang chờ duyệt)"
+            >
+              {savingAction === 'submit' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              <span>{savingAction === 'submit' ? 'Đang gửi...' : 'Gửi đề xuất duyệt'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -694,9 +648,9 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
                     </div>
 
                     {/* Policy summary (full width if selected) */}
-                    {selectedCategory && (
+                    {policyCategory && !isStaff && (
                       <div className="md:col-span-2">
-                        <ServiceCategoryPolicySummary category={selectedCategory} policy={policyQuery.data} pending={policyQuery.isPending} failed={policyQuery.isError} />
+                        <ServiceCategoryPolicySummary category={policyCategory} policy={policyQuery.data} pending={policyQuery.isPending} failed={policyQuery.isError} />
                       </div>
                     )}
 
@@ -1392,31 +1346,51 @@ function ListingEditor({ editing, categories, onClose, initial }: Props & { init
     )}
 
     {/* Footer actions bar */}
-    <div className="flex items-center justify-between px-6 py-3 bg-white border-t border-slate-200 shrink-0">
+    <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white border-t border-slate-200 shrink-0">
       <div className="text-xs text-slate-500 hidden sm:block">
-        {editing ? 'Chỉnh sửa dịch vụ đã có' : 'Dịch vụ sẽ được lưu nháp hoặc gửi kiểm duyệt đến Admin'}
+        {editing
+          ? 'Chỉnh sửa dịch vụ — Bạn có thể lưu bản nháp hoặc gửi đề xuất duyệt đến Admin'
+          : 'Dịch vụ có thể lưu nháp khi chưa ưng ý, hoặc gửi đề xuất duyệt lên Admin khi đã hoàn thiện'}
       </div>
-      <div className="flex items-center gap-3 ml-auto">
+      <div className="flex items-center gap-2 sm:gap-3 ml-auto">
         <button
           type="button"
           onClick={closeEditor}
-          className="px-4 py-2 text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 transition"
+          disabled={isLoading}
+          className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 transition disabled:opacity-50"
         >
           Hủy
         </button>
         <button
-          type="submit"
-          form="vendor-listing-form"
+          type="button"
           disabled={isLoading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold shadow-sm transition disabled:opacity-60"
+          onClick={() => void handleSave(false)}
+          className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition disabled:opacity-60 shadow-2xs"
+          title="Lưu lại dưới dạng bản nháp để tiếp tục hoàn thiện sau"
         >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+          {savingAction === 'draft' ? (
+            <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
           ) : (
-            <PlusCircle className="w-4 h-4" />
+            <Save className="w-4 h-4 text-slate-500" />
           )}
-          {published ? 'Lưu bản sửa nháp' : editing ? 'Lưu Thay Đổi' : 'Tạo Bài Đăng'}
+          <span>{savingAction === 'draft' ? 'Đang lưu nháp...' : 'Lưu bản nháp'}</span>
         </button>
+        {canSubmitForApproval && (
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => void handleSave(true)}
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs sm:text-sm font-semibold shadow-sm transition disabled:opacity-60"
+            title="Lưu và gửi duyệt đến Admin (trạng thái: Đang chờ duyệt)"
+          >
+            {savingAction === 'submit' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            <span>{savingAction === 'submit' ? 'Đang gửi duyệt...' : 'Gửi đề xuất duyệt'}</span>
+          </button>
+        )}
       </div>
     </div>
   </div>

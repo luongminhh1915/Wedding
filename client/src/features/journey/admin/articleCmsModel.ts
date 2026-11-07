@@ -1,5 +1,5 @@
 export const ARTICLE_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
-const managedImage = /^\/uploads\/articles\/[a-fA-F0-9]{32}\.(jpg|png|webp)$/;
+const managedImage = /^(\/uploads\/articles\/[a-fA-F0-9]{32}\.(jpg|png|webp)|\/blog\/[a-zA-Z0-9_\-\.]+\.(jpg|png|webp))$/;
 export type CmsActor = { id: string | undefined; token: string | null; revision: number; role: string | undefined };
 type CmsSession = { user: { id: string; role: string } | null; token: string | null; sessionRevision: number };
 
@@ -25,6 +25,7 @@ export function requireUploadedArticleImage(value: unknown): string {
 /** Keep stored upload paths portable when frontend and API use different origins. */
 export function articleImageSrc(value?: string | null, apiBase = import.meta.env?.VITE_API_URL || ""): string {
   if (!value) return "";
+  if (value.startsWith("/blog/")) return value;
   if (managedImage.test(value)) return `${apiBase.replace(/\/$/, "")}${value}`;
   try {
     const url = new URL(value);

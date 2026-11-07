@@ -25,6 +25,52 @@ namespace Wedding.Tests;
 
 public class ListingPublicationTests
 {
+    [Theory]
+    [InlineData("Moderator")] [InlineData("SuperAdmin")]
+    public async Task StaffEditsAndSubmitsCanonicalDraftWithoutRewritingPublicMediaPricingOrFinancialHistory(string role)
+    {
+        await using var f = await Fixture.Create();
+        var actor = new Current(role == "Moderator" ? f.Moderator.Id : f.Admin.Id, role);
+        var original = await f.LiveSnapshot(); var financial = await f.FinancialSnapshot();
+        var pricingCount = await f.Db.ServiceItems.CountAsync();
+        await new UpdateListingCommandHandler(f.Db, actor).Handle(f.Update("Staff proposed title", [NewImage], new(Notes: "Staff draft")) with {
+            Pricing = new(1800, Regions: "Hà Nội", CancellationPolicy: Cancellation) }, default);
+        Assert.Equal(original, await f.LiveSnapshot()); Assert.Equal(financial, await f.FinancialSnapshot());
+        Assert.Equal(pricingCount, await f.Db.ServiceItems.CountAsync());
+        var editor = await new GetListingEditorQueryHandler(f.Db, actor).Handle(new(f.Listing.Id), default);
+        Assert.Equal("Staff proposed title", editor.Title); Assert.Equal("Draft", editor.LatestRevision?.Status);
+        Assert.Equal(NewImage, Assert.Single(editor.Media).MediaUrl); Assert.Equal(1800, editor.Pricing?.BasePrice);
+        var draftAudit = await f.Db.AuditLogs.SingleAsync(row => row.Action == "ListingRevision.SaveDraft");
+        Assert.Equal(actor.UserId, draftAudit.ActorId); Assert.Equal(role, draftAudit.ActorRole);
+        await new SubmitForApprovalCommandHandler(f.Db, actor).Handle(new(f.Listing.Id), default);
+        Assert.Equal(original, await f.LiveSnapshot()); Assert.Equal(financial, await f.FinancialSnapshot());
+        Assert.Equal("Pending", (await f.Editor()).LatestRevision?.Status);
+        var submitAudit = await f.Db.AuditLogs.SingleAsync(row => row.Action == "ListingRevision.Submit");
+        Assert.Equal(role, submitAudit.ActorRole); Assert.Equal(actor.UserId, submitAudit.ActorId);
+        Assert.True(await ControllerAllows(nameof(ListingsController.UpdateListing), role));
+        Assert.True(await ControllerAllows(nameof(ListingsController.SubmitForApproval), role));
+        Assert.False(await ControllerAllows(nameof(ListingsController.CreateListing), role));
+        await f.Approve(); Assert.Equal("Staff proposed title", (await f.Public()).Title);
+        Assert.Equal(financial, await f.FinancialSnapshot());
+    }
+
+    [Theory]
+    [InlineData("forged")] [InlineData("unknown")] [InlineData("mismatch")] [InlineData("inactive")]
+    public async Task StaffEditorSubmitAndImageAccessRejectForgedOrInactivePersistedIdentity(string identity)
+    {
+        await using var f = await Fixture.Create();
+        var actor = identity switch {
+            "forged" => new Current(f.Customer.Id, "SuperAdmin"), "unknown" => new Current(Guid.NewGuid(), "Moderator"),
+            "mismatch" => new Current(f.Moderator.Id, "SuperAdmin"), _ => f.Staff };
+        if (identity == "inactive") { f.Moderator.SetStatus(false); await f.Db.SaveChangesAsync(); }
+        var before = await f.FullSnapshot();
+        await Assert.ThrowsAsync<DomainException>(() => new UpdateListingCommandHandler(f.Db, actor).Handle(f.Update("Unauthorized staff edit"), default));
+        await Assert.ThrowsAsync<DomainException>(() => new SubmitForApprovalCommandHandler(f.Db, actor).Handle(new(f.Listing.Id), default));
+        await Assert.ThrowsAsync<DomainException>(() => new GetListingEditorQueryHandler(f.Db, actor).Handle(new(f.Listing.Id), default));
+        await Assert.ThrowsAsync<DomainException>(() => ListingAccess.RequireImageUploadAccessAsync(f.Db, actor, default));
+        Assert.Equal(before, await f.FullSnapshot());
+    }
+
     [Fact]
     public async Task StudioAlbumsAndLatestUpdateStayPrivateUntilApprovedAndRetainFinancialSnapshots()
     {
@@ -254,7 +300,15 @@ public class ListingPublicationTests
             default: f.Db.Entry(f.Category).Property(item => item.IsActive).CurrentValue = false; break;
         }
         await f.Db.SaveChangesAsync(); var before = await f.FullSnapshot();
-        await Assert.ThrowsAsync<DomainException>(() => f.Approve()); Assert.Equal(before, await f.FullSnapshot());
+        if (condition is "owner-disabled" or "category-disabled")
+        {
+            await Assert.ThrowsAsync<DomainException>(() => f.Approve()); Assert.Equal(before, await f.FullSnapshot());
+        }
+        else
+        {
+            await f.Approve();
+            Assert.Equal("Needs verification", (await f.Public()).Title);
+        }
     }
 
     [Fact]

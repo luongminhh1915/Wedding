@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wedding Match - Product Development Journey</title>
+    <style>
+      :root {
+        --ivory: #fff9f3;
+        --paper: #fffdf9;
+        --ink: #28364a;
+        --muted: #667083;
+        --coral: #f7b7b2;
+        --coral-deep: #b96f69;
+        --sage: #a8c3ae;
+        --sage-deep: #52735d;
+        --gold: #d9ae76;
+        --gold-deep: #9a6a32;
+        --navy: #263957;
+        --line: rgba(154, 106, 50, 0.2);
+        --shadow: 0 20px 52px rgba(61, 47, 34, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #e9e2da;
+        color: var(--ink);
+        font-family: Aptos, "Segoe UI", Arial, sans-serif;
+      }
+
+      .deck {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .slide {
+        position: relative;
+        isolation: isolate;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        padding: 54px 72px 48px;
+        background:
+          radial-gradient(circle at 8% 12%, rgba(247, 183, 178, 0.26), transparent 21%),
+          radial-gradient(circle at 91% 18%, rgba(168, 195, 174, 0.2), transparent 21%),
+          linear-gradient(135deg, var(--ivory), #fffaf4 65%, #fff5ed);
+      }
+
+      .slide::before,
+      .slide::after {
+        position: absolute;
+        z-index: -1;
+        content: "";
+        border-radius: 999px;
+        pointer-events: none;
+      }
+
+      .slide::before {
+        right: -120px;
+        bottom: -150px;
+        width: 440px;
+        height: 440px;
+        border: 54px solid rgba(217, 174, 118, 0.1);
+      }
+
+      .slide::after {
+        top: 104px;
+        left: -124px;
+        width: 260px;
+        height: 260px;
+        border: 30px solid rgba(247, 183, 178, 0.1);
+      }
+
+      .slide-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 17px;
+      }
+
+      .eyebrow,
+      .slide-number {
+        margin: 0;
+        color: var(--gold-deep);
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: 2.2px;
+        text-transform: uppercase;
+      }
+
+      .slide-number {
+        color: var(--muted);
+        letter-spacing: 1.6px;
+      }
+
+      h1, h2, h3, p { margin: 0; }
+
+      h1 {
+        max-width: 1520px;
+        color: var(--ink);
+        font-size: 57px;
+        font-weight: 800;
+        letter-spacing: -1.35px;
+        line-height: 1.05;
+      }
+
+      .subtitle {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 24px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .gold-rule {
+        width: 134px;
+        height: 5px;
+        margin: 21px 0 24px;
+        border-radius: 99px;
+        background: linear-gradient(90deg, var(--gold), var(--coral));
+      }
+
+      .screen {
+        position: relative;
+        overflow: hidden;
+        background: #f5eee6;
+        border: 1px solid rgba(217, 174, 118, 0.56);
+        border-radius: 19px;
+        box-shadow: 0 12px 29px rgba(53, 42, 32, 0.15);
+      }
+
+      .screen img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top center;
+      }
+
+      .screen .evidence-chip {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+      }
+
+      .evidence-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 29px;
+        padding: 5px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        border-radius: 999px;
+        background: rgba(255, 253, 249, 0.94);
+        box-shadow: 0 3px 9px rgba(38, 57, 87, 0.11);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.72px;
+        line-height: 1.1;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .evidence-chip.live { color: #315b47; background: rgba(235, 247, 238, 0.96); }
+      .evidence-chip.hosted { color: #875c24; background: rgba(255, 244, 221, 0.96); }
+      .evidence-chip.qa { color: #73572b; background: rgba(255, 249, 231, 0.96); }
+      .evidence-chip.local { color: #995851; background: rgba(255, 239, 237, 0.96); }
+      .evidence-chip.admin { color: #37536f; background: rgba(237, 245, 255, 0.96); }
+
+      .slide-foot {
+        position: absolute;
+        right: 72px;
+        bottom: 28px;
+        left: 72px;
+        padding-top: 13px;
+        border-top: 1px solid var(--line);
+        color: #666e78;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      /* Slide 12 */
+      .journey-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        margin-top: 2px;
+      }
+
+      .phase-card {
+        min-height: 723px;
+        overflow: hidden;
+        border: 1px solid rgba(217, 174, 118, 0.42);
+        border-radius: 24px;
+        background: rgba(255, 253, 249, 0.86);
+        box-shadow: var(--shadow);
+      }
+
+      .phase-card .screen { height: 380px; border: 0; border-radius: 0; box-shadow: none; }
+      .phase-card:nth-child(2) .screen img { object-position: top center; }
+      .phase-card:nth-child(3) .screen img { object-position: top center; }
+      .phase-card:nth-child(4) .screen img { object-position: top center; }
+
+      .phase-body { padding: 22px 23px 20px; }
+
+      .phase-index {
+        margin-bottom: 10px;
+        color: var(--gold-deep);
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 1.75px;
+        text-transform: uppercase;
+      }
+
+      .phase-body h2 {
+        min-height: 61px;
+        color: var(--ink);
+        font-size: 27px;
+        font-weight: 800;
+        line-height: 1.12;
+      }
+
+      .phase-date {
+        margin-top: 7px;
+        color: var(--coral-deep);
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .phase-body p:last-child {
+        margin-top: 17px;
+        color: #526071;
+        font-size: 18px;
+        line-height: 1.42;
+      }
+
+      /* Slide 13 */
+      #slide13 h1 {
+        max-width: none;
+        font-size: 48px;
+        letter-spacing: -1px;
+      }
+
+      .evolution-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-top: 3px;
+      }
+
+      .evolution-card {
+        min-height: 739px;
+        padding: 20px;
+        border: 1px solid rgba(217, 174, 118, 0.42);
+        border-radius: 24px;
+        background: rgba(255, 253, 249, 0.9);
+        box-shadow: var(--shadow);
+      }
+
+      .evolution-card h2 {
+        margin-bottom: 16px;
+        color: var(--ink);
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .compare-image {
+        position: relative;
+      }
+
+      .compare-image + .compare-image { margin-top: 14px; }
+
+      .compare-image .screen { height: 200px; }
+      .compare-image.tall-before .screen { height: 200px; }
+      .compare-image .screen img {
+        transform: scale(1.12);
+        transform-origin: top center;
+      }
+      .compare-image.discovery-before .screen img { object-position: top center; }
+
+      .compare-label {
+        position: absolute;
+        top: 11px;
+        left: 11px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: var(--navy);
+        color: white;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 1.2px;
+        line-height: 1;
+      }
+
+      .compare-label.after { background: var(--coral-deep); }
+
+      .compare-caption {
+        margin: 8px 2px 0;
+        color: #697383;
+        font-size: 14px;
+        line-height: 1.24;
+      }
+
+      .compare-arrow {
+        position: absolute;
+        z-index: 2;
+        right: 17px;
+        bottom: -13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border: 2px solid var(--ivory);
+        border-radius: 50%;
+        background: var(--gold);
+        color: white;
+        font-size: 17px;
+        font-weight: 900;
+      }
+
+      .change-copy {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .change-copy h3 {
+        margin-bottom: 5px;
+        color: var(--gold-deep);
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 1.1px;
+        text-transform: uppercase;
+      }
+
+      .change-copy p {
+        color: #4f5e70;
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      /* Slide 14 */
+      .workflows-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px;
+        margin-top: 2px;
+      }
+
+      .workflow-card {
+        display: grid;
+        grid-template-columns: 56% 44%;
+        min-height: 366px;
+        overflow: hidden;
+        border: 1px solid rgba(217, 174, 118, 0.44);
+        border-radius: 23px;
+        background: rgba(255, 253, 249, 0.9);
+        box-shadow: var(--shadow);
+      }
+
+      .workflow-card .screen { margin: 10px 0 10px 10px; border-radius: 16px; }
+      .workflow-card .screen img { object-position: top center; }
+
+      .workflow-copy {
+        display: flex;
+        flex-direction: column;
+        padding: 18px 18px 14px;
+      }
+
+      .workflow-copy h2 {
+        margin-bottom: 11px;
+        color: var(--ink);
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .detail-line { margin-bottom: 11px; }
+
+      .detail-line h3 {
+        margin-bottom: 3px;
+        color: var(--gold-deep);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .detail-line p {
+        color: #4d5d6e;
+        font-size: 16px;
+        line-height: 1.29;
+      }
+
+      .workflow-copy .evidence-chip {
+        align-self: flex-start;
+        margin-top: auto;
+      }
+
+      /* Slide 15 */
+      .deployment-layout {
+        display: grid;
+        grid-template-columns: 42% 58%;
+        gap: 30px;
+        align-items: stretch;
+        margin-top: 0;
+      }
+
+      .deployment-left,
+      .deployment-right { min-width: 0; }
+
+      .process-title,
+      .milestones-title,
+      .validation-title {
+        margin-bottom: 14px;
+        color: var(--gold-deep);
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 1.45px;
+        text-transform: uppercase;
+      }
+
+      .process-flow {
+        position: relative;
+        display: grid;
+        gap: 9px;
+        margin-bottom: 24px;
+      }
+
+      .process-flow::before {
+        position: absolute;
+        top: 43px;
+        bottom: 42px;
+        left: 25px;
+        width: 3px;
+        content: "";
+        border-radius: 4px;
+        background: linear-gradient(var(--coral), var(--gold), var(--sage));
+      }
+
+      .process-step {
+        display: grid;
+        grid-template-columns: 53px 1fr;
+        gap: 14px;
+        align-items: center;
+        min-height: 62px;
+      }
+
+      .process-step span {
+        z-index: 1;
+        display: grid;
+        width: 51px;
+        height: 51px;
+        place-items: center;
+        border: 4px solid var(--ivory);
+        border-radius: 50%;
+        background: var(--navy);
+        box-shadow: 0 4px 11px rgba(38, 57, 87, 0.24);
+        color: white;
+        font-size: 17px;
+        font-weight: 900;
+      }
+
+      .process-step:nth-child(3) span { background: var(--coral-deep); }
+      .process-step:nth-child(4) span { background: var(--gold-deep); }
+      .process-step:nth-child(5) span { background: var(--sage-deep); }
+      .process-step:nth-child(6) span { background: var(--navy); }
+
+      .process-step h2 {
+        color: var(--ink);
+        font-size: 23px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .process-step p {
+        margin-top: 2px;
+        color: #627082;
+        font-size: 15px;
+        line-height: 1.25;
+      }
+
+      .milestones {
+        padding: 18px 20px;
+        border: 1px solid rgba(217, 174, 118, 0.42);
+        border-radius: 20px;
+        background: rgba(255, 253, 249, 0.85);
+        box-shadow: 0 12px 28px rgba(54, 42, 30, 0.08);
+      }
+
+      .milestones ul,
+      .validation-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .milestones li {
+        display: grid;
+        grid-template-columns: 102px 1fr;
+        gap: 10px;
+        color: #4f5f70;
+        font-size: 16px;
+        line-height: 1.27;
+      }
+
+      .milestones time { color: var(--coral-deep); font-weight: 900; }
+
+      .deployment-right .screen { height: 500px; }
+      .deployment-right .screen img { object-position: top center; }
+
+      .public-caption {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 10px 4px 16px;
+        color: #607082;
+        font-size: 15px;
+      }
+
+      .validation {
+        padding: 18px 20px;
+        border: 1px solid rgba(168, 195, 174, 0.64);
+        border-radius: 20px;
+        background: rgba(239, 248, 241, 0.76);
+      }
+
+      .validation-list li {
+        position: relative;
+        padding-left: 21px;
+        color: #496254;
+        font-size: 17px;
+        line-height: 1.3;
+      }
+
+      .validation-list li::before {
+        position: absolute;
+        top: 6px;
+        left: 0;
+        width: 9px;
+        height: 9px;
+        content: "";
+        border-radius: 50%;
+        background: var(--sage-deep);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="deck">
+      <article id="slide12" class="slide" aria-label="Slide 12: Product development journey">
+        <header class="slide-header">
+          <p class="eyebrow">Wedding Match / EXE201 Outcome 3</p>
+          <p class="slide-number">Slide 12</p>
+        </header>
+        <h1>OUR PRODUCT DEVELOPMENT JOURNEY</h1>
+        <p class="subtitle">14 Documented Milestones | Oct 16 – Nov 5, 2026</p>
+        <div class="gold-rule"></div>
+
+        <section class="journey-grid" aria-label="Four documented development phases">
+          <article class="phase-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-16/IMG062_desktop.jpg" alt="Early navy Wedding Match homepage" />
+              <span class="evidence-chip local">Recorded local / historical</span>
+            </div>
+            <div class="phase-body">
+              <p class="phase-index">01 / Foundation</p>
+              <h2>Early customer entry point</h2>
+              <p class="phase-date">Oct 16–18</p>
+              <p>Initial navy UI, responsive design, customer onboarding and the planning journey.</p>
+            </div>
+          </article>
+          <article class="phase-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-19/IMG044_phase3a-services-desktop.jpg" alt="Historical vendor service-management interface" />
+              <span class="evidence-chip qa">Historical browser QA</span>
+            </div>
+            <div class="phase-body">
+              <p class="phase-index">02 / Core workflows</p>
+              <h2>Workflows by role</h2>
+              <p class="phase-date">Oct 19–22</p>
+              <p>Vendor management, combos, moderation, notifications and role-based navigation.</p>
+            </div>
+          </article>
+          <article class="phase-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-30/IMG014_live-home-after.jpg" alt="Hosted live homepage after the Vendor Studio release" />
+              <span class="evidence-chip hosted">Hosted live</span>
+            </div>
+            <div class="phase-body">
+              <p class="phase-index">03 / Deploy &amp; redesign</p>
+              <h2>Public identity takes shape</h2>
+              <p class="phase-date">Oct 23–30</p>
+              <p>Public website launch, ivory/coral identity and a documented Vendor Studio workspace.</p>
+            </div>
+          </article>
+          <article class="phase-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-11-05/IMG010_live-blog.jpg" alt="Hosted live Wedding Match Blog" />
+              <span class="evidence-chip hosted">Hosted live</span>
+            </div>
+            <div class="phase-body">
+              <p class="phase-index">04 / Public UX refinement</p>
+              <h2>Marketplace &amp; Blog refinement</h2>
+              <p class="phase-date">Nov 1–5</p>
+              <p>Mobile improvements, homepage redesign, marketplace browsing and server-backed Blog.</p>
+            </div>
+          </article>
+        </section>
+        <p class="slide-foot">Evidence note: capture dates come from the product-history catalog and report milestones. Historical QA or local captures document interfaces; they do not claim public end-to-end verification.</p>
+      </article>
+
+      <article id="slide13" class="slide" aria-label="Slide 13: Product evolution">
+        <header class="slide-header">
+          <p class="eyebrow">Wedding Match / EXE201 Outcome 3</p>
+          <p class="slide-number">Slide 13</p>
+        </header>
+        <h1>FROM BASIC INTERFACES TO A WEDDING MARKETPLACE</h1>
+        <p class="subtitle">Three documented UI shifts, shown with historical and current product captures</p>
+        <div class="gold-rule"></div>
+
+        <section class="evolution-grid" aria-label="Before and after comparisons">
+          <article class="evolution-card">
+            <h2>Visual Identity</h2>
+            <div class="compare-image">
+              <div class="screen">
+                <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-16/IMG062_desktop.jpg" alt="Navy homepage recorded on October 16" />
+              </div>
+              <span class="compare-label">Before</span>
+              <span class="compare-arrow">↓</span>
+              <p class="compare-caption">Navy homepage / recorded local historical capture</p>
+            </div>
+            <div class="compare-image">
+              <div class="screen">
+                <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-11-03/IMG002_live-home-desktop.jpg" alt="Ivory and coral hosted Wedding Match homepage" />
+              </div>
+              <span class="compare-label after">After</span>
+              <p class="compare-caption">Ivory/coral homepage / hosted live capture</p>
+            </div>
+            <div class="change-copy">
+              <h3>What changed</h3>
+              <p>Warm marketplace identity replaced the navy utility-led visual system.</p>
+            </div>
+            <div class="change-copy">
+              <h3>Intended user benefit</h3>
+              <p>A clearer, more welcoming first impression for couples.</p>
+            </div>
+          </article>
+
+          <article class="evolution-card">
+            <h2>Vendor Experience</h2>
+            <div class="compare-image tall-before">
+              <div class="screen">
+                <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-19/IMG044_phase3a-services-desktop.jpg" alt="Historical vendor service management view" />
+              </div>
+              <span class="compare-label">Before</span>
+              <span class="compare-arrow">↓</span>
+              <p class="compare-caption">Service editing / historical browser QA</p>
+            </div>
+            <div class="compare-image">
+              <div class="screen">
+                <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-30/IMG017_studio-desktop.jpg" alt="Vendor Studio with form and live preview" />
+              </div>
+              <span class="compare-label after">After</span>
+              <p class="compare-caption">Vendor Studio / recorded local capture</p>
+            </div>
+            <div class="change-copy">
+              <h3>What changed</h3>
+              <p>Editing and live preview now share a full-screen workspace.</p>
+            </div>
+            <div class="change-copy">
+              <h3>Intended user benefit</h3>
+              <p>Fewer context switches while preparing a service listing.</p>
+            </div>
+          </article>
+
+          <article class="evolution-card">
+            <h2>Service Discovery</h2>
+            <div class="compare-image discovery-before">
+              <div class="screen">
+                <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-20/IMG058_service-category-desktop.jpg" alt="Historical service category and filter view" />
+              </div>
+              <span class="compare-label">Before</span>
+              <span class="compare-arrow">↓</span>
+              <p class="compare-caption">Category and filter view / historical browser QA</p>
+            </div>
+            <div class="compare-image">
+              <div class="screen">
+                <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-11-04/IMG007_live-browse-desktop.jpg" alt="Hosted live marketplace browse page" />
+              </div>
+              <span class="compare-label after">After</span>
+              <p class="compare-caption">Marketplace browse page / hosted live capture</p>
+            </div>
+            <div class="change-copy">
+              <h3>What changed</h3>
+              <p>Marketplace browsing added category filters, comparison access and richer service cards.</p>
+            </div>
+            <div class="change-copy">
+              <h3>Intended user benefit</h3>
+              <p>Faster browsing across services that fit a couple’s needs.</p>
+            </div>
+          </article>
+        </section>
+        <p class="slide-foot">Status is shown per source: “hosted live” validates a recorded public surface; “historical browser QA” and “recorded local” do not claim public deployment or full workflow acceptance.</p>
+      </article>
+
+      <article id="slide14" class="slide" aria-label="Slide 14: Functional workflows">
+        <header class="slide-header">
+          <p class="eyebrow">Wedding Match / EXE201 Outcome 3</p>
+          <p class="slide-number">Slide 14</p>
+        </header>
+        <h1>TURNING IDEAS INTO FUNCTIONAL WORKFLOWS</h1>
+        <p class="subtitle">Documented product surfaces across customer, vendor, marketplace and operational roles</p>
+        <div class="gold-rule"></div>
+
+        <section class="workflows-grid" aria-label="Functional workflow groups">
+          <article class="workflow-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-18/IMG034_customer-journey-final-qa.jpg" alt="Customer planning journey screenshot" />
+            </div>
+            <div class="workflow-copy">
+              <h2>Customer Journey</h2>
+              <div class="detail-line"><h3>Key features</h3><p>Onboarding, planning, saved choices, combos and enquiries.</p></div>
+              <div class="detail-line"><h3>User value</h3><p>Guided wedding preparation in one place.</p></div>
+              <span class="evidence-chip qa">Historical browser QA / fixture data</span>
+            </div>
+          </article>
+          <article class="workflow-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/01_Anh_san_pham_theo_moc/2026-10-30/IMG017_studio-desktop.jpg" alt="Vendor Studio workspace screenshot" />
+            </div>
+            <div class="workflow-copy">
+              <h2>Vendor Workspace</h2>
+              <div class="detail-line"><h3>Key features</h3><p>Service listings, pricing, combo management and Vendor Studio.</p></div>
+              <div class="detail-line"><h3>User value</h3><p>One workspace to prepare content and inspect the public result.</p></div>
+              <span class="evidence-chip local">Recorded local / environment unknown</span>
+            </div>
+          </article>
+          <article class="workflow-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/05_Web_hien_tai_2026-11-05/02-browse-desktop/part-01.jpg" alt="Live public marketplace browse page" />
+            </div>
+            <div class="workflow-copy">
+              <h2>Marketplace &amp; Content</h2>
+              <div class="detail-line"><h3>Key features</h3><p>Categories, filters, service discovery, comparison and Blog.</p></div>
+              <div class="detail-line"><h3>User value</h3><p>Discover providers and wedding guidance with less searching.</p></div>
+              <span class="evidence-chip live">Live public / captured Nov 5</span>
+            </div>
+          </article>
+          <article class="workflow-card">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/05_Web_hien_tai_2026-11-05/20-admin-overview/part-01.jpg" alt="Live administrator overview screenshot" />
+            </div>
+            <div class="workflow-copy">
+              <h2>Platform Operations</h2>
+              <div class="detail-line"><h3>Key features</h3><p>Role-based navigation, moderation, notifications and administration.</p></div>
+              <div class="detail-line"><h3>User value</h3><p>Role-aware tools for reviewing and operating the platform.</p></div>
+              <span class="evidence-chip admin">Live admin / read-only capture</span>
+            </div>
+          </article>
+        </section>
+        <p class="slide-foot">Verification status identifies the type of evidence, not a blanket acceptance claim. The live-admin capture was reviewed without performing a mutation; authenticated end-to-end coverage remains separately scoped.</p>
+      </article>
+
+      <article id="slide15" class="slide" aria-label="Slide 15: Public deployment">
+        <header class="slide-header">
+          <p class="eyebrow">Wedding Match / EXE201 Outcome 3</p>
+          <p class="slide-number">Slide 15</p>
+        </header>
+        <h1>FROM LOCAL DEVELOPMENT TO PUBLIC DEPLOYMENT</h1>
+        <p class="subtitle">A documented release path with visible public evidence and clear validation boundaries</p>
+        <div class="gold-rule"></div>
+
+        <section class="deployment-layout" aria-label="Deployment workflow, milestones and validation boundaries">
+          <div class="deployment-left">
+            <p class="process-title">Release process</p>
+            <div class="process-flow">
+              <article class="process-step"><span>1</span><div><h2>Local Development</h2><p>Build customer, vendor and operations surfaces in the project workspace.</p></div></article>
+              <article class="process-step"><span>2</span><div><h2>Testing &amp; Fixes</h2><p>Run targeted checks and resolve issues within the documented release scope.</p></div></article>
+              <article class="process-step"><span>3</span><div><h2>Hosting Configuration</h2><p>Prepare same-origin hosting, private configuration and controlled deployment checks.</p></div></article>
+              <article class="process-step"><span>4</span><div><h2>Public Deployment</h2><p>Publish verified artifacts and confirm the public website surface.</p></div></article>
+              <article class="process-step"><span>5</span><div><h2>Continuous Improvement</h2><p>Refine mobile, homepage, marketplace and Blog experiences in later milestones.</p></div></article>
+            </div>
+            <section class="milestones">
+              <p class="milestones-title">Key milestones</p>
+              <ul>
+                <li><time>Oct 23–24</time><span>Initial public deployment</span></li>
+                <li><time>Nov 2</time><span>Mobile and operational updates</span></li>
+                <li><time>Nov 3</time><span>Homepage redesign</span></li>
+                <li><time>Nov 4</time><span>Marketplace update</span></li>
+                <li><time>Nov 5</time><span>Server-backed Blog</span></li>
+              </ul>
+            </section>
+          </div>
+
+          <div class="deployment-right">
+            <div class="screen">
+              <img src="../../output/product-history-20261105/05_Web_hien_tai_2026-11-05/01-home-desktop/part-01.jpg" alt="Wedding Match public homepage captured on November 5" />
+              <span class="evidence-chip live">Live public / Nov 5</span>
+            </div>
+            <p class="public-caption"><span>Current public website capture</span><span>Source: weddingmatch.website</span></p>
+            <section class="validation">
+              <p class="validation-title">Remaining validation</p>
+              <ul class="validation-list">
+                <li>Authenticated workflow testing</li>
+                <li>End-to-end booking and payment verification</li>
+                <li>Vendor usability testing</li>
+              </ul>
+            </section>
+          </div>
+        </section>
+        <p class="slide-foot">Public captures and deployment reports verify published surfaces. They do not prove every authenticated workflow, payment path, performance condition or vendor usability outcome.</p>
+      </article>
+    </main>
+  </body>
+</html>

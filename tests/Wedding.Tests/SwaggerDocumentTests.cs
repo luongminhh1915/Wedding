@@ -56,7 +56,7 @@ public class SwaggerDocumentTests
 
     [Theory]
     [InlineData(nameof(UploadController.UploadInvitationImage), "Customer", "file", 9L * 1024 * 1024)]
-    [InlineData(nameof(UploadController.UploadImages), "VendorOwner", "files", 81L * 1024 * 1024)]
+    [InlineData(nameof(UploadController.UploadImages), "VendorOwner,Moderator,SuperAdmin", "files", 81L * 1024 * 1024)]
     public void UploadOpenApiBindingRetainsRoleFormFieldAndRequestLimits(string actionName, string role, string formField, long limit)
     {
         Assert.NotNull(typeof(UploadController).GetCustomAttribute<AuthorizeAttribute>());

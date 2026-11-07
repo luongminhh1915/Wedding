@@ -21,6 +21,7 @@ const hooks = moduleUrl(`
     if (!(index in state.slots)) state.slots[index] = { current: initial };
     return state.slots[index];
   }
+  export function useEffect() {}
 `);
 const jsx = moduleUrl(`
   import { jsx as originalJsx, jsxs as originalJsxs, Fragment } from ${JSON.stringify(import.meta.resolve('react/jsx-runtime'))};
@@ -46,8 +47,9 @@ const leaves = moduleUrl(`
   export const Pagination = () => null, ServiceDetails = () => null, ComboPhoto = () => null, ComboTemplateEditor = () => null, ComboLifecycleCard = () => null;
   export const listingImagePreview = url => url;
   export const vnd = value => String(value), comboVnd = value => String(value);
-  export const useModerationQueue = () => ({data:{items:[],pendingCount:0}});
+  export const useModerationQueue = () => ({data:{items:[],pendingCount:0}}), useAutoApproveAll = () => ({ isPending: false, mutate: () => {}, mutateAsync: async () => ({ approvedListings: 0, approvedServices: 0, approvedCombos: 0, totalApproved: 0 }) });
   export function ApprovalConfirmationDialog(props) { state.dialogs.push(props); return createElement('div', {role:'dialog'}, props.details.title); }
+  export const BulkModerationConfirmationDialog = () => null;
   export const useCatalog = () => ({data:[]}), useComboTemplates = () => ({data:[]}), useRules = () => ({data:[]});
 `);
 const mutationHooks = moduleUrl(`
@@ -83,6 +85,7 @@ const { ReviewDetail } = await actualModule('../src/features/admin/ModerationQue
   '../vendor-portal/components/listingEditModel': leaves, '../journey/api': leaves,
   '../journey/combo/comboTemplateEditorModel': comboModel, './useModerationQueue': leaves,
   './moderationQueueModel': model, './ApprovalConfirmationDialog': leaves,
+  './bulkModerationModel': new URL('../src/features/admin/bulkModerationModel.ts', import.meta.url).href, './BulkModerationConfirmationDialog': leaves,
 });
 const { ReviewItem } = await actualModule('../src/features/journey/admin/ComboAdministration.tsx', {
   '../api': leaves, '../comboApi': mutationHooks, '../../../store/authStore': leaves,

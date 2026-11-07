@@ -86,7 +86,7 @@ public class CommissionRateResolverTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task ServiceScopeTakesHighestPriority()
+    public async Task CandidatePreview_ServiceScopeTakesHighestPriority_WithoutActivatingIt()
     {
         AddApprovedRule(CommissionRuleScope.System, rate: 0.10m);
         AddApprovedRule(CommissionRuleScope.Category, categoryId: _category.Id, rate: 0.09m);
@@ -94,7 +94,7 @@ public class CommissionRateResolverTests : IAsyncDisposable
         AddApprovedRule(CommissionRuleScope.VendorCategory, categoryId: _category.Id, vendorId: _vendor.Id, rate: 0.07m);
         AddApprovedRule(CommissionRuleScope.Service, serviceItemId: _service.Id, rate: 0.06m, version: "service-v1");
 
-        var resolved = await CommissionRateResolver.ResolveRateAsync(
+        var resolved = await CommissionRateResolver.PreviewCandidateRateAsync(
             _db, _vendor.Id, _category.Id, _service.Id, null, 0.12m, 0.08m, _now);
 
         Assert.Equal(0.06m, resolved.Rate);
@@ -103,14 +103,14 @@ public class CommissionRateResolverTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task VendorCategoryScopeOverridesVendorCategoryAndSystem()
+    public async Task CandidatePreview_VendorCategoryScopeOverridesVendorCategoryAndSystem()
     {
         AddApprovedRule(CommissionRuleScope.System, rate: 0.10m);
         AddApprovedRule(CommissionRuleScope.Category, categoryId: _category.Id, rate: 0.09m);
         AddApprovedRule(CommissionRuleScope.Vendor, vendorId: _vendor.Id, rate: 0.08m);
         AddApprovedRule(CommissionRuleScope.VendorCategory, categoryId: _category.Id, vendorId: _vendor.Id, rate: 0.07m, version: "vc-v1");
 
-        var resolved = await CommissionRateResolver.ResolveRateAsync(
+        var resolved = await CommissionRateResolver.PreviewCandidateRateAsync(
             _db, _vendor.Id, _category.Id, null, null, 0.12m, 0.08m, _now);
 
         Assert.Equal(0.07m, resolved.Rate);
@@ -119,13 +119,13 @@ public class CommissionRateResolverTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task VendorScopeOverridesCategoryAndSystem()
+    public async Task CandidatePreview_VendorScopeOverridesCategoryAndSystem()
     {
         AddApprovedRule(CommissionRuleScope.System, rate: 0.10m);
         AddApprovedRule(CommissionRuleScope.Category, categoryId: _category.Id, rate: 0.09m);
         AddApprovedRule(CommissionRuleScope.Vendor, vendorId: _vendor.Id, rate: 0.08m, version: "v-v1");
 
-        var resolved = await CommissionRateResolver.ResolveRateAsync(
+        var resolved = await CommissionRateResolver.PreviewCandidateRateAsync(
             _db, _vendor.Id, _category.Id, null, null, 0.12m, 0.08m, _now);
 
         Assert.Equal(0.08m, resolved.Rate);
@@ -134,12 +134,12 @@ public class CommissionRateResolverTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CategoryScopeOverridesSystem()
+    public async Task CandidatePreview_CategoryScopeOverridesSystem()
     {
         AddApprovedRule(CommissionRuleScope.System, rate: 0.10m);
         AddApprovedRule(CommissionRuleScope.Category, categoryId: _category.Id, rate: 0.09m, version: "cat-v1");
 
-        var resolved = await CommissionRateResolver.ResolveRateAsync(
+        var resolved = await CommissionRateResolver.PreviewCandidateRateAsync(
             _db, _vendor.Id, _category.Id, null, null, 0.12m, 0.08m, _now);
 
         Assert.Equal(0.09m, resolved.Rate);
@@ -148,11 +148,11 @@ public class CommissionRateResolverTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SystemScopeOverridesFallback()
+    public async Task CandidatePreview_SystemScopeOverridesFallback()
     {
         AddApprovedRule(CommissionRuleScope.System, rate: 0.10m, version: "sys-v1");
 
-        var resolved = await CommissionRateResolver.ResolveRateAsync(
+        var resolved = await CommissionRateResolver.PreviewCandidateRateAsync(
             _db, _vendor.Id, _category.Id, null, null, 0.12m, 0.08m, _now);
 
         Assert.Equal(0.10m, resolved.Rate);
@@ -227,5 +227,37 @@ public class CommissionRateResolverTests : IAsyncDisposable
         Assert.Equal(0.11m, resolved.Rate);
         Assert.Equal("LegacyVendor", resolved.RateSource);
         Assert.Null(resolved.PolicyVersion);
+    }
+
+    [Theory]
+    [InlineData(CommissionRuleScope.System, 0.11)]
+    [InlineData(CommissionRuleScope.Category, 0.11)]
+    [InlineData(CommissionRuleScope.Vendor, 0.11)]
+    [InlineData(CommissionRuleScope.VendorCategory, 0.11)]
+    [InlineData(CommissionRuleScope.Service, 0.11)]
+    [InlineData(CommissionRuleScope.System, 0.0)]
+    [InlineData(CommissionRuleScope.Category, 0.0)]
+    [InlineData(CommissionRuleScope.Vendor, 0.0)]
+    [InlineData(CommissionRuleScope.VendorCategory, 0.0)]
+    [InlineData(CommissionRuleScope.Service, 0.0)]
+    public async Task ApprovedEffectiveCandidateWithoutSignedActivationCannotChangeTransactionRate(
+        CommissionRuleScope scope, decimal legacyRate)
+    {
+        AddApprovedRule(scope,
+            categoryId: scope is CommissionRuleScope.Category or CommissionRuleScope.VendorCategory ? _category.Id : null,
+            vendorId: scope is CommissionRuleScope.Vendor or CommissionRuleScope.VendorCategory ? _vendor.Id : null,
+            serviceItemId: scope == CommissionRuleScope.Service ? _service.Id : null,
+            rate: 0.04m, version: "approved-but-not-activated");
+
+        var result = await CommissionRateResolver.ResolveRateAsync(
+            _db, _vendor.Id, _category.Id, _service.Id, null, legacyRate, 0.08m, _now);
+
+        Assert.Equal(legacyRate > 0m ? legacyRate : 0.08m, result.Rate);
+        Assert.Equal(legacyRate > 0m ? "LegacyVendor" : "CategoryDefault", result.RateSource);
+        Assert.Null(result.RuleId);
+        Assert.Null(result.PolicyVersion);
+        Assert.Equal(CommissionBasisKind.StandardService, result.BasisKind);
+        Assert.Equal(CommissionPolicyStatus.Approved, (await _db.CommissionPolicyRules.SingleAsync()).Status);
+        Assert.Empty(await _db.Commissions.ToListAsync());
     }
 }

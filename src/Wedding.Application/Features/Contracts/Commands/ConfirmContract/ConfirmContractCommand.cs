@@ -52,6 +52,11 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
         }
         if (contract.Status == ContractStatus.PendingVerification && contract.CommissionRateSnapshot.HasValue)
             throw new DomainException("Hợp đồng chờ xác nhận đã có snapshot hoa hồng cũ cần Admin/Tài chính đối chiếu; không tự gắn nguồn chính sách hoặc danh mục hiện tại vào dữ liệu đó.");
+        // Preserve the deployed positive legacy shop agreement for existing combo
+        // flows. Category-inheriting/new-basis combos cannot infer a common parent
+        // rate while component-basis and signed activation are unfinished.
+        if (contract.Lead.ComboOrderId.HasValue && contract.Vendor.CommissionRate <= 0m)
+            throw new DomainException("Chưa thể xác nhận hợp đồng combo: cần cơ sở và tỷ lệ hoa hồng được duyệt riêng cho từng thành phần cùng điều kiện kích hoạt hợp lệ. Không tự áp một tỷ lệ trên toàn bộ combo.");
         var categoryId = contract.Lead.Listing?.CategoryId
             ?? throw new DomainException("Hợp đồng chưa liên kết một dịch vụ có danh mục xác định. Cần NCC/Admin kiểm tra trước khi xác nhận.");
         var category = await ListingCategoryAccess.RequireForExistingAsync(_context, contract.VendorId, categoryId, cancellationToken);
@@ -68,19 +73,13 @@ public class ConfirmContractCommandHandler : IRequestHandler<ConfirmContractComm
                 throw new DomainException("Dịch vụ tổ chức cưới trọn gói cần cơ sở tính hoa hồng được Admin phê duyệt. Chưa thể xác nhận hợp đồng hoặc tính 12% trên toàn bộ giá trị gói.");
         }
         Guid? serviceItemId = contract.Lead.Listing?.PricingServiceItemId;
-        Guid? comboTemplateId = null;
-        if (contract.Lead.ComboOrderId.HasValue)
-        {
-            var comboOrder = await _context.ComboOrders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == contract.Lead.ComboOrderId.Value, cancellationToken);
-            comboTemplateId = comboOrder?.ComboTemplateId;
-        }
 
         var resolved = await CommissionRateResolver.ResolveRateAsync(
             _context,
             contract.VendorId,
             categoryId,
             serviceItemId,
-            comboTemplateId,
+            comboTemplateId: null,
             contract.Vendor.CommissionRate,
             category.DefaultCommissionRate,
             DateTime.UtcNow,

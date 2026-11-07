@@ -1,6 +1,6 @@
 # Wedding Match — bắt đầu tại đây khi tiếp quản
 
-Cập nhật: **22/10/2026, Asia/Ho_Chi_Minh**. Tài liệu dành cho bất kỳ coding agent/IDE nào, không cần đọc lại chat. Đây là chỉ dẫn tiếp nhận, **không tự cấp quyền thực hiện toàn bộ backlog**.
+Cập nhật: **01/11/2026, Asia/Ho_Chi_Minh**. Tài liệu dành cho bất kỳ coding agent/IDE nào, không cần đọc lại chat. Đây là chỉ dẫn tiếp nhận, **không tự cấp quyền thực hiện toàn bộ backlog**.
 
 ## 1. Dự án trong một phút
 
@@ -8,18 +8,18 @@ Wedding Match là nền tảng lập kế hoạch đám cưới kết hợp tìm
 
 Nhà cung cấp đăng ký shop → tạo dịch vụ một lần → duyệt nội dung public → tạo combo từ dịch vụ của chính shop → nhận Lead/chat → báo giá/hợp đồng → thực hiện dịch vụ. Bộ phận nội bộ có kiểm duyệt, hỗ trợ và tài chính; quyền của từng actor khác nhau.
 
-Đây là dự án môn học nhưng dự kiến thu thập dữ liệu thật và triển khai trong thời gian ngắn. **Không xem dữ liệu local là đồ bỏ, không reset/reseed để sửa lỗi.** Thương hiệu hiện tại là Wedding Match, navy + kem là màu chính, vàng là điểm nhấn. Tên Weddy trong source cũ là lịch sử, không phải yêu cầu đổi tên entity hàng loạt.
+Đây là dự án môn học đã có website và dữ liệu thật. **Không xem dữ liệu local là đồ bỏ, không reset/reseed để sửa lỗi.** Thương hiệu Wedding Match dùng tông hồng san hô/kem ấm, vàng nhạt và chữ xanh đậm theo các yêu cầu giao diện mới. Tên Weddy trong source cũ là lịch sử, không phải yêu cầu đổi tên entity hàng loạt.
 
 ## 2. Điểm dừng hiện tại — không bắt đầu lại
 
-- Branch/HEAD được kiểm: `weddy-journey` / `3596ae832faeac95fb15cc44bc0e8e62351c788b`. Có nhiều thay đổi **chưa commit và untracked**; chỉ lấy remote HEAD sẽ thiếu chức năng/migration.
-- Core Customer/Vendor, dịch vụ thống nhất, combo FixedPrice, đề xuất nội dung riêng và review Shop/Service/Combo đã có code thật. Không xây lại chúng.
-- Phase 5 mới là **backend foundation**, đã audit/sửa lỗi và test SQL. Policy/basis/adjustment request có thật; **chưa có engine công thức mới/activation/signed agreement linkage đầy đủ**. Phase 6 Negotiation và Phase 7 Partnership Contracts vẫn chưa triển khai trọn vẹn.
-- Gate backend mới nhất: **1.135 pass / 0 fail / 0 skip**, gồm actual SQL Server trong DB test unique. Targeted Phase 5: **62/62**, gồm 19 SQL-only test methods. Build API qua test-project build thành công. Còn 4 xUnit2031 warnings cũ. Xem [báo cáo audit](reports/phase5-copilot-audit-2026-10-22.md).
-- Frontend mới nhất **401/401PASS + lint/build22/10**, sau yêu cầu thông báo căn giữa và navbar theoactor;13lintwarningscũ. Browser staticSSR actualcomponents/CSS đủ6role desktop/mobile đạt layout/links; authenticated E2E toàn sản phẩm/provider/host/load/restore chưa chứng nhận. Xem [report UI](reports/notifications-actor-navbar-2026-10-22.md);392/39221/10 là lịch sử.
-- Có **17 migration trong source**. Migration17 chỉ được áp dụng trên DB test do test sở hữu; lượt audit không kết nối/migrate DB ứng dụng/production. Trạng thái DB ứng dụng hiện tại phải kiểm an toàn, không suy từ source.
-- Hosting đang tạm gác. User báo đã trả tiền `weddingmatch.website`; quyền sở hữu/DNS/host active chưa xác minh. Không tự mua hosting/deploy từ các cuộc trao đổi cũ.
-- **Sau docs, user giao thêm UI notifications/navbar; phạm vi này đã hoàn tất và cập nhật bàn giao.** Không tự tiếp backlog tài chính/deploy; agent tiếp theo vẫn phải nhận task cụ thể từ user.
+- Git01/11: `main` / `20b292b5384254c0d250766847570adbbe86bd48`. Working tree có thay đổi và file untracked; nhận toàn bộ source, không chỉ checkout HEAD. Không ép về branch/commit cũ của22/10.
+- Core Customer/Vendor, unified services, fixed combos, private content agreements, independent reviews, authoring Studio, CMS, account provisioning, email recovery và social sign-in đã có. Nguồn/trạng thái nghiệm thu chi tiết ở [đặc tả](PRODUCT_FUNCTIONAL_SPEC.md) và [handoff](AGENT_HANDOFF.md); không xây lại.
+- Website `https://weddingmatch.website/` đã deploy. Bản Studio30/10 được ghi nhận trong [release report](reports/vendor-studio-release-2026-10-30.md). Trạng thái mới01/11, hash bản đang chạy, schema host và kiểm thử phải xem Living Checkpoint/report mới; không dùng gate cũ để chứng nhận code mới.
+- Nhiệm vụ01/11: cập nhật bàn giao portable, sửa lỗi chặn release, deploy các cải tiến đã sẵn sàng. Draft/submit, batch/session auto-moderation và private document upload là phạm vi release. Owner đã [xác nhận](decisions/2026-11-01-batch-and-session-auto-moderation.md) tự duyệt cả NCC chưa xác minh sau khi Admin xác nhận bật.
+- Phase5 có policy/basis/adjustment API và UI; thứ tự scope là foundation/candidate, **Approved chưa là Active**. Không áp rate mới trước signed scoped evidence + approved basis + date. Giữ rate legacy và snapshot gốc.
+- Phase6 có entity/CQRS/API client mới, **UI chưa hoàn tất**, schema/feature gate phải xem checkpoint. Không bật API còn dang dở chỉ vì build xanh; không tự tạo policy Approved từ đàm phán. Phase7 partnership/signed evidence và kích hoạt tài chính vẫn là dependencies còn thiếu.
+- Số test trước/sau mỗi sửa, warnings/skip, migration nào chỉ test-owned và trạng thái host nằm ở checkpoint/report. Không đọc521FE trong bản dán hay17PASS/1SQLskip như bằng chứng đã kiểm toàn bộ chức năng mới.
+- Các số liệu/mệnh lệnh22–30/10 phía dưới hoặc trong report cũ là lịch sử theo scope từng lượt; chỉ quyết định nghiệp vụ còn hiệu lực được kế thừa. Yêu cầu hiện tại của owner quyết định phạm vi tiếp theo.
 
 ## 3. Đọc theo thứ tự
 
@@ -58,7 +58,7 @@ Không commit/push/reset/clean/checkout đè; không xóa untracked; không depl
 
 ## 5. Prompt chuyển tiếp — copy đoạn này cho agent mới
 
-> Tiếp quản Wedding Match trong toàn bộ worktree hiện tại. Đọc AGENTS.md, docs/START_HERE.md và Living Checkpoint đầu docs/AGENT_HANDOFF.md; sau đó đọc PRODUCT_FUNCTIONAL_SPEC, ARCHITECTURE_AND_OPERATIONS, PRODUCT_COMPLETION_ROADMAP, master checklist và decisions liên quan. Tự kiểm Git branch/HEAD/status/diff/staged/untracked/worktrees; bảo toàn mọi thay đổi. Backend foundation Phase 5 đã audit/sửa và đạt 62 targeted + 1135 full tests có SQL riêng, không đồng nghĩa activation hoàn tất. Không làm lại Customer/Vendor/services/fixed combos/private agreements/independent reviews đã có. Legacy rates/original confirmed financial snapshots/payments bất biến; Admin approval, effective date và externally signed Platform–Vendor agreement phải cùng đủ trước kích hoạt. Không dùng BookingContract hoặc content-only PrivateServiceAgreement thay partnership/negotiation. Không migrate DB ứng dụng, reset/reseed dữ liệu, deploy, commit/push hoặc tự quyết chính sách tài chính. Nếu được giao tiếp tục code, chọn một module trong roadmap, nêu gap cụ thể, triển khai và test theo rủi ro rồi cập nhật checkpoint. Nếu chỉ được giao đọc/bàn giao thì dừng sau báo cáo. Các tài liệu không tự cấp quyền làm backlog.
+> Tiếp quản Wedding Match trong toàn bộ worktree hiện tại. Đọc AGENTS.md, docs/START_HERE.md và Living Checkpoint đầu docs/AGENT_HANDOFF.md, report release mới, PRODUCT_FUNCTIONAL_SPEC, ARCHITECTURE_AND_OPERATIONS, PRODUCT_COMPLETION_ROADMAP, master checklist và decisions liên quan. Tự kiểm Git branch/HEAD/status/diff/staged/untracked/worktrees và source/caller/tests/schema/config; bảo toàn thay đổi, không ép về baseline cũ. Website đã có dữ liệu thật. Không làm lại core/Studio/CMS/auth/review đã có. Phase5 policy Approved không là Active; Phase6 foundation/API client không chứng minh UI/schema đã sẵn sàng. Giữ rate legacy/original confirmed snapshots/payments; Admin approval + effective date + externally signed scoped evidence + approved basis phải đầy đủ trước kích hoạt. Đọc feature flags và rollout limits; không tự bật Phase6, migrate DB ứng dụng, reset/reseed, deploy, commit/push hoặc sửa tiền. Nếu task chỉ audit/docs thì dừng đúng scope; nếu giao code thì triển khai một gap cụ thể, test phù hợp rồi cập nhật checkpoint. Số test và host status chỉ lấy từ bằng chứng mới, không từ một checklist cũ.
 >
 > Nhiệm vụ cụ thể của bạn: **[người giao việc điền tại đây]**.
 

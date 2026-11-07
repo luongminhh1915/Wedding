@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Star,
   Percent,
+  Palette,
 } from "lucide-react";
 import {
   AdminKpiPanel,
@@ -30,6 +31,7 @@ import { useModerationQueue } from "./useModerationQueue";
 import { OrderRequestInbox } from "../journey/customerOrders/OrderRequestInbox";
 import ReviewModerationQueue from "./ReviewModerationQueue";
 import CommissionPolicyManager from "./CommissionPolicyManager";
+import AppearanceManager from "./AppearanceManager";
 
 const tabs = [
   {
@@ -103,8 +105,15 @@ const tabs = [
     roles: ["SuperAdmin", "CustomerCare", "Finance"],
   },
   { id: "change-requests", label: "Yêu cầu thay đổi / hủy", icon: RefreshCw, description: "Tiếp nhận đề nghị sau khi NCC phản hồi; không tự thay hợp đồng hoặc hoàn tiền.", roles: ["SuperAdmin", "Finance"] },
-  { id: "cms", label: "Cẩm nang CMS", icon: FileCheck, description: "Tạo, chỉnh sửa, xuất bản và ghim dịch vụ vào bài viết.", roles: ["SuperAdmin", "Moderator"] },
+  { id: "cms", label: "Quản lý Blog", icon: FileCheck, description: "Tạo, chỉnh sửa, xuất bản và ghim dịch vụ vào bài viết Blog.", roles: ["SuperAdmin", "Moderator"] },
   { id: "combos", label: "Combo & ưu đãi", icon: Layers, description: "Mẫu combo, duyệt dịch vụ và cấu hình giảm giá.", roles: ["SuperAdmin", "Moderator"] },
+  {
+    id: "appearance",
+    label: "Giao diện & Nhạc nền",
+    icon: Palette,
+    description: "Quản lý danh sách nhạc nền (YouTube/MP3), hiệu ứng hoa cưới rơi và cấu hình giao diện.",
+    roles: ["SuperAdmin", "Moderator"],
+  },
   { id: "emergency", label: "Hỗ trợ khẩn cấp", icon: ShieldCheck, description: "Tạo yêu cầu NCC thay thế cho hợp đồng đang tranh chấp.", roles: ["SuperAdmin", "CustomerCare"] },
 ] as const;
 
@@ -167,6 +176,7 @@ export default function AdminDashboard() {
         {activeTab === "cms" && <ArticleCms />}
         {activeTab === "emergency" && <EmergencyMatchingPanel />}
         {activeTab === "combos" && <ComboAdministration />}
+        {activeTab === "appearance" && <AppearanceManager />}
       </div>
     </main>
   );

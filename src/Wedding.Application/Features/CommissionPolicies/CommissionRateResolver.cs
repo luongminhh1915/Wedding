@@ -15,7 +15,33 @@ public record ResolvedCommissionRate(
 
 public static class CommissionRateResolver
 {
-    public static async Task<ResolvedCommissionRate> ResolveRateAsync(
+    /// <summary>
+    /// Effective transaction rate. Policy approval and an effective date alone do not
+    /// activate a policy: the signed partnership/appendix and approved-basis activation
+    /// path is not implemented yet. Preserve the deployed legacy/category behavior.
+    /// </summary>
+    public static Task<ResolvedCommissionRate> ResolveRateAsync(
+        IApplicationDbContext db,
+        Guid vendorId,
+        Guid categoryId,
+        Guid? serviceItemId,
+        Guid? comboTemplateId,
+        decimal legacyVendorRate,
+        decimal defaultCategoryRate,
+        DateTime transactionUtc,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var source = legacyVendorRate > 0m ? "LegacyVendor" : "CategoryDefault";
+        var rate = CommissionRules.ResolveRate(defaultCategoryRate, legacyVendorRate);
+        return Task.FromResult(new ResolvedCommissionRate(rate, source, null, null, CommissionBasisKind.StandardService));
+    }
+
+    /// <summary>
+    /// Foundation-only candidate preview. This is not an effective rate and must never
+    /// be used to snapshot a contract or calculate a commission obligation.
+    /// </summary>
+    public static async Task<ResolvedCommissionRate> PreviewCandidateRateAsync(
         IApplicationDbContext db,
         Guid vendorId,
         Guid categoryId,

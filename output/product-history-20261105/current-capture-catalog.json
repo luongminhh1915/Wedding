@@ -1,0 +1,1811 @@
+{
+  "summary": {
+    "captured_date": "2026-11-05",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "screen_state_count": 35,
+    "image_count": 167,
+    "role_note": "Các màn nội bộ mới được chụp bằng SuperAdmin. Không nhận đây là phiên riêng của Finance/Moderator/NCC/Customer.",
+    "scope_note": "Ảnh chụp UI để làm album; không phải kết quả kiểm thử giao dịch hoặc chứng nhận mọi tính năng hoàn tất.",
+    "capture_note": "Trang dài lưu thành chuỗi ảnh có vùng chồng lặp. Không ghép giả ảnh lịch sử; mỗi file là ảnh chụp nguyên gốc.",
+    "unverified_current": [
+      "Phiên riêng Customer, VendorOwner, Moderator, Finance chưa được chụp lại trong lượt này. Có ảnh lịch sử khi tìm được."
+    ]
+  },
+  "captures": [
+    {
+      "id": "01-home-desktop",
+      "title": "Trang chủ máy tính - marketplace Wedding Match",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:36:01.471Z",
+      "url": "https://weddingmatch.website/",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/01-home-desktop",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 4667,
+          "sha256": "7d9cc11a7955939373e5be9ca00e684fb6bd72765f1244a272a1581b3fb9f1e0"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 4667,
+          "sha256": "42a7c6835262a5fa5d5bb3f93e4d18bf625addecfb0ad9e4f278d22d953b42c2"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 4667,
+          "sha256": "d7ec13addb793cd35ce33a598e36aba5635b6edd3d1cccb939e44118857b41d4"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 4667,
+          "sha256": "0c86ddda3415789810d943788684d8256f96d86d4eed1a5409a63ce6ae0317d0"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 4667,
+          "sha256": "cd7acf32874e8f8bc631273bb16c69f37a9830889b164328fa6038313a533109"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2160,
+          "pageHeight": 4667,
+          "sha256": "9d3315a311ab1d58d1c28e85930cb42b059a8b36fc0a20e1bced128f214c5916"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-07.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2592,
+          "pageHeight": 4667,
+          "sha256": "36e270f7b716a2eb642681095a5b6cd6e13dbbb799f1964eea195db01fae65f8"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-08.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3024,
+          "pageHeight": 4667,
+          "sha256": "93b3da4500cc1d29b2d8755114da25a9db420580e2c47143ede6113b68609cee"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-09.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3456,
+          "pageHeight": 4667,
+          "sha256": "19711d1916b976b933f3486181556e26f97cb331c96af88181ec1459c961a859"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-10.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3888,
+          "pageHeight": 4667,
+          "sha256": "25916fbb3cba48b2a569896883ac4fda8ebbab73aa90d2d934d65fe9c595264e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/01-home-desktop/part-11.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3947.199951171875,
+          "pageHeight": 4667,
+          "sha256": "0e9613a8672ba2cebdb8ff73e3fb148bc843d6d9cabd2ec97cbb677ee6875210"
+        }
+      ]
+    },
+    {
+      "id": "02-browse-desktop",
+      "title": "Marketplace - toàn bộ dịch vụ",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:07:01.862393+00:00",
+      "url": "https://weddingmatch.website/browse",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/02-browse-desktop",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 3042,
+          "sha256": "d355a08c9ad5f56fecb33ff821a719747ae88824da409425ec31a82f1758a613"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 3042,
+          "sha256": "1306483857934a4dd81552da0e80b65dd342811d11d5d5c9269096c4db0e926a"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 3042,
+          "sha256": "231b2d8f661830cadaaadeee394b6cb9e10f4f8646ecda8e2c440d91539511b9"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 3042,
+          "sha256": "33dcfcae9bf2c89b68bea44e8a3c2096a25445dc61147b38b711c416d1987bb4"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 3042,
+          "sha256": "8dec2b88bec26c907e223bd031b1b6edd36409a9694e300052c2da96c097949c"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2160,
+          "pageHeight": 3042,
+          "sha256": "3fb2d8505986b6276b8ba7cdf0183f004536158acac6ce498f67bcbd8d373753"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/02-browse-desktop/part-07.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2322,
+          "pageHeight": 3042,
+          "sha256": "ca0cef4d579d5e5a2c09481fcafbdc205cff3aef45aeea5154e8b0ea19049c8d"
+        }
+      ]
+    },
+    {
+      "id": "03-service-detail",
+      "title": "Chi tiết dịch vụ thực tế",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:13:28.243Z",
+      "url": "https://weddingmatch.website/listings/85bfb2e5-4cc4-46da-941a-86552cad8158",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/03-service-detail",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 4211,
+          "sha256": "d8b4df6b676243feb9897daddfce9a2891dcbeb12e9284c24e4f0201f8c26988"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 4211,
+          "sha256": "60dfa0bba08637cb8087e04dcc7e8ba09a2d3e9d089568ab49157abb3aaa99cb"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 4211,
+          "sha256": "d8c1f08be5b8827b75e45aca90702e233d1461db25fa7e1036d4299ae403209a"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 4211,
+          "sha256": "b29dd571458ae68976427a99e66280dd9c11c3b0fc646261d1fd82262142a07f"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 4211,
+          "sha256": "c982bda20797f8bd10b3df28d4faa5a47b0f0e7892023ee061823a2fe3f05ef1"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2160,
+          "pageHeight": 4211,
+          "sha256": "fed984d49a90bbc016c0619f420404a856ce5ca719b945a94c597851d847822d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-07.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2592,
+          "pageHeight": 4211,
+          "sha256": "6c75d29375413b0186d6ff66ac325adffd27db60b5399d177f86492dacf7d650"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-08.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3024,
+          "pageHeight": 4211,
+          "sha256": "8ec783c1091ebfbe49fcbd9c8f61414771e3c406835dacad08277a3276bf5746"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-09.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3456,
+          "pageHeight": 4211,
+          "sha256": "40201d2628cd7f3e1b84de24d70fbc5314597be5bc241999928abf440fd3c791"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/03-service-detail/part-10.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3491.199951171875,
+          "pageHeight": 4211,
+          "sha256": "c194620ad67220ba8317f8005a1cde1c25a163d395137cfaa967f6b16a020987"
+        }
+      ]
+    },
+    {
+      "id": "04-blog-list",
+      "title": "Blog - danh sách bài viết thực tế",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:07:30.313591+00:00",
+      "url": "https://weddingmatch.website/blog",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/04-blog-list",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/04-blog-list/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1341,
+          "sha256": "cedbe280cf11f4794a05c91780566347870bd9d7bf3a9c7a1ba8209ae094f3e4"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/04-blog-list/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1341,
+          "sha256": "37126887ad2c972724d76d2abbae3af3c303cd15770bd12d295139cae1b7c4e5"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/04-blog-list/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 621,
+          "pageHeight": 1341,
+          "sha256": "f285bf9c296e3f0daa5b01f33a733a5e5d6bd9a783447af57cb5b4057a725b06"
+        }
+      ],
+      "note": "Danh sách có 1 bài viết; ảnh bìa chưa hiển thị tại lúc chụp. Ảnh này không xác nhận ảnh bìa đã tải thành công."
+    },
+    {
+      "id": "05-blog-reader",
+      "title": "Blog - nội dung bài viết",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:13:14.742Z",
+      "url": "https://weddingmatch.website/blog/checklist-chuan-bi-dam-cuoi",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/05-blog-reader",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 5151,
+          "sha256": "4aa1e1a0e65eae8755c302da3fe78b1afba14037995f7fe50ae01f454116d553"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 5151,
+          "sha256": "89f62e4f879055bba641b05984d1e046d3ca755869c38a51b3308157922d583b"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 5151,
+          "sha256": "5da27a9fa7fb290cf1426dc4cacf5cfdb9a09adac513568e9fc6c27301d4d710"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 5151,
+          "sha256": "6bb24a4de337971adcf49f84a99dc0ce2b5f1fca6c27140a57f064449bda125f"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 5151,
+          "sha256": "a8e9ff4f5129eb72c8ba6c343bc63b3941daab3f67670294796495d57b80173d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2160,
+          "pageHeight": 5151,
+          "sha256": "a5ac5d843381544062f54d5ccf28a489597ef02fbc35ce9ccbab7d8e4b8a69d8"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-07.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2592,
+          "pageHeight": 5151,
+          "sha256": "36a8b11f919026ec39fcd1c52051e177bb014ca92edbfaa8619d8e62017812ca"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-08.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3024,
+          "pageHeight": 5151,
+          "sha256": "e490afd2dd313845e4ae69e3d69cf5d30f743d88902a114e18f5147dd30fb8d8"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-09.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3456,
+          "pageHeight": 5151,
+          "sha256": "4bca5c9835dc0936e8ee7b7fcecaff82d283a85919d186e6f818dea23e277fe5"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-10.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 3888,
+          "pageHeight": 5151,
+          "sha256": "74d67de20aadd25bde704e54a1d01d314f3334fbb8b56140eac508ea3b3005b1"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-11.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 4320,
+          "pageHeight": 5151,
+          "sha256": "e499434daf3e3b105b2cf606a7eef66ed825520a5d4c7ddf7a701cdbee0e8eff"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/05-blog-reader/part-12.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 4431.2001953125,
+          "pageHeight": 5151,
+          "sha256": "cb89381a7e1cf94953577eecad0cc0f411ba268e3e15addcfff9f9e85d347ae6"
+        }
+      ]
+    },
+    {
+      "id": "06-cart-empty",
+      "title": "Giỏ hàng - trạng thái trống",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:13:51.198Z",
+      "url": "https://weddingmatch.website/cart",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/06-cart-empty",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/06-cart-empty/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1198,
+          "sha256": "14523f15a451a8acaa51abe81f54b96c27b3dd91ff1052629dd0cbd0b5797897"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/06-cart-empty/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1198,
+          "sha256": "a73a903fff59e7a3bbefef89ceb8ffbb2faf396f957da8912e49c3d732e055de"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/06-cart-empty/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 477.6000061035156,
+          "pageHeight": 1198,
+          "sha256": "6fdc2f2fdab85d0c838e7e345b7a6475eccab1b566c67b6e1d548cf3d5df0f15"
+        }
+      ]
+    },
+    {
+      "id": "07-compare-demo",
+      "title": "So sánh dịch vụ - mẫu minh họa",
+      "kind": "live-demo",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:14:03.028Z",
+      "url": "https://weddingmatch.website/compare",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/07-compare-demo",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/07-compare-demo/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1710,
+          "sha256": "27e8d82a99e3e6eb80f11c8746271f01d2f72b5fa7f50544d94971649a0a13fa"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/07-compare-demo/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1710,
+          "sha256": "65c0e68d36635805e1b4c643f376db73169226c8609b062f48da31b7f03118b3"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/07-compare-demo/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 1710,
+          "sha256": "71a3c6eebfe7225f6da00ddbb48cbc86590c1ec15e54440313185b5593de3619"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/07-compare-demo/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 990.4000244140624,
+          "pageHeight": 1710,
+          "sha256": "8468b97d90c8ae7d15b624cb40c0c854da1194da758a2d7fcfeb9ff154262136"
+        }
+      ]
+    },
+    {
+      "id": "08-invitation-gallery",
+      "title": "Thư viện 16 mẫu thiệp cưới",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:14:23.068Z",
+      "url": "https://weddingmatch.website/invitation",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/08-invitation-gallery",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/08-invitation-gallery/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 2857,
+          "sha256": "01f7c63b43230ea99a701c938979539c95fea1393e71cf200141596122ea555c"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/08-invitation-gallery/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 2857,
+          "sha256": "6958a4440a53809cb94c66bc92b748cb369fc486514cff76607ae6162077fd6d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/08-invitation-gallery/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 2857,
+          "sha256": "8997fa4495c447afe440dd50b1fe4a110cb44bcafdcb53adaf061e9fbf0bb39e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/08-invitation-gallery/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 2857,
+          "sha256": "7ea5af92e0febbade132d5596f05399dedba76e745fa68a6c41ab9aeb2d9cc77"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/08-invitation-gallery/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 2857,
+          "sha256": "bdf5b39beb05edf45074d7332a9a64271ec8435680a832067e524252802d6e36"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/08-invitation-gallery/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2136.800048828125,
+          "pageHeight": 2857,
+          "sha256": "caa86e090d34f81b8412d6c2eca9edd8c382fe38d4bdde5fefe3a4fa59428035"
+        }
+      ]
+    },
+    {
+      "id": "09-invitation-preview",
+      "title": "Xem trước thiệp - nội dung minh họa",
+      "kind": "live-demo",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:14:37.889900+00:00",
+      "url": "https://weddingmatch.website/invitation",
+      "capture_mode": "viewport",
+      "complete": false,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/09-invitation-preview",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/09-invitation-preview/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 712,
+          "sha256": "22a8cb1c02dc8585ae2abe24b70555bfd19b145af4726c48e25ce7a4b4f4068b"
+        }
+      ]
+    },
+    {
+      "id": "10-anniversary-demo",
+      "title": "Kỷ niệm ngày cưới - dữ liệu minh họa",
+      "kind": "live-demo",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:14:48.926Z",
+      "url": "https://weddingmatch.website/anniversary",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/10-anniversary-demo",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/10-anniversary-demo/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1797,
+          "sha256": "20d69aa3f26e4dab98a537f182089ad3604b6628b5a891821ee9236c5870a02b"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/10-anniversary-demo/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1797,
+          "sha256": "77247c8812908275dc9fcf2b0561660b2c26457bdc79fb6945579b59d0528e7d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/10-anniversary-demo/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 1797,
+          "sha256": "f490ff8ea8571670404efd78de94ba1c4c7935cf33bd836fde704f563e17a1c5"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/10-anniversary-demo/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1076.800048828125,
+          "pageHeight": 1797,
+          "sha256": "9ff8157bbeaf3a9d01206c9ee4f597a561268e4c522a752d97a874c00334af61"
+        }
+      ]
+    },
+    {
+      "id": "11-register-customer",
+      "title": "Đăng ký khách hàng - form trống",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:15:00.196Z",
+      "url": "https://weddingmatch.website/register",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/11-register-customer",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/11-register-customer/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1536,
+          "sha256": "4ccb503307273a6f3002a084b0e1639d3dc4ebea5eb9d8ceb2000b09e0efa45e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/11-register-customer/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1536,
+          "sha256": "b1c8edff4349a303e95d226ac9dba8943a60860e180079c7600834a8d0fc930e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/11-register-customer/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 816,
+          "pageHeight": 1536,
+          "sha256": "22313fed7a7fdec7e6c1ba487282da4cfabaa703a971a973dd6e57f5712d74c8"
+        }
+      ]
+    },
+    {
+      "id": "12-register-vendor",
+      "title": "Đăng ký nhà cung cấp - form trống",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:15:09.804Z",
+      "url": "https://weddingmatch.website/register?role=vendor",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/12-register-vendor",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/12-register-vendor/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 2010,
+          "sha256": "3a96064373c3eed42dc1f47a250429b8440536bfa160954e43162dd6f406e97c"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/12-register-vendor/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 2010,
+          "sha256": "0e214faba8a5feb7df21af1ef8ee2d9c70352381027c2326a9ab7f83a9509f9d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/12-register-vendor/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 2010,
+          "sha256": "51d684a07a094e61d44b6c83a0c4f725f033fe6106cbd871b5fde51bb393bc0c"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/12-register-vendor/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1290.4000244140625,
+          "pageHeight": 2010,
+          "sha256": "f8344161f4e842defd146baa98aec0f29e5daab20e82518058dcf97e4bd271c7"
+        }
+      ]
+    },
+    {
+      "id": "13-login",
+      "title": "Đăng nhập bằng mật khẩu, Google và Facebook",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:15:30.441Z",
+      "url": "https://weddingmatch.website/login",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/13-login",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/13-login/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1379,
+          "sha256": "93209b4b3d740982a0047087c686b0c9cfb92eac0719e9fb882a9c91b9bbb4aa"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/13-login/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1379,
+          "sha256": "6ca0732c9d0fd585bc3e905b326ac842cc63694494c243eada73cb461d5b01fd"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/13-login/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 659.2000122070312,
+          "pageHeight": 1379,
+          "sha256": "55d4e565c003b8d2276bcc3b9302cfe01ddf467e3177c70585eead3518ec34ea"
+        }
+      ],
+      "note": "Trình duyệt tự điền tài khoản; mật khẩu đang che. Chỉ ghi nhận các phương thức đăng nhập, không phải kết quả thử đăng nhập."
+    },
+    {
+      "id": "14-password-recovery",
+      "title": "Khôi phục mật khẩu - chưa gửi yêu cầu",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:15:42.890Z",
+      "url": "https://weddingmatch.website/login",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/14-password-recovery",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/14-password-recovery/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1042,
+          "sha256": "d072ac42e532030860a7f1d1c865e46036459004cafd914d4c8235baf37b56fd"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/14-password-recovery/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 321.6000061035156,
+          "pageHeight": 1042,
+          "sha256": "fe78744ed76629f9785613d0b7d13cb2d292f7fc7dd6ded4166714f7e39373aa"
+        }
+      ]
+    },
+    {
+      "id": "20-admin-overview",
+      "title": "Admin - tổng quan vận hành",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:18:09.279Z",
+      "url": "https://weddingmatch.website/admin/dashboard",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/20-admin-overview",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/20-admin-overview/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 2001,
+          "sha256": "b600786cc676ce07756838b860b3362592c866ac1ee438135479e737d2446d09"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/20-admin-overview/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 2001,
+          "sha256": "337a29a03216508acbfcc3a7cc27826038cd5dce41e6eb8f1843d682db78a865"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/20-admin-overview/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 2001,
+          "sha256": "fbf88157fe10a2d19d4e5ba0cbd1931eead2c11aa4168c0c598283b431b27f11"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/20-admin-overview/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1280.800048828125,
+          "pageHeight": 2001,
+          "sha256": "e8474be13b9dd2bb8f5b44093c2fc0c3463b444192496d61bb5c4e2657f667cc"
+        }
+      ]
+    },
+    {
+      "id": "21-admin-moderation",
+      "title": "Admin - hàng chờ kiểm duyệt",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:18:22.882Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=moderation",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/21-admin-moderation",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/21-admin-moderation/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1184,
+          "sha256": "31b3139e42c40f3b2bc4b16ea2c2ca98f104f05605eeb51805a3e73df5fb728e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/21-admin-moderation/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1184,
+          "sha256": "f9dd99f15ffc0bf46f7556cd3cea5bfae842da9e26127b65093aa3696395032f"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/21-admin-moderation/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 464,
+          "pageHeight": 1184,
+          "sha256": "b3b26082c393529d1417d07ce89bbfc57360dc8abd5f785f57d0308078683e74"
+        }
+      ]
+    },
+    {
+      "id": "22-admin-services",
+      "title": "Admin - gói dịch vụ và phân trang",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:18:52.306Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=published-listings",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/22-admin-services",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/22-admin-services/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 2602,
+          "sha256": "7db472df0c410a801780923bf8d98d8a39e2a1553cc28e86c1e9dbfce348bf69"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/22-admin-services/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 2602,
+          "sha256": "a403b26f09f7ee35ef889d7d70dd25d3591ea9e2ff48e3725fd5069ea6434bcd"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/22-admin-services/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 2602,
+          "sha256": "842b6352b2e8316d4b4a7ff125d5f1d2497815b316267d2192d53e2206f6a794"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/22-admin-services/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 2602,
+          "sha256": "f6f3d458bc5a3183119409aa01e9577f9fe0321930c9dbc23ad6a317fba155da"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/22-admin-services/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 2602,
+          "sha256": "e1c09210e19169d8306ec6b23fdab5eb7c54aad39eba89bc7a147d731ef8a904"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/22-admin-services/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1882.4000244140625,
+          "pageHeight": 2602,
+          "sha256": "9e6a65b010466cfa15500007a7615f04fc97033d94a579cc0b73831da39a7e44"
+        }
+      ]
+    },
+    {
+      "id": "23-admin-users",
+      "title": "Admin - người dùng và phân quyền",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:19:16.941Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=users",
+      "capture_mode": "viewport",
+      "complete": false,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/23-admin-users",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/23-admin-users/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 8120,
+          "sha256": "2dc3ee549e31efb05f0a050389c37a50dcdb61737b1377b672a559f30bda8e7e"
+        }
+      ],
+      "note": "Chỉ giữ phần tổng quan; không đưa danh sách liên hệ khách hàng dài vào bộ ảnh bàn giao."
+    },
+    {
+      "id": "24-admin-create-user",
+      "title": "Admin - tạo người dùng, form trống",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:19:38.758Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=users",
+      "capture_mode": "scroll-sequence",
+      "complete": false,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/24-admin-create-user",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/24-admin-create-user/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 8584,
+          "sha256": "903bf6fc9720fd4f18c4e2a317b29412dccb6d7f5cc371606a229018db5df0bf"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/24-admin-create-user/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 8584,
+          "sha256": "715d12ebf09018c47c02f431cec6d1c63c619c4fc3459f70f502fdfc31844f18"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/24-admin-create-user/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 8584,
+          "sha256": "3aa9f65bac240c9e6ab80997226c9a48b40a8eeedd3f7834337adb7617732908"
+        }
+      ],
+      "note": "Chụp phần biểu mẫu tạo người dùng, không phải toàn bộ bảng người dùng phía dưới."
+    },
+    {
+      "id": "25-admin-finance",
+      "title": "Admin - tài chính và đối soát, chưa có hợp đồng",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:13.754Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=finance",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/25-admin-finance",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/25-admin-finance/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1358,
+          "sha256": "78132927e95bcd7d62a4835ddc3941bde3874583a5e3e25de96b059c656eb745"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/25-admin-finance/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1358,
+          "sha256": "e529aef13829a7415b73d662aedab4919eead5318a65e57c063074fc22ef4633"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/25-admin-finance/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 637.5999755859375,
+          "pageHeight": 1358,
+          "sha256": "745c73ff87ccd0f7b671c15a431290cbefb08f08dfdb20b932921923bdb7b9be"
+        }
+      ]
+    },
+    {
+      "id": "26-admin-settlements",
+      "title": "Admin - bảng kê tháng",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:14.093Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=settlements",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/26-admin-settlements",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/26-admin-settlements/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1465,
+          "sha256": "c3a3364aa4beea3deaeffa1facbfe7725af43510626639e9df510cbda2618cf4"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/26-admin-settlements/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1465,
+          "sha256": "b9072c62112dfff6877bfa0f1d3fafb65ecd2d637abd4509748e39a312ca51e9"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/26-admin-settlements/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 744.7999877929688,
+          "pageHeight": 1465,
+          "sha256": "058f68e690141045eeaee4405e4021c29d57ff2a395567677fb870e88bbc6837"
+        }
+      ]
+    },
+    {
+      "id": "27-admin-commissions",
+      "title": "Admin - chính sách hoa hồng, chỉ xem",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:14.823Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=commissions",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/27-admin-commissions",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/27-admin-commissions/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1338,
+          "sha256": "dba6dd7136b5a3c29d725b24e8f3a21d9422ad14d5fab270366cb40a87f8a968"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/27-admin-commissions/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1338,
+          "sha256": "d52a6c2340759d8e7fa01552cb2571a126606b823e39e3743f75ee28d1c5dacb"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/27-admin-commissions/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 617.5999755859375,
+          "pageHeight": 1338,
+          "sha256": "7a7d8dac6995dd3a0ee1cd0bdcf3baf48ce81e1db500163ea616ae9e150ffb85"
+        }
+      ]
+    },
+    {
+      "id": "28-admin-reviews",
+      "title": "Admin - kiểm duyệt đánh giá",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:25.821Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=reviews",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/28-admin-reviews",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/28-admin-reviews/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1035,
+          "sha256": "494ff2fa4321d50c9672cdcff20d41531ee9cd9ff9ea2c3ec941b5f14f5481b4"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/28-admin-reviews/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 315.20001220703125,
+          "pageHeight": 1035,
+          "sha256": "7113dbc1f58e37aa4703f9012fb205648ea67b03fcd9bc286e8a7ae6951c732a"
+        }
+      ]
+    },
+    {
+      "id": "29-admin-verification",
+      "title": "Admin - xác minh nhà cung cấp",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:26.397Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=verifications",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/29-admin-verification",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/29-admin-verification/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1061,
+          "sha256": "289bc796731bed75b739ce4430ac72ab34df4adc07da17b14129ccf272cbc77b"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/29-admin-verification/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 340.79998779296875,
+          "pageHeight": 1061,
+          "sha256": "fa5183dde15035e4da208aaab9888ef3c71f97138e732136bfc4a226a229ddac"
+        }
+      ]
+    },
+    {
+      "id": "30-admin-disputes",
+      "title": "Admin - quản lý tranh chấp",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:27.052Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=disputes",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/30-admin-disputes",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/30-admin-disputes/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1061,
+          "sha256": "47717c6804941870ad4f5eb4d6816c016441bdbe93b12f991185dc97c4f240e8"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/30-admin-disputes/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 340.79998779296875,
+          "pageHeight": 1061,
+          "sha256": "ab6e62a97289e497d35ef1cd35661d65567cee66e6fe0b34fd6f6dbdd9250721"
+        }
+      ]
+    },
+    {
+      "id": "31-admin-change-requests",
+      "title": "Admin - yêu cầu thay đổi và hủy",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:27.751Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=change-requests",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/31-admin-change-requests",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/31-admin-change-requests/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1269,
+          "sha256": "e4f856a7b89525061be550af0e048a65669d3a2f680efb4c6e2c97fce7993ce6"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/31-admin-change-requests/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1269,
+          "sha256": "1f143b77c7fc9ddfc0780e3c35d869bc5181148b09274f6cc9b884ba02d50e8d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/31-admin-change-requests/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 548.7999877929688,
+          "pageHeight": 1269,
+          "sha256": "655530e92019424b8bef3412f47c162dd131f4cf71922b7ff602230780d93735"
+        }
+      ]
+    },
+    {
+      "id": "32-admin-cms",
+      "title": "Admin - quản lý Blog, tải ảnh và bài viết",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:38.173Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=cms",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/32-admin-cms",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/32-admin-cms/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1202,
+          "sha256": "3a9750371450b59a19ca5588af04398aafb797634df02798645695736d78d608"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/32-admin-cms/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1202,
+          "sha256": "f2e1794ef17b286575b39950bef225b513695fbd971a1deadb7fa14819e89569"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/32-admin-cms/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 482.3999938964844,
+          "pageHeight": 1202,
+          "sha256": "3ff88985c148dcafb56202adaa0fd561160fbe7229a0dbce86680644d497be6d"
+        }
+      ]
+    },
+    {
+      "id": "33-admin-combos",
+      "title": "Admin - combo và ưu đãi",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:39.141Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=combos",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/33-admin-combos",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/33-admin-combos/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1712,
+          "sha256": "c80749ae19bc9a4e134e54d39a5c1179cf65c33bfdba9ffd03ad2da8f6d92511"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/33-admin-combos/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1712,
+          "sha256": "479c0091683f77424d9ff9d8f3d7da8e3f6038b38cff790591cdca3f562608b2"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/33-admin-combos/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 1712,
+          "sha256": "4429f6383c8ba963ce3b5c145033271ba14bf01b4b13e9e9894bc279612ccb9b"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/33-admin-combos/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 992,
+          "pageHeight": 1712,
+          "sha256": "744f356873df8a00c5a96831af1a8911c328857ee3f97de3634f522b760da17e"
+        }
+      ]
+    },
+    {
+      "id": "34-admin-appearance",
+      "title": "Admin - giao diện và nhạc nền",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:39.908Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=appearance",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/34-admin-appearance",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/34-admin-appearance/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1912,
+          "sha256": "35f38ca15bc5975c8f6dc9e4386be87c4b897e8c17ee70fb3f62f7c90ea39fe2"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/34-admin-appearance/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1912,
+          "sha256": "0ab41f4ed725fa7eaf3dbc59fad9e70587bd784377eb44866daa79b78384e2b2"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/34-admin-appearance/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 1912,
+          "sha256": "dc271c50685e1cac51255bb1b8657225c87e65b88c79952cb0a30c6b79315b92"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/34-admin-appearance/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1192,
+          "pageHeight": 1912,
+          "sha256": "6d89e1f2619637fee2c03aa46b757982e046415964d7ec1ee90715d7e56ebcdc"
+        }
+      ]
+    },
+    {
+      "id": "35-admin-emergency",
+      "title": "Admin - hỗ trợ khẩn cấp",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:20:40.284Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=emergency",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/35-admin-emergency",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/35-admin-emergency/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1256,
+          "sha256": "e904a91974ac7d4ffc7e505dabbf3adeec50adf434cb92a31bc80213dd513d94"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/35-admin-emergency/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 1256,
+          "sha256": "c42c98944afb967fb843ce8690b7630fb545d79ebcd8726b7caf3d9c05654d57"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/35-admin-emergency/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 536,
+          "pageHeight": 1256,
+          "sha256": "0a02a4557189fe29b431db776575ff56b55aab50a226dfa33360c3359d5944ac"
+        }
+      ]
+    },
+    {
+      "id": "36-admin-blog-editor",
+      "title": "Admin - soạn Blog và tải ảnh trực tiếp, chưa lưu",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:21:03.016Z",
+      "url": "https://weddingmatch.website/admin/dashboard?tab=cms",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 3115,
+          "sha256": "97c4803de5aa6bbe3e4423df5fad06e3866142c0acbffb4e800946aceceb8fbe"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 432,
+          "pageHeight": 3115,
+          "sha256": "32122fa9e62263be370add74fba06d5b0f1a220d3b5e39cb47fc5e9ad871c31b"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-03.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 864,
+          "pageHeight": 3115,
+          "sha256": "ca5804d3ea40351773595ebf2bb9923949b9c55a0eaefe0d02b9335ba00dfe4d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-04.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1296,
+          "pageHeight": 3115,
+          "sha256": "ddd410eb08a70a40973b4579b719d710693a2dd436214b8738eed7237cd5541e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-05.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 1728,
+          "pageHeight": 3115,
+          "sha256": "10ee66e85f7e5e8b0485c1eec3aa968df28a19e76deb3fa1d799ab1879bc9dc4"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-06.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2160,
+          "pageHeight": 3115,
+          "sha256": "6e64e0836ada5488de8b2f1b54af563012ff6a10333d62ac6470dc9293393108"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/36-admin-blog-editor/part-07.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 2395.199951171875,
+          "pageHeight": 3115,
+          "sha256": "2ab191b2a2d8d3c32b3a44a796b71357de488c8041256497e70a64f4a75a0c75"
+        }
+      ]
+    },
+    {
+      "id": "37-admin-notifications",
+      "title": "Admin - trung tâm thông báo",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:21:25.479Z",
+      "url": "https://weddingmatch.website/notifications",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/37-admin-notifications",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/37-admin-notifications/part-01.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 0,
+          "pageHeight": 1026,
+          "sha256": "47d845de063ca8a578ae05758065ca0d462dd9a041efb122c95a216d26479675"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/37-admin-notifications/part-02.jpg",
+          "width": 1265,
+          "height": 712,
+          "y": 306.3999938964844,
+          "pageHeight": 1026,
+          "sha256": "a5a73887f4ec205af8f3a0aec5b0654bf92c8d2dcfb4d1486a8f2b1330b80ff2"
+        }
+      ]
+    },
+    {
+      "id": "38-admin-mobile",
+      "title": "Admin - tổng quan trên điện thoại",
+      "kind": "live-admin",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:34:57.342Z",
+      "url": "https://weddingmatch.website/admin/dashboard",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/38-admin-mobile",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/38-admin-mobile/part-01.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 0,
+          "pageHeight": 3058,
+          "sha256": "9223dbac49943af22945bfd6fe97e5d025566e80630395012e976be00c35a6d3"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/38-admin-mobile/part-02.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 506.3999938964844,
+          "pageHeight": 3058,
+          "sha256": "6e728988c8fc99e9a50a0cb947184397f452632b5889e62114a594af32f61de2"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/38-admin-mobile/part-03.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 1012.7999877929688,
+          "pageHeight": 3058,
+          "sha256": "3923e9c7daa239ffc22bb33ef8240675dd77a9ed31c7cc131973f01fe940ba8b"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/38-admin-mobile/part-04.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 1519.199951171875,
+          "pageHeight": 3058,
+          "sha256": "951e9b1f23b8b72779443bc2a5f4b9b0a472afb23ce29ffe55fe27ff3c7e2810"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/38-admin-mobile/part-05.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 2025.5999755859375,
+          "pageHeight": 3058,
+          "sha256": "5023c4f7fda33ad9b6ac7428dca4a344e69b26b62220d2d9fdafef202b6b6e18"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/38-admin-mobile/part-06.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 2214.39990234375,
+          "pageHeight": 3058,
+          "sha256": "11773af2dc24dfbe537b120b80b081ed050c0378a66ba84a0273f983f93f795a"
+        }
+      ]
+    },
+    {
+      "id": "39-home-mobile",
+      "title": "Trang chủ điện thoại - thanh điều hướng dưới",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:35:46.848Z",
+      "url": "https://weddingmatch.website/",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/39-home-mobile",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-01.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 0,
+          "pageHeight": 8349,
+          "sha256": "1e0eb2a02fc3c13c0e9d86d8d7ea719359d9da7a3d0d538825f574995b5d6ce1"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-02.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 506.3999938964844,
+          "pageHeight": 8349,
+          "sha256": "ee6ae9499e54e406c59df8065e44ce5be7fee83219f95398873b877e93593d56"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-03.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 1012.7999877929688,
+          "pageHeight": 8349,
+          "sha256": "f56b909c376aca382e3867bb3d2218b269fa327552e6f96844e67244d9f8ae48"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-04.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 1519.199951171875,
+          "pageHeight": 8349,
+          "sha256": "f10a2491a6cfd6ff90bdd3624bb486d3aee7ef2c5002e9eee8012cdd558d4191"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-05.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 2025.5999755859375,
+          "pageHeight": 8349,
+          "sha256": "df13edeb8bb3fe35371704e10866877891c272f19c846838f133d80748521498"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-06.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 2532,
+          "pageHeight": 8349,
+          "sha256": "0bd77a62a432f9acde837ee178e35bc200610c197203b62d4864674a37a21c7e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-07.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 3038.39990234375,
+          "pageHeight": 8349,
+          "sha256": "c15d0f7b3d8de9d88f3329ab9b89f1c80041a56a9bb25ca2987bb2023d171ae2"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-08.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 3544.800048828125,
+          "pageHeight": 8349,
+          "sha256": "2d477db94bfb101928b9e9e95ddfc30f4c8f5e9710182f65152e35ac7d82b17a"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-09.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 4051.199951171875,
+          "pageHeight": 8349,
+          "sha256": "753fd9cb48416ba14b3db0c0b6a544551290970c20f68136fa8cb7f2453189f0"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-10.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 4557.60009765625,
+          "pageHeight": 8349,
+          "sha256": "3c3a6131786000110126011614cc96b73cca9ce0f9e4a60829c25c5084638474"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-11.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 5064,
+          "pageHeight": 8349,
+          "sha256": "de5fd57c38e98a450054c1f82d5daf41e57423c02c4db68d988413e1318044dd"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-12.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 5570.39990234375,
+          "pageHeight": 8349,
+          "sha256": "8c01b7b44c5f42e4c690adf4794fe07104087100d7a8054c914cddc16263c995"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-13.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 6076.7998046875,
+          "pageHeight": 8349,
+          "sha256": "1de8bab30bdc6069c5fae9507a56dba3795a334a91935294f0928e4b94e9bcad"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-14.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 6583.2001953125,
+          "pageHeight": 8349,
+          "sha256": "6450c96bdaccac11eaa0e8e4b0a9f5c50226821a7897bb309656feaf6c176466"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-15.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 7089.60009765625,
+          "pageHeight": 8349,
+          "sha256": "28bafe670728f15e2f63184bbe1ac7e490dbecfc168f2258720b0bd6c653b619"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/39-home-mobile/part-16.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 7504.7998046875,
+          "pageHeight": 8349,
+          "sha256": "c9f083436d8c394dd96d50de6a9ad1c7a1b75d312ebb4be56269b2762e94ef23"
+        }
+      ]
+    },
+    {
+      "id": "40-browse-mobile",
+      "title": "Marketplace điện thoại - bộ lọc phía trên",
+      "kind": "live-public",
+      "date": "2026-11-05",
+      "capturedUtc": "2026-11-05T03:35:49.105Z",
+      "url": "https://weddingmatch.website/browse",
+      "capture_mode": "scroll-sequence",
+      "complete": true,
+      "relative_folder": "05_Web_hien_tai_2026-11-05/40-browse-mobile",
+      "segments": [
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-01.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 0,
+          "pageHeight": 7043,
+          "sha256": "a099591fe45f3f1a6c2fad8d8b27b7af20e4b93843552a461b067a740c888015"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-02.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 506.3999938964844,
+          "pageHeight": 7043,
+          "sha256": "9f6427fb4bc060538d681a134b57b1df8b9a3913ff7bee9259b09e58e682333d"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-03.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 1012.7999877929688,
+          "pageHeight": 7043,
+          "sha256": "a1555831667601c1f5bc72212e8c19730f10e14fef5eb3702777d9f395b5fe8e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-04.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 1519.199951171875,
+          "pageHeight": 7043,
+          "sha256": "b65b6bb44a935a7a75e6c50796f3e8aa8de8746d12925bef61e27af8f6686e57"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-05.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 2025.5999755859375,
+          "pageHeight": 7043,
+          "sha256": "cde214b015bd67eb2b2d7bee0d610000ca2ff2e3380b458ba333e16ea0af8f45"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-06.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 2532,
+          "pageHeight": 7043,
+          "sha256": "664d0779e09918ebf51e99ddf0ad1f3746c627455681ab77d6ba5f8fd143c03e"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-07.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 3038.39990234375,
+          "pageHeight": 7043,
+          "sha256": "c1c77cd2b5d9111752620b324c08440bb0a0f6331a5e729474a63d0fdd7f91b1"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-08.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 3544.800048828125,
+          "pageHeight": 7043,
+          "sha256": "cb4b719ff5c48f11d85773c9533dcab19daea9137867d4ee05ef60e920f6be24"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-09.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 4051.199951171875,
+          "pageHeight": 7043,
+          "sha256": "ceb081d48f6eed4053a62d3f309317385e0db0a37d67c6ff213c8ea40f5c43ba"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-10.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 4557.60009765625,
+          "pageHeight": 7043,
+          "sha256": "9677e7713d5daf9ea8e55a603a758af1ff7280fb2204b347a0f6643f6ef3d476"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-11.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 5064,
+          "pageHeight": 7043,
+          "sha256": "245c451fff989d1e25ce32fe29a71bcf60c43420da61d88a104631e1536428a7"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-12.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 5570.39990234375,
+          "pageHeight": 7043,
+          "sha256": "4902029383dba19384580ef474b009c02c55e2fad6e4afa1de33a9df48c7435a"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-13.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 6076.7998046875,
+          "pageHeight": 7043,
+          "sha256": "4ce89f5ef5dc244b5573bc68c83eaa8cd090cffd839fe6f8f86ede71cf58b3ac"
+        },
+        {
+          "relative_path": "05_Web_hien_tai_2026-11-05/40-browse-mobile/part-14.jpg",
+          "width": 375,
+          "height": 811,
+          "y": 6199.2001953125,
+          "pageHeight": 7043,
+          "sha256": "61ff7630723dec51d1a7a3b9e59aca6982206066e0c511c9b322788d28a9307f"
+        }
+      ]
+    }
+  ]
+}

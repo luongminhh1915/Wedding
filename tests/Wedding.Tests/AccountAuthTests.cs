@@ -26,6 +26,45 @@ public class AccountAuthTests
     private static readonly Guid DecorGroupId = Guid.Parse("22222222-2222-2222-2222-222222222202");
 
     [Fact]
+    public void TestAdminPasswords()
+    {
+        var h = new PasswordHasher();
+        var adminHashes = new Dictionary<string, string>
+        {
+            { "ADMIN1", "$2a$11$h7pjjH.IPMr5GxuJ0v0KXu0ZIDzirWXfBxLRaYkFPKNiShHRa9yKW" },
+            { "Dung", "$2a$11$inI/gZHJ8TdtVxQGbsp8VOajDxgJHqYbRRqEMdXqo1lXLLoXZH1Mm" },
+            { "Dat", "$2a$11$OjbXtwNdJiNp6SwwhVQocekegVee5YE2/kCiJS7fcP1GvMS57aY5u" },
+            { "Minh", "$2a$11$7hFzrq/UdvSHTjoj7fx75.O0iS4u3dmwwzwD.5SM6.HKU9vUk37Hm" },
+            { "Thao", "$2a$11$KdSVPPv6qF0jw8.mty11/.5nyhwS10kr9uil.IetGS54CrPdb5z5C" }
+        };
+
+        var candidateList = new[]
+        {
+            "123456", "12345678", "123456789", "1234567890", "password", "Password123!", "Admin@123", "Admin@123!", "admin123", "Admin123",
+            "weddingmatch", "wedding123", "Wedding123!", "Wedding@123", "T@i2101200622122005", "admin", "123456aA@", "admin@wedding.com",
+            "he186892", "hs186587", "admin@123456", "weddingmatch123", "WeddingMatch2026", "WeddingMatch@2026", "WeddingMatch123!", "12345678a@",
+            "Dung@123", "Minh@123", "Thao@123", "Dat@123", "NgoTriDung", "TaHuyDat", "LuongHuuMinh", "PhanThiThao"
+        };
+
+        var results = new List<string>();
+        foreach (var (user, hash) in adminHashes)
+        {
+            string matched = "UNKNOWN";
+            foreach (var pwd in candidateList)
+            {
+                if (h.Verify(pwd, hash))
+                {
+                    matched = pwd;
+                    break;
+                }
+            }
+            results.Add($"{user}: {matched}");
+        }
+
+        Assert.Fail(string.Join(", ", results));
+    }
+
+    [Fact]
     public async Task CustomerRegistrationNormalizesInputAndLoginReturnsPersistedActor()
     {
         await using var f = await Fixture.Create();

@@ -8,9 +8,14 @@ import {
   FileCheck2,
   Heart,
   Mail,
+  MessageCircle,
+  MessageSquare,
   Users,
   Wallet,
 } from "lucide-react";
+import { ChatRoomModal } from "../chat/components/ChatRoomModal";
+import { useCustomerOrderPage } from "../journey/customerOrders/customerOrderApi";
+import type { Lead } from "../../types/lead.types";
 import { useAuthStore } from "../../store/authStore";
 import { ContractWorkspace } from "./components/ContractWorkspace";
 import { InvitationBuilder } from "./components/invitation/InvitationBuilder";
@@ -101,6 +106,7 @@ export default function CustomerDashboard() {
           <>
             <ContinueIntent />
             <PlannerOverview onSelect={selectTab} />
+            <CustomerChatOverview />
             <details className="planner-members" open={params.get("join") ? true : undefined}><summary>Cùng nhau lên kế hoạch · Thành viên & chia sẻ</summary><WeddingMembers /></details>
           </>
         )}
@@ -256,6 +262,13 @@ function PlannerOverview({
               </span>
               <ArrowRight size={15} />
             </button>
+            <Link to="/anniversary" className="flex items-center justify-between text-rose-700 hover:text-rose-800 font-semibold text-xs p-2.5 rounded-xl bg-rose-50/70 border border-rose-100 hover:bg-rose-100/70 transition">
+              <span className="flex items-center gap-2">
+                <Heart size={16} className="text-rose-500 fill-rose-500" />
+                Kỷ niệm ngày cưới &amp; Đếm ngày yêu
+              </span>
+              <ArrowRight size={14} />
+            </Link>
             <button onClick={() => onSelect("contracts")}>
               <span className="flex items-center gap-2">
                 <FileCheck2 size={17} />
@@ -287,5 +300,98 @@ function PlannerOverview({
         </aside>
       </div>
     </>
+  );
+}
+
+
+function CustomerChatOverview() {
+  const query = useCustomerOrderPage<Lead>("lead", 1, 6, "active");
+  const [activeChatLead, setActiveChatLead] = useState<Lead | null>(null);
+  const leads = query.data?.items ?? [];
+  const activeCount = leads.filter(l => !["Cancelled", "Expired"].includes(l.status)).length;
+
+  return (
+    <section className="overview-panel my-5 p-5 md:p-6 rounded-2xl bg-white border border-rose-100 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 flex items-center justify-center">
+            <MessageSquare size={18} />
+          </div>
+          <div>
+            <h2 className="serif text-lg font-bold text-slate-800">Box Chat &amp; Tin Nhắn với Nhà Cung Cấp</h2>
+            <p className="text-xs text-slate-500">Nhắn tin trực tiếp 1-1, nhận báo giá chi tiết và voucher ưu đãi từ các đối tác cưới.</p>
+          </div>
+        </div>
+        {activeCount > 0 && (
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{activeCount} cuộc trò chuyện sẵn sàng</span>
+          </span>
+        )}
+      </div>
+
+      {query.isLoading ? (
+        <div className="py-6 text-center text-xs text-slate-400">Đang tải danh sách cuộc trò chuyện...</div>
+      ) : leads.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {leads.map((lead) => (
+            <div
+              key={lead.id}
+              className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-rose-300 transition-all flex flex-col justify-between gap-3"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-sm text-slate-900 line-clamp-1">{lead.vendorBrandName}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold shrink-0">
+                    {lead.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-1 line-clamp-1">{lead.listingTitle}</p>
+                {lead.voucher?.code && (
+                  <div className="mt-2 text-[11px] text-amber-800 font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block">
+                    Voucher: {lead.voucher.code}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveChatLead(lead)}
+                className="w-full py-2 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+              >
+                <MessageCircle size={14} />
+                <span>Mở Hộp Chat</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="p-6 rounded-xl border border-dashed border-slate-200 text-center bg-slate-50/50">
+          <MessageCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+          <p className="text-xs font-semibold text-slate-700">Chưa có cuộc trò chuyện nào</p>
+          <p className="text-[11px] text-slate-500 mt-1 max-w-md mx-auto">
+            Khi bạn chọn "Nhận tư vấn" ở bất kỳ dịch vụ nào trên sàn, hộp chat trực tiếp 1-1 với Nhà cung cấp sẽ tự động mở tại đây để hai bạn trao đổi chi tiết và chốt ưu đãi.
+          </p>
+          <Link
+            to="/browse"
+            className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs transition border border-rose-200"
+          >
+            <span>Khám phá dịch vụ cưới</span>
+            <ArrowRight size={13} />
+          </Link>
+        </div>
+      )}
+
+      {activeChatLead && (
+        <ChatRoomModal
+          isOpen={!!activeChatLead}
+          onClose={() => setActiveChatLead(null)}
+          leadId={activeChatLead.id}
+          partnerName={activeChatLead.vendorBrandName}
+          isVendorUser={false}
+          listingTitle={activeChatLead.listingTitle}
+          voucherCode={activeChatLead.voucher?.code}
+        />
+      )}
+    </section>
   );
 }

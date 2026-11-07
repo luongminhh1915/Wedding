@@ -5,8 +5,8 @@ export const MODERATION_TYPES = [["all", "Tất cả nội dung"], ["listing", "
 export const MODERATION_STATUSES = [["Pending", "Chờ kiểm duyệt"], ["Draft", "Bản nháp"], ["Approved", "Đã duyệt"], ["Rejected", "Bị từ chối"], ["all", "Tất cả trạng thái"]] as const;
 export type ModerationType = "listing" | "service-item" | "combo";
 export interface ModerationFilters { type: string; status: string; search: string; page: number; pageSize: number }
-export interface ModerationRow { id: string; type: ModerationType; title: string; vendorId?: string | null; vendorName: string; status: string; revisionId?: string | null; revisionSequence?: number | null; changedAt: string; isActive: boolean }
-export interface ModerationDetail { type: ModerationType; id: string; listing?: ListingDto | null; serviceItem?: CatalogItem | null; combo?: CatalogTemplate | null }
+export interface ModerationRow { id: string; type: ModerationType; title: string; vendorId?: string | null; vendorName: string; status: string; revisionId?: string | null; revisionSequence?: number | null; changedAt: string; isActive: boolean; isVendorVerified?: boolean }
+export interface ModerationDetail { type: ModerationType; id: string; listing?: ListingDto | null; serviceItem?: CatalogItem | null; combo?: CatalogTemplate | null; isVendorVerified?: boolean }
 export interface ModerationPage { items: ModerationRow[]; page: number; pageSize: number; totalCount: number; pendingCount: number; type: string; status: string; search: string }
 const guid = (value: string | null | undefined): value is string => !!value && /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(value) && value !== "00000000-0000-0000-0000-000000000000";
 const boundedInt = (value: string | null, fallback: number, maximum: number) => value && /^\d+$/.test(value) ? Math.max(1, Math.min(maximum, Number(value))) : fallback;

@@ -61,7 +61,20 @@ export function ArticleCoverPicker({ value, onChange, onUploadingChange, disable
   return <section className="rounded-2xl border border-[#eadbd4] bg-[#fcf6ea] p-4 space-y-3" aria-labelledby={`${inputId}-title`} aria-busy={busy}>
     <h4 id={`${inputId}-title`} className="font-semibold text-[#233a42]">Ảnh bìa bài viết</h4>
     <p className="text-xs leading-relaxed text-slate-600">Chọn ảnh từ điện thoại hoặc máy tính. Hỗ trợ JPG, PNG, WebP, tối đa 8 MB.</p>
-    {src ? <img src={src} alt="Ảnh bìa đang chọn" className="max-h-64 w-full rounded-xl object-cover border border-[#eadbd4]" /> : <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[#d5b9ab] bg-[#fffaf4] text-sm text-slate-500"><ImagePlus size={24} className="mr-2" aria-hidden="true" />Chưa có ảnh bìa</div>}
+    {src ? (
+      <div className="flex items-center justify-center rounded-xl border border-[#eadbd4] bg-white/70 p-2 max-w-md max-h-56 overflow-hidden">
+        <img
+          src={src}
+          alt="Ảnh bìa đang chọn"
+          className="max-h-52 max-w-full rounded-lg object-contain"
+        />
+      </div>
+    ) : (
+      <div className="flex min-h-24 max-w-md items-center justify-center rounded-xl border border-dashed border-[#d5b9ab] bg-[#fffaf4] text-xs text-slate-500">
+        <ImagePlus size={20} className="mr-2" aria-hidden="true" />
+        Chưa có ảnh bìa
+      </div>
+    )}
     <div className="flex flex-wrap items-center gap-3">
       <input id={inputId} ref={input} type="file" aria-label="Tải ảnh bìa bài viết" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={disabled || busy} onChange={event => void upload(event.target.files?.[0])} />
       <button type="button" className="btn btn-outline" disabled={disabled || busy} onClick={() => input.current?.click()}>{busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={16} aria-hidden="true" />}{busy ? "Đang tải ảnh..." : value ? "Thay ảnh bìa" : "Chọn ảnh bìa"}</button>

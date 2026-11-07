@@ -1,5 +1,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +20,86 @@ namespace Wedding.Tests;
 public class UnifiedModerationQueueTests
 {
     [Theory]
+    [InlineData("unknown", 20)] [InlineData("all", 0)] [InlineData("all", 51)]
+    public async Task BulkRejectsInvalidScopeOrLimitBeforeCallingAnyApproval(string type, int size)
+    {
+        await using var f = await Fixture.Create();
+        var audits = await f.Db.AuditLogs.CountAsync();
+        await Assert.ThrowsAsync<DomainException>(() => new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, null!).Handle(new(type, size), default));
+        Assert.Equal(audits, await f.Db.AuditLogs.CountAsync());
+    }
+
+    [Fact]
+    public async Task BulkApprovesAllThreeKindsThroughCanonicalHandlersAndSkipsInvalidProposalIndependently()
+    {
+        await using var f = await Fixture.Create();
+        await AssertSuccessfulBulk(f);
+    }
+
+    [Fact]
+    public async Task BulkMayApproveUnverifiedVendorListingsWithoutMarkingVendorVerifiedOrWaivingComboEligibility()
+    {
+        await using var f = await Fixture.Create();
+        var result = await new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator()).Handle(new(), default);
+        Assert.Equal(2, result.ApprovedListings); Assert.Equal(1, result.ApprovedServices);
+        Assert.Equal(0, result.ApprovedCombos); Assert.Equal(1, result.Skipped);
+        Assert.False((await f.Db.Vendors.AsNoTracking().SingleAsync()).IsVerified);
+    }
+
+    [Fact]
+    public async Task BulkNeverApprovesCanonicalPricingFacetAsASeparateServiceItem()
+    {
+        await using var f = await Fixture.Create();
+        f.Live.AttachPricingServiceItem(f.Service.Id); await f.Db.SaveChangesAsync();
+        var result = await new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator()).Handle(new("service-item"), default);
+        Assert.Equal(0, result.Attempted); Assert.Equal(0, result.TotalApproved);
+        Assert.Equal("Pending", (await f.Db.ServiceItems.AsNoTracking().SingleAsync(row => row.Id == f.Service.Id)).ModerationStatus);
+    }
+
+    [Fact]
+    public async Task BulkLimitsEachKindAndReportsMoreWithoutReviewingDraftsOrCanonicalFacetsSeparately()
+    {
+        await using var f = await Fixture.Create();
+        var beforeDraft = await f.Db.Listings.CountAsync(row => row.Status == ListingStatus.Draft);
+        var result = await new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator()).Handle(new("listing", 1), default);
+        Assert.Equal(1, result.Attempted); Assert.Equal(1, result.TotalApproved); Assert.Equal(0, result.Skipped); Assert.True(result.HasMore);
+        Assert.Equal(0, result.ApprovedServices); Assert.Equal(0, result.ApprovedCombos);
+        Assert.Equal(beforeDraft, await f.Db.Listings.CountAsync(row => row.Status == ListingStatus.Draft));
+        Assert.Equal("Pending", (await f.Db.ServiceItems.AsNoTracking().SingleAsync(row => row.Id == f.Service.Id)).ModerationStatus);
+    }
+
+    [Fact]
+    public async Task BulkPropagatesCancellationAndUnexpectedFailureInsteadOfReportingFalseSuccess()
+    {
+        await using var f = await Fixture.Create();
+        var audits = await f.Db.AuditLogs.CountAsync();
+        var cancelled = new CancellationTokenSource(); cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator()).Handle(new(), cancelled.Token));
+        var error = new InvalidOperationException("Synthetic infrastructure failure");
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator(new FailingListingHandler(error))).Handle(new(), default));
+        Assert.Same(error, actual); Assert.Equal(audits, await f.Db.AuditLogs.CountAsync());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator(new FailingListingHandler(new OperationCanceledException()))).Handle(new(), default));
+    }
+
+    private static async Task AssertSuccessfulBulk(Fixture f)
+    {
+        var vendor = await f.Db.Vendors.SingleAsync(); vendor.SetVerified(true); vendor.ConfigureComboParticipation(true, 0);
+        var invalid = Listing.Create(vendor.Id, f.Live.CategoryId, "Malformed synthetic proposal", "malformed-bulk-qa", 1000, 2000, "Synthetic invalid draft content", "HCM");
+        f.Db.Listings.Add(invalid);
+        f.Db.ListingRevisions.Add(ListingRevision.Create(invalid.Id, 1, "{malformed", f.Owner.Id, true));
+        await f.Db.SaveChangesAsync(); f.Db.ChangeTracker.Clear();
+        var beforeContracts = await f.Db.BookingContracts.CountAsync();
+        var result = await new AutoApproveModerationQueueCommandHandler(f.Db, f.Moderator, f.Mediator()).Handle(new(), default);
+        Assert.Equal(2, result.ApprovedListings); Assert.Equal(1, result.ApprovedServices); Assert.Equal(1, result.ApprovedCombos);
+        Assert.Equal(4, result.TotalApproved); Assert.Equal(5, result.Attempted); Assert.Equal(1, result.Skipped); Assert.False(result.HasMore);
+        Assert.Equal("Pending", (await f.Db.ListingRevisions.AsNoTracking().SingleAsync(row => row.ListingId == invalid.Id)).Status);
+        Assert.Equal("Approved", (await f.Db.ListingRevisions.AsNoTracking().SingleAsync(row => row.Id == f.ListingRevision.Id)).Status);
+        Assert.Equal("Approved", (await f.Db.ComboTemplateRevisions.AsNoTracking().SingleAsync(row => row.Id == f.ComboRevision.Id)).Status);
+        Assert.Equal(beforeContracts, await f.Db.BookingContracts.CountAsync());
+        Assert.Equal(2, await f.Db.AuditLogs.CountAsync(row => row.Action == "Listing.Approve"));
+    }
+
+    [Theory]
     [InlineData("anonymous")] [InlineData("unknown")] [InlineData("inactive")]
     [InlineData("VendorOwner")] [InlineData("Customer")] [InlineData("Finance")] [InlineData("CustomerCare")]
     [InlineData("forged")] [InlineData("mismatch")]
@@ -33,6 +115,7 @@ public class UnifiedModerationQueueTests
         if (identity == "inactive") { f.Users.Single(user => user.Id == f.Moderator.UserId).SetStatus(false); await f.Db.SaveChangesAsync(); }
         var audits = await f.Db.AuditLogs.CountAsync();
         await Assert.ThrowsAsync<DomainException>(() => new GetModerationQueueQueryHandler(f.Db, actor).Handle(new(), default));
+        await Assert.ThrowsAsync<DomainException>(() => new AutoApproveModerationQueueCommandHandler(f.Db, actor, null!).Handle(new(), default));
         foreach (var (kind, id) in new[] { ("listing", f.Live.Id), ("service-item", f.Service.Id), ("combo", f.Combo.Id) })
             await Assert.ThrowsAsync<DomainException>(() => new GetModerationQueueDetailQueryHandler(f.Db, actor).Handle(new(kind, id), default));
         Assert.Equal(audits, await f.Db.AuditLogs.CountAsync());
@@ -159,14 +242,27 @@ public class UnifiedModerationQueueTests
             Assert.Equal(64, (await f.Detail("service-item", f.Service.Id)).ServiceItem!.ReviewVersion.Length);
             Assert.Equal("Still public combo", (await db.ComboTemplates.AsNoTracking().SingleAsync(row => row.Id == f.Combo.Id)).Name);
             Assert.Empty(await db.Database.GetPendingMigrationsAsync()); Assert.False(db.Database.HasPendingModelChanges());
+            await AssertSuccessfulBulk(f);
         }
         finally { Assert.StartsWith("WeddingPlanTest_ModerationQueue_", database); await using var cleanup = new ApplicationDbContext(options); await cleanup.Database.EnsureDeletedAsync(); }
     }
 
     private sealed record Current(Guid? UserId, string? Role) : ICurrentUserService { public string? Email => null; }
+    private sealed class Audit : IAuditLogger { public Task LogAsync(string action, string entityType, string? entityId, object? data = null) => Task.CompletedTask; }
+    private sealed class FailingListingHandler(Exception error) : IRequestHandler<ApproveListingCommand>
+    { public Task Handle(ApproveListingCommand request, CancellationToken ct) => Task.FromException(error); }
     private sealed class Fixture(ApplicationDbContext db, SqliteConnection? connection) : IAsyncDisposable
     {
         public ApplicationDbContext Db { get; } = db; public List<User> Users { get; } = [];
+        public IMediator Mediator(IRequestHandler<ApproveListingCommand>? listingHandler = null)
+        {
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton<IApplicationDbContext>(Db); services.AddSingleton<ICurrentUserService>(Moderator); services.AddSingleton<IAuditLogger>(new Audit());
+            services.AddMediatR(config => config.RegisterServicesFromAssemblyContaining<AutoApproveModerationQueueCommand>());
+            if (listingHandler != null) services.AddSingleton(listingHandler);
+            return services.BuildServiceProvider().GetRequiredService<IMediator>();
+        }
         public User Owner { get; private set; } = null!; public Current Moderator { get; private set; } = null!;
         public Listing Live { get; private set; } = null!; public ListingRevision ListingRevision { get; private set; } = null!;
         public ServiceItem Service { get; private set; } = null!; public ComboTemplate Combo { get; private set; } = null!;

@@ -61,4 +61,11 @@ test('Studio actor identity binds account, token, role and session revision', ()
   const current = { user: { id: 'vendor-a', role: 'VendorOwner' }, token: 'synthetic-token', sessionRevision: 9 };
   assert.equal(listingStudioActorIsCurrent(actor, current), true);
   for (const changed of [{ ...current, user: { id: 'vendor-b', role: 'VendorOwner' } }, { ...current, token: 'other' }, { ...current, sessionRevision: 10 }, { ...current, user: { id: 'vendor-a', role: 'SuperAdmin' } }, { ...current, user: null, token: null }]) assert.equal(listingStudioActorIsCurrent(actor, changed), false);
+  for (const role of ['Moderator', 'SuperAdmin']) {
+    const staff = { ...actor, role }; const staffSession = { ...current, user: { id: actor.id, role } };
+    assert.equal(listingStudioActorIsCurrent(staff, staffSession), false, 'Staff cannot use Vendor create scope');
+    assert.equal(listingStudioActorIsCurrent(staff, staffSession, true), true, 'Staff can use explicitly enabled edit scope');
+    for (const changed of [{ ...staffSession, sessionRevision: 10 }, { ...staffSession, token: 'other' }, { ...staffSession, user: { id: actor.id, role: role === 'Moderator' ? 'SuperAdmin' : 'Moderator' } }])
+      assert.equal(listingStudioActorIsCurrent(staff, changed, true), false);
+  }
 });

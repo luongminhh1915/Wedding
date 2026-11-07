@@ -134,8 +134,7 @@ public class ServiceItemModerationTests
     [Theory]
     [InlineData("draft-listing")] [InlineData("pending-listing")] [InlineData("rejected-listing")] [InlineData("hidden-listing")]
     [InlineData("inactive-listing")] [InlineData("inactive-category")] [InlineData("inactive-vendor")] [InlineData("inactive-owner")]
-    [InlineData("owner-role-changed")] [InlineData("unverified-vendor")] [InlineData("tax-missing")] [InlineData("tax-draft")]
-    [InlineData("tax-submitted")] [InlineData("tax-rejected")] [InlineData("tax-suspended")]
+    [InlineData("owner-role-changed")]
     [InlineData("item-category-mismatch")] [InlineData("item-vendor-mismatch")]
     public async Task ApprovalRevalidatesEveryLivePublicationAndBusinessDependencyBeforeMutation(string dependency)
     {
@@ -143,6 +142,36 @@ public class ServiceItemModerationTests
         var before = await f.Snapshot(); var version = await f.Version();
         await Assert.ThrowsAsync<DomainException>(() => f.ReviewWithVersion(true, version));
         Assert.Equal(before, await f.Snapshot());
+    }
+
+    [Theory]
+    [InlineData("unverified-vendor")] [InlineData("tax-missing")] [InlineData("tax-draft")]
+    [InlineData("tax-submitted")] [InlineData("tax-rejected")] [InlineData("tax-suspended")]
+    public async Task DeliberateContentApprovalDoesNotVerifyShopApproveTaxOrEnablePublicComboParticipation(string dependency)
+    {
+        await using var f = await Fixture.Create(); await f.SeedFinancialHistory(); await f.DisableDependency(dependency);
+        var financial = await f.FinancialSnapshot();
+        var vendor = await f.Db.Vendors.AsNoTracking().SingleAsync(row => row.Id == f.Vendor.Id);
+        var tax = await f.Db.VendorTaxProfiles.AsNoTracking().SingleOrDefaultAsync(row => row.VendorId == f.Vendor.Id);
+        var taxStatus = tax?.Status;
+        await f.Review(true, "Deliberate content approval with verification warning");
+        await using var read = f.Open();
+        var approved = await read.ServiceItems.AsNoTracking().SingleAsync(row => row.Id == f.Item.Id);
+        var afterVendor = await read.Vendors.AsNoTracking().SingleAsync(row => row.Id == f.Vendor.Id);
+        var afterTax = await read.VendorTaxProfiles.AsNoTracking().SingleOrDefaultAsync(row => row.VendorId == f.Vendor.Id);
+        Assert.Equal("Approved", approved.ModerationStatus);
+        Assert.Equal(vendor.IsVerified, afterVendor.IsVerified); Assert.False(afterVendor.AllowInCombos);
+        Assert.Equal(vendor.CommissionRate, afterVendor.CommissionRate); Assert.Equal(taxStatus, afterTax?.Status);
+        Assert.Equal(tax == null, afterTax == null);
+        Assert.False(await ComboPublicCatalog.Eligible(read).AnyAsync(row => row.Id == f.Item.Id));
+        Assert.Equal(financial, await f.FinancialSnapshot());
+        // Publication/participation remains a separate decision; approving content cannot supply consent.
+        if (!afterVendor.IsVerified)
+        {
+            afterVendor = await read.Vendors.SingleAsync(row => row.Id == f.Vendor.Id);
+            afterVendor.ConfigureComboParticipation(true, 0); await read.SaveChangesAsync();
+            Assert.False(await ComboPublicCatalog.Eligible(read).AnyAsync(row => row.Id == f.Item.Id));
+        }
     }
 
     [Fact]

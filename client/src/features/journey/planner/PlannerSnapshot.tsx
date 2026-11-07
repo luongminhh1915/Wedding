@@ -37,7 +37,7 @@ export function PlannerSnapshot() {
           </h2>
         </div>
         <div className="flex gap-2">
-          <Link to="/combo" className="btn btn-gold"><PackageCheck size={14} /> Chọn combo</Link>
+          <Link to="/browse?keyword=combo" className="btn btn-gold"><PackageCheck size={14} /> Khám phá gói combo</Link>
         </div>
       </div>
       <div className="h-2 rounded-full bg-[var(--paper)] overflow-hidden mb-5" aria-label={`Tiến độ ${pct}%`}>

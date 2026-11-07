@@ -128,6 +128,61 @@ public class ContractCategorySnapshotTests
         Assert.Equal(100000000m * result.CommissionRateSnapshot, rows.Sum(row => row.CommissionAmount));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ApprovedEffectivePolicyWithoutSignedActivationDoesNotChangeContractOrLedgerRate(bool inheritsCategory)
+    {
+        await using var f = await Fixture.Create(confirmed: false, shopRate: inheritsCategory ? 0m : .12m);
+        var admin = await f.Db.Users.SingleAsync(u => u.Role == UserRole.SuperAdmin);
+        var rule = CommissionPolicyRule.Create(CommissionRuleScope.Vendor, null, f.Vendor.Id,
+            null, null, null, .03m, CommissionBasisKind.StandardService, "not-activated",
+            "Admin approval alone is insufficient", DateTime.UtcNow.AddDays(-1), null, admin.Id);
+        rule.Submit(); rule.Approve(admin.Id);
+        f.Db.CommissionPolicyRules.Add(rule);
+        await f.Db.SaveChangesAsync();
+
+        var result = await f.Confirm();
+        Assert.Equal(inheritsCategory ? .08m : .12m, result.CommissionRateSnapshot);
+        AssertCategory(result.CategorySnapshot, f.Category, inheritsCategory);
+        Assert.All(await f.Db.Commissions.ToListAsync(), row => Assert.Equal(result.CommissionRateSnapshot, row.CommissionRate));
+        Assert.Equal(100000000m * result.CommissionRateSnapshot, await f.Db.Commissions.SumAsync(row => row.CommissionAmount));
+        Assert.Equal(inheritsCategory ? 0m : .12m, (await f.Db.Vendors.AsNoTracking().SingleAsync()).CommissionRate);
+    }
+
+    [Fact]
+    public async Task ComboWithoutApprovedPerComponentActivationFailsBeforeAnyFinancialOrPlannerWrite()
+    {
+        await using var f = await Fixture.Create(confirmed: false, shopRate: 0m);
+        var order = ComboOrder.Create(f.Customer.Id, null, f.Lead.WeddingDate, 100, null,
+            new[] { (f.Listing.Id, f.Vendor.Id, f.Category.Id, f.Listing.Title, 100000000m) });
+        f.Db.ComboOrders.Add(order);
+        f.Lead.AttachSource("Combo", order.Id);
+        await f.Db.SaveChangesAsync();
+        var before = await State(f.Db);
+        await Assert.ThrowsAsync<DomainException>(() => f.Confirm());
+        Assert.Equal(before, await State(f.Db));
+        Assert.Empty(await f.Db.Commissions.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ComboRetainsDeployedPositiveLegacyShopRateAndExistingConfirmationWorkflow()
+    {
+        await using var f = await Fixture.Create(confirmed: false, shopRate: .11m);
+        var order = ComboOrder.Create(f.Customer.Id, null, f.Lead.WeddingDate, 100, null,
+            new[] { (f.Listing.Id, f.Vendor.Id, f.Category.Id, f.Listing.Title, 100000000m) });
+        f.Db.ComboOrders.Add(order);
+        f.Lead.AttachSource("Combo", order.Id);
+        await f.Db.SaveChangesAsync();
+
+        var result = await f.Confirm();
+        Assert.Equal(.11m, result.CommissionRateSnapshot);
+        Assert.Equal("LegacyVendor", result.CategorySnapshot!.RateSource);
+        Assert.All(await f.Db.Commissions.ToListAsync(), c => Assert.Equal(.11m, c.CommissionRate));
+        Assert.Equal(11000000m, await f.Db.Commissions.SumAsync(c => c.CommissionAmount));
+        Assert.Equal(.11m, (await f.Db.Vendors.AsNoTracking().SingleAsync()).CommissionRate);
+    }
+
     [Fact]
     public async Task CatalogRenamesRateAndPolicyUpdatesDoNotRewriteConfirmedCategoryOrAnyReadModel()
     {

@@ -30,6 +30,11 @@ public static class ListingAccess
 
     public static async Task RequireImageUploadAccessAsync(IApplicationDbContext db, ICurrentUserService user, CancellationToken ct)
     {
+        if (user.Role is nameof(UserRole.SuperAdmin) or nameof(UserRole.Moderator))
+        {
+            await ListingPublication.RequireStaff(db, user, ct);
+            return;
+        }
         if (user.Role != nameof(UserRole.VendorOwner) || !user.UserId.HasValue ||
             !await db.Vendors.AnyAsync(vendor => vendor.UserId == user.UserId && vendor.IsActive && vendor.User.IsActive && vendor.User.Role == UserRole.VendorOwner, ct))
             throw new DomainException("Chỉ nhà cung cấp đang hoạt động được tải ảnh dịch vụ.");

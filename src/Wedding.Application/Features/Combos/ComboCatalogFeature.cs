@@ -141,7 +141,6 @@ public class SaveServiceItemCommandHandler(IApplicationDbContext context, ICurre
             return CatalogMap.ToDto(item) with { VendorName = vendor.BrandName };
         }
         if (listing.Status != ListingStatus.Active || !listing.IsActive) throw new DomainException("Dịch vụ cũ phải thuộc bài đăng Active của bạn.");
-        if (!vendor.IsVerified) throw new DomainException("NCC phải được xác minh trước khi quản lý dịch vụ.");
         ListingServicePricing.ValidateChildIds(existing.SingleOrDefault(x => x.Id == item.Id), r.Variants, r.AddOns);
         var changed = !ListingServicePricing.SameValues(item, r.Name, r.BasePrice, r.Unit, r.MinGuests, r.MaxGuests, r.Regions, r.CancellationPolicy, r.IsActive, r.MaxBookingsPerDay);
         if (changed) item.Update(r.Name, r.BasePrice, r.Unit, r.MinGuests, r.MaxGuests, r.Regions, r.CancellationPolicy, r.IsActive);

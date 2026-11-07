@@ -7,7 +7,7 @@ import { ComboPhoto } from "./ComboPhoto";
 import { comboVnd } from "./FixedComboServicePicker";
 import { ApprovalConfirmationDialog, type ApprovalConfirmationDetails } from "../../admin/ApprovalConfirmationDialog";
 
-const labels: Record<string, string> = { Draft: "Nháp", Pending: "Chờ kiểm duyệt", Approved: "Đã duyệt", Rejected: "Bị từ chối", Superseded: "Đã thay thế", Archived: "Đã ẩn" };
+const labels: Record<string, string> = { Draft: "Bản nháp", Pending: "Đang chờ duyệt", Approved: "Đã duyệt", Rejected: "Bị từ chối", Superseded: "Đã thay thế", Archived: "Đã ẩn" };
 export function ComboLifecycleCard({ template, onEdit, staff = false }: { template: CatalogTemplate; onEdit: () => void; staff?: boolean }) {
   const latest = template.latestRevision;
   const proposal = latest?.proposal;

@@ -13,7 +13,7 @@ export function VendorListingActions({ listing, edit }: { listing: ListingSummar
   const send = async () => {
     if (!confirm(`Gửi "${listing.title}" để kiểm duyệt? Bản công khai hiện tại và các giao dịch đã chốt được giữ nguyên.`)) return;
     setMessage('');
-    try { await submit.mutateAsync(listing.id); setMessage('Đã gửi phiên bản để kiểm duyệt.'); }
+    try { await submit.mutateAsync(listing.id); setMessage('Đã gửi đề xuất duyệt đến Ban quản trị. Trạng thái hiện tại: Đang chờ duyệt.'); }
     catch { /* Render the API error next to the action. */ }
   };
   return <div className="min-w-0 max-w-full">

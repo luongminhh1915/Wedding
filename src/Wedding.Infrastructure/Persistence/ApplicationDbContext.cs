@@ -31,6 +31,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<CommissionPolicyRule> CommissionPolicyRules => Set<CommissionPolicyRule>();
     public DbSet<CommissionComponentBasisApproval> CommissionComponentBasisApprovals => Set<CommissionComponentBasisApproval>();
     public DbSet<CommissionAdjustmentRequest> CommissionAdjustmentRequests => Set<CommissionAdjustmentRequest>();
+    public DbSet<CommissionNegotiationRequest> CommissionNegotiationRequests => Set<CommissionNegotiationRequest>();
+    public DbSet<CommissionNegotiationMessage> CommissionNegotiationMessages => Set<CommissionNegotiationMessage>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<ReviewEditRequest> ReviewEditRequests => Set<ReviewEditRequest>();
     public DbSet<Article> Articles => Set<Article>();
@@ -209,7 +211,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 !entry.Entity.DecidedAt.HasValue || !entry.Entity.DecidedById.HasValue)
                 throw new InvalidOperationException("Commission adjustment request snapshots are immutable and can receive one final decision only.");
         }
-        var auditedTypes = new[] { typeof(BookingContract), typeof(Commission), typeof(CommissionSettlement), typeof(CommissionPolicyRule), typeof(CommissionComponentBasisApproval), typeof(CommissionAdjustmentRequest), typeof(PaymentTransaction), typeof(AdvancePayment), typeof(VendorVerification), typeof(VendorTaxProfile), typeof(Dispute), typeof(Listing), typeof(Review), typeof(ReviewEditRequest) };
+        var auditedTypes = new[] { typeof(BookingContract), typeof(Commission), typeof(CommissionSettlement), typeof(CommissionPolicyRule), typeof(CommissionComponentBasisApproval), typeof(CommissionAdjustmentRequest), typeof(CommissionNegotiationRequest), typeof(PaymentTransaction), typeof(AdvancePayment), typeof(VendorVerification), typeof(VendorTaxProfile), typeof(Dispute), typeof(Listing), typeof(Review), typeof(ReviewEditRequest) };
         var changes = ChangeTracker.Entries().Where(e => auditedTypes.Contains(e.Entity.GetType()) && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).ToArray();
         foreach (var change in changes)
             AuditLogs.Add(AuditLog.Create(currentUser?.UserId, currentUser?.Role ?? "System", $"Persist.{change.State}", change.Entity.GetType().Name,

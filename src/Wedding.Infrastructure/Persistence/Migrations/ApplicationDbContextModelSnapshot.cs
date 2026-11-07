@@ -1796,6 +1796,163 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.ToTable("CommissionCreditNotes");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionNegotiationMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AttachmentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("NegotiationRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ProposedRateSnapshot")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SenderRole")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("NegotiationRequestId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("CommissionNegotiationMessages", (string)null);
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionNegotiationRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ApprovedRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<Guid?>("AssignedModeratorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CooperationPlan")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal?>("CounterRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CurrentRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DecidedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DecisionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal>("ProposedRate")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("ReasonCategory")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("ReasonDetail")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("ResultingPolicyRuleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid?>("ServiceItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedModeratorId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("ResultingPolicyRuleId");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("VendorId");
+
+                    b.HasIndex("Scope", "CategoryId", "ServiceItemId");
+
+                    b.ToTable("CommissionNegotiationRequests", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CommissionNegotiationRequests_TargetScope", "([Scope] = 'Vendor' AND [CategoryId] IS NULL AND [ServiceItemId] IS NULL)\nOR ([Scope] = 'VendorCategory' AND [CategoryId] IS NOT NULL AND [ServiceItemId] IS NULL)\nOR ([Scope] = 'Service' AND [ServiceItemId] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.CommissionPolicyRule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4706,6 +4863,79 @@ namespace Wedding.Infrastructure.Persistence.Migrations
                     b.Navigation("ServiceItem");
                 });
 
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionNegotiationMessage", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.CommissionNegotiationRequest", "NegotiationRequest")
+                        .WithMany("Messages")
+                        .HasForeignKey("NegotiationRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("NegotiationRequest");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionNegotiationRequest", b =>
+                {
+                    b.HasOne("Wedding.Domain.Entities.User", "AssignedModerator")
+                        .WithMany()
+                        .HasForeignKey("AssignedModeratorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Wedding.Domain.Entities.User", "DecidedBy")
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.CommissionPolicyRule", "ResultingPolicyRule")
+                        .WithMany()
+                        .HasForeignKey("ResultingPolicyRuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.ServiceItem", "ServiceItem")
+                        .WithMany()
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Wedding.Domain.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedModerator");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("DecidedBy");
+
+                    b.Navigation("ResultingPolicyRule");
+
+                    b.Navigation("ServiceItem");
+
+                    b.Navigation("Vendor");
+                });
+
             modelBuilder.Entity("Wedding.Domain.Entities.CommissionPolicyRule", b =>
                 {
                     b.HasOne("Wedding.Domain.Entities.User", "ApprovedBy")
@@ -5196,6 +5426,11 @@ namespace Wedding.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Wedding.Domain.Entities.ComboTemplate", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Wedding.Domain.Entities.CommissionNegotiationRequest", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("Wedding.Domain.Entities.Lead", b =>

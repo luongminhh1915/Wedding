@@ -205,6 +205,18 @@ public sealed class ListingVisibilityPrivacyTests
         await Assert.ThrowsAsync<DomainException>(() => ListingAccess.RequireImageUploadAccessAsync(fixture.Db, new Current(fixture.Owner.Id, role), default));
     }
 
+    [Theory]
+    [InlineData("Moderator")] [InlineData("SuperAdmin")]
+    public async Task StaffImageUploadRequiresPersistedActiveMatchingStaffRole(string role)
+    {
+        await using var fixture = await Fixture.Create();
+        var staff = User.Create("Synthetic staff editor", role + "@staff-edit.example.invalid", "0901234567", "synthetic-hash", Enum.Parse<UserRole>(role));
+        fixture.Db.Users.Add(staff); await fixture.Db.SaveChangesAsync();
+        await ListingAccess.RequireImageUploadAccessAsync(fixture.Db, new Current(staff.Id, role), default);
+        staff.SetStatus(false); await fixture.Db.SaveChangesAsync();
+        await Assert.ThrowsAsync<DomainException>(() => ListingAccess.RequireImageUploadAccessAsync(fixture.Db, new Current(staff.Id, role), default));
+    }
+
     [Fact]
     public async Task ListingUploadsRequireOwnActiveVendorAndOwnerAccount()
     {
@@ -230,7 +242,7 @@ public sealed class ListingVisibilityPrivacyTests
         Assert.False(Directory.Exists(environment.ContentRootPath));
         var authorization = typeof(UploadController).GetMethod(nameof(UploadController.UploadImages))!
             .GetCustomAttributes(typeof(AuthorizeAttribute), false).Cast<AuthorizeAttribute>();
-        Assert.Contains(authorization, attribute => attribute.Roles == "VendorOwner");
+        Assert.Equal(new[] { "Moderator", "SuperAdmin", "VendorOwner" }, authorization.SelectMany(attribute => (attribute.Roles ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)).Distinct().Order());
     }
 
     private static Task<PublicListingsResult> Browse(ApplicationDbContext db) => new GetPublicListingsQueryHandler(db)

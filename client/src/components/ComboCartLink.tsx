@@ -1,18 +1,21 @@
 import { ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
-import { useComboCartStore } from "../store/comboCartStore";
+import { useWeddingCartStore } from "../store/weddingCartStore";
+
 export default function ComboCartLink() {
   const user = useAuthStore((s) => s.user);
-  const count = useComboCartStore(
-    (s) => s.carts[user?.id ?? "guest"]?.selections.length ?? 0,
+  const count = useWeddingCartStore((s) =>
+    (s.items ?? []).reduce((sum, i) => sum + (i.quantity || 1), 0)
   );
+
   if (user && user.role !== "Customer") return null;
+
   return (
     <Link
       className="wm-cart-link"
-      to="/combo"
-      aria-label={`Giỏ combo, ${count} dịch vụ`}
+      to="/cart"
+      aria-label={`Giỏ hàng dịch vụ cưới, ${count} dịch vụ`}
     >
       <ShoppingBag size={18} />
       <span>{count}</span>

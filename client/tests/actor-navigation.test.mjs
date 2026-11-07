@@ -11,6 +11,7 @@ import { VENDOR_JOURNEY_TABS } from "../src/features/vendor-portal/vendorJourney
 const roles = ["Customer", "VendorOwner", "Moderator", "Finance", "CustomerCare", "SuperAdmin"];
 const layoutSource = await readFile(new URL("../src/components/WeddingMatchLayout.tsx", import.meta.url), "utf8");
 const layoutCss = await readFile(new URL("../src/styles/wedding-match.css", import.meta.url), "utf8");
+const bottomNavCss = await readFile(new URL("../src/styles/mobile-bottom-navigation.css", import.meta.url), "utf8");
 const adminSource = await readFile(new URL("../src/features/admin/AdminDashboard.tsx", import.meta.url), "utf8");
 const roleTabs = {
   VendorOwner: ["overview", "listings", "combos", "leads"],
@@ -114,7 +115,7 @@ test("real desktop/mobile link renderer excludes Customer catalog and other acto
   assert.deepEqual(links(renderLinks("unknown", true, "/admin/dashboard")).map(item => item.href), ["/account"]);
 });
 
-test("header and mobile primary navigation use the actor gate and mobile nav remains visible below the header", () => {
+test("customer bottom navigation uses five shortcuts while staff navigation keeps the actor gate", () => {
   const header = layoutSource.slice(layoutSource.indexOf("export function WeddingMatchHeader"), layoutSource.indexOf("export function WeddingMatchFooter"));
   const mobile = layoutSource.slice(layoutSource.indexOf("export function MobileNavigation"), layoutSource.indexOf("export default function WeddingMatchLayout"));
   assert.match(header, /usesCustomerNavigation\(user\?\.role\)/);
@@ -127,14 +128,20 @@ test("header and mobile primary navigation use the actor gate and mobile nav rem
   assert.match(mobile, /if \(!usesCustomerNavigation\(user\?\.role\)\) return/);
   assert.match(mobile, /<ActorWorkspaceLinks role=\{user\?\.role\} pathname=\{pathname\} search=\{search\} \/>/);
   assert.match(mobile, /customerMobileSection\(pathname\)/);
-  for (const item of ["Combo cưới", "Wedding Planner", "Cẩm nang", "Về Wedding Match", "Dành cho NCC"])
+  for (const item of ["Trang chủ", "Kế hoạch", "Thiệp", "Dịch vụ", "Blog"])
     assert.ok(mobile.includes(item), `mobile navigation is missing ${item}`);
+  assert.match(mobile, /wm-mobile-nav wm-mobile-bottom-nav/);
+  assert.match(mobile, /customerTab\(pathname, search\) === "invitations"/);
+  assert.match(header, /to="\/cam-nang">Blog</);
+  assert.match(bottomNavCss, /position:\s*fixed/);
+  assert.match(bottomNavCss, /grid-template-columns:\s*repeat\(5,/);
+  assert.match(bottomNavCss, /safe-area-inset-bottom/);
   const layout = layoutSource.slice(layoutSource.indexOf("export default function WeddingMatchLayout"));
-  assert.ok(layout.indexOf("<MobileNavigation />") < layout.indexOf("<div id=\"main-content\">"), "mobile navigation should be placed directly below the header, before page content");
+  assert.ok(layout.includes("has-mobile-bottom-nav"), "customer layouts reserve space for the floating bar");
   const tabletRules = layoutCss.slice(layoutCss.indexOf("@media (max-width: 900px)"), layoutCss.indexOf("@media (max-width: 600px)"));
   const mobileNavRules = tabletRules.slice(tabletRules.indexOf(".wm-mobile-nav {"), tabletRules.indexOf(".wm-mobile-nav a {"));
   assert.match(mobileNavRules, /display:\s*flex/);
-  assert.match(mobileNavRules, /position:\s*sticky/, "mobile navigation must remain visible beneath the sticky header instead of hiding at the viewport bottom");
+  assert.match(mobileNavRules, /position:\s*sticky/, "staff navigation retains its existing sticky layout");
   assert.match(mobileNavRules, /overflow-x:\s*auto/, "long actor menus must remain reachable on narrow phones");
   assert.doesNotMatch(layoutSource, /dashboardPath\(user\)/);
 });

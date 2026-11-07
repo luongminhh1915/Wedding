@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Eye, Loader2, RefreshCw } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, RefreshCw, Zap } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import axiosClient from "../../services/axiosClient";
 import { Pagination } from "../../components/Pagination";
@@ -9,8 +9,10 @@ import { ServiceDetails } from "../customer/components/ServiceDetails";
 import { listingImagePreview } from "../vendor-portal/components/listingEditModel";
 import { apiError } from "../journey/api";
 import { comboDate, comboPreviewPath } from "../journey/combo/comboTemplateEditorModel";
-import { useModerationQueue } from "./useModerationQueue";
+import { useModerationQueue, useAutoApproveAll } from "./useModerationQueue";
 import { ApprovalConfirmationDialog, type ApprovalConfirmationDetails } from "./ApprovalConfirmationDialog";
+import { BulkModerationConfirmationDialog } from "./BulkModerationConfirmationDialog";
+import { moderationActor, sameModerationActor, startModerationPolling, type ModerationActor, type BulkModerationProposal } from "./bulkModerationModel";
 import { MODERATION_TYPES, MODERATION_STATUSES, moderationFilters, moderationSelection, updateModerationFilters, selectModerationRow,
   moderationStatus, moderationDecision, type ModerationDetail, type ModerationFilters } from "./moderationQueueModel";
 
@@ -70,6 +72,7 @@ export function ReviewDetail({ detail, onRefresh, onDone }: { detail: Moderation
           title: detail.listing?.title ?? detail.serviceItem?.name ?? detail.combo?.latestRevision?.proposal?.name ?? detail.combo?.name ?? "Nội dung đang chọn",
           vendorName: detail.listing?.vendorBrandName ?? detail.serviceItem?.vendorName ?? detail.combo?.ownerVendorName,
           versionLabel: revision ? `Phiên bản #${revision.sequence}` : "Nội dung hiện tại đang xem",
+          isVendorVerified: detail.isVendorVerified,
         } });
         return;
       }
@@ -103,9 +106,59 @@ export function ReviewDetail({ detail, onRefresh, onDone }: { detail: Moderation
   </article>;
 }
 export default function ModerationQueue() {
-  const [params, setParams] = useSearchParams(); const { user, token } = useAuthStore();
-  const filters = moderationFilters(params); const selected = moderationSelection(params); const query = useModerationQueue(filters);
+  const [params, setParams] = useSearchParams(); const session = useAuthStore(); const { user, token } = session;
+  const filters = moderationFilters(params); const selected = moderationSelection(params);
+  const [automaticActor, setAutomaticActor] = useState<ModerationActor | null>(null);
+  const [bulkApproval, setBulkApproval] = useState<BulkModerationProposal | null>(null);
+  const [bulkError, setBulkError] = useState("");
+  const autoApproveMode = sameModerationActor(automaticActor, session);
+  const autoApproveMutation = useAutoApproveAll();
+  const query = useModerationQueue(filters, { refetchInterval: autoApproveMode ? 3000 : false });
+  const pendingCount = useRef(0);
+  useEffect(() => { pendingCount.current = query.data?.pendingCount ?? 0; }, [query.data?.pendingCount]);
   const [notice, setNotice] = useState("");
+
+  const openBulkApproval = (mode: "once" | "automatic") => {
+    if (autoApproveMutation.isPending) return;
+    const actor = moderationActor(useAuthStore.getState());
+    if (!actor) return;
+    setBulkError(""); setBulkApproval({ mode, type: "all", actor });
+  };
+  const confirmBulkApproval = async () => {
+    if (!bulkApproval || autoApproveMutation.isPending) return;
+    const proposal = bulkApproval;
+    if (!sameModerationActor(proposal.actor, useAuthStore.getState())) { setBulkError("Phiên kiểm duyệt đã thay đổi. Hủy và xác nhận lại."); return; }
+    if (proposal.mode === "automatic") {
+      setAutomaticActor(proposal.actor); setBulkApproval(null);
+      setNotice("Đã bật tự động duyệt trong phiên này khi màn hàng chờ đang mở; bao gồm NCC chưa xác minh. Gặp lỗi hoặc mục cần xem lại sẽ tạm dừng.");
+      return;
+    }
+    try {
+      const res = await autoApproveMutation.mutateAsync({ type: proposal.type, actor: proposal.actor });
+      if (!sameModerationActor(proposal.actor, useAuthStore.getState())) return;
+      setBulkApproval(null);
+      setNotice(`Đã duyệt ${res.totalApproved}/${res.attempted} mục trong lượt này (${res.approvedListings} bài đăng, ${res.approvedServices} dịch vụ thành phần, ${res.approvedCombos} combo). Bỏ qua ${res.skipped} mục cần xem lại.${res.hasMore ? " Còn nội dung chưa xử lý; xác nhận một lượt tiếp theo khi sẵn sàng." : ""}`);
+      void query.refetch();
+      if (selected) void detail.refetch();
+    } catch (err) {
+      if (sameModerationActor(proposal.actor, useAuthStore.getState())) setBulkError("Lượt duyệt đã dừng; một số mục có thể đã được duyệt. Tải lại hàng chờ trước khi thử lại. " + apiError(err));
+    }
+  };
+
+  const approveBatch = autoApproveMutation.mutateAsync;
+  useEffect(() => {
+    if (!autoApproveMode || !automaticActor) return;
+    return startModerationPolling({
+      isCurrent: () => sameModerationActor(automaticActor, useAuthStore.getState()),
+      hasPending: () => pendingCount.current > 0,
+      approve: () => approveBatch({ type: "all", actor: automaticActor }),
+      onResult: res => {
+        setNotice(`Tự động: đã duyệt ${res.totalApproved}/${res.attempted} mục, bỏ qua ${res.skipped}.${res.skipped ? " Đã tạm dừng; xem lại các mục không hợp lệ trước khi bật lại." : ""}`);
+        if (res.skipped > 0) setAutomaticActor(null);
+      },
+      onError: error => { setAutomaticActor(null); setNotice("Tự động duyệt đã tạm dừng. Tải lại hàng chờ để kiểm tra các mục đã xử lý. " + apiError(error)); },
+    });
+  }, [autoApproveMode, automaticActor, approveBatch]);
   const detail = useQuery({ queryKey: ["moderation-detail", user?.id, user?.role, selected?.type, selected?.id, selected?.revisionId], enabled: !!token && !!selected && ["Moderator", "SuperAdmin"].includes(user?.role ?? ""),
     retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false,
     queryFn: async () => (await axiosClient.get<ModerationDetail>(`/api/moderation-queue/${selected!.type}/${selected!.id}`, { params: { revisionId: selected!.revisionId } })).data });
@@ -114,7 +167,62 @@ export default function ModerationQueue() {
   const done = () => { const next = new URLSearchParams(params); for (const key of ["reviewType", "reviewId", "reviewRevision"]) next.delete(key); setParams(next, { replace: true }); setNotice("Đã lưu quyết định và thông báo tới đúng NCC. Các dữ liệu tài chính được giữ nguyên."); };
   const version = detail.data?.serviceItem?.reviewVersion ?? detail.data?.listing?.latestRevision?.id ?? detail.data?.combo?.latestRevision?.id ?? "legacy";
   return <section aria-label="Hàng chờ kiểm duyệt thống nhất" className="min-w-0">
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-[#233a42]">Hàng chờ nội dung</h2><p className="mt-1 text-xs text-slate-500">Bài giới thiệu, dịch vụ thành phần và combo · {query.data?.pendingCount ?? "…"} nội dung chờ duyệt.</p></div><button className={button} onClick={() => { void query.refetch(); if (selected) void detail.refetch(); }}>Tải lại hàng chờ</button></div>
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-semibold text-[#233a42] flex items-center gap-2">
+          Hàng chờ nội dung
+          {autoApproveMode && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 border border-amber-300 animate-pulse">
+              <Zap size={12} className="fill-amber-600 text-amber-600" />
+              Tự động duyệt: BẬT
+            </span>
+          )}
+        </h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Bài giới thiệu, dịch vụ thành phần và combo · {query.data?.pendingCount ?? "…"} nội dung chờ duyệt.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2.5">
+        <label className="flex items-center gap-2 cursor-pointer select-none rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm hover:bg-amber-100/70 transition">
+          <input
+            type="checkbox"
+            checked={autoApproveMode}
+            disabled={autoApproveMutation.isPending}
+            onChange={(e) => { if (e.target.checked) openBulkApproval("automatic"); else { setAutomaticActor(null); setNotice("Đã tắt tự động duyệt."); } }}
+            className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+          />
+          <span className="flex items-center gap-1.5">
+            <Zap size={14} className={autoApproveMode ? "text-amber-600 fill-amber-600" : "text-amber-500"} />
+            Tự động duyệt trong phiên này
+          </span>
+        </label>
+
+        <button
+          type="button"
+          className="flex items-center gap-1.5 rounded-xl border border-amber-400 bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 transition disabled:opacity-50"
+          disabled={autoApproveMutation.isPending || (query.data?.pendingCount ?? 0) === 0}
+          onClick={() => openBulkApproval("once")}
+          title="Xem phạm vi và xác nhận trước khi duyệt một lượt giới hạn"
+        >
+          {autoApproveMutation.isPending ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Đang duyệt lượt này...
+            </>
+          ) : (
+            <>
+              <Zap size={16} className="fill-white" />
+              Duyệt hàng loạt ({query.data?.pendingCount ?? 0})
+            </>
+          )}
+        </button>
+
+        <button className={button} onClick={() => { void query.refetch(); if (selected) void detail.refetch(); }}>
+          Tải lại hàng chờ
+        </button>
+      </div>
+    </div>
     <div className="mb-5 grid min-w-0 gap-3 rounded-2xl border border-[#dedccf] bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr_auto]">
       <label className="min-w-0 text-xs font-semibold text-slate-600">Loại nội dung<select aria-label="Loại nội dung kiểm duyệt" className={input + " mt-2"} value={filters.type} onChange={event => update({ type: event.target.value })}>{MODERATION_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
       <label className="min-w-0 text-xs font-semibold text-slate-600">Trạng thái<select aria-label="Trạng thái kiểm duyệt" className={input + " mt-2"} value={filters.status} onChange={event => update({ status: event.target.value })}>{MODERATION_STATUSES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
@@ -122,10 +230,23 @@ export default function ModerationQueue() {
       <button className={button + " self-end"} onClick={() => update({ type: "all", status: "Pending", search: "", page: 1, pageSize: 10 })}>Xóa bộ lọc</button>
     </div>
     {notice && <p role="status" className="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</p>}
+    {bulkApproval && <BulkModerationConfirmationDialog proposal={bulkApproval} busy={autoApproveMutation.isPending} error={bulkError}
+      onCancel={() => { if (!autoApproveMutation.isPending) { setBulkApproval(null); setBulkError(""); } }} onConfirm={() => { void confirmBulkApproval(); }} />}
     {query.isPending ? <p role="status" className="flex items-center gap-2 p-8"><Loader2 className="animate-spin" size={18} />Đang tải hàng chờ...</p> : query.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(query.error)}</p><button className={button + " mt-3"} onClick={() => void query.refetch()}><RefreshCw size={16} className="mr-2 inline" />Thử lại</button></div> : <>
       <div className="grid min-w-0 gap-5 lg:grid-cols-[300px_minmax(0,1fr)]"><div className="min-w-0 space-y-3">
         {!query.data?.items.length && <div className="rounded-2xl border border-[#dedccf] bg-white p-6 text-center text-slate-500"><CheckCircle2 className="mx-auto mb-3" /><p>Không có nội dung phù hợp bộ lọc.</p></div>}
-        {query.data?.items.map(row => <button key={`${row.type}:${row.id}:${row.revisionId ?? row.changedAt}`} className={`w-full rounded-2xl border p-4 text-left [overflow-wrap:anywhere] ${selected?.id === row.id && selected.type === row.type ? "border-[#e38c82] bg-[#fcf6ea]" : "border-[#dedccf] bg-white"}`} onClick={() => { setNotice(""); setParams(selectModerationRow(params, row)); }}><span className="block text-xs text-slate-500">{kindLabel(row.type)} · {label(row.status)}</span><b className="mt-2 block text-sm text-[#233a42]">{row.title}</b><span className="mt-2 block text-xs text-slate-500">{row.vendorName}</span><span className="mt-2 block text-xs text-slate-500">{row.revisionSequence ? `Phiên bản #${row.revisionSequence}` : "Nội dung hiện tại"} · {comboDate(row.changedAt)}</span></button>)}
+        {query.data?.items.map(row => <button key={`${row.type}:${row.id}:${row.revisionId ?? row.changedAt}`} className={`w-full rounded-2xl border p-4 text-left [overflow-wrap:anywhere] ${selected?.id === row.id && selected.type === row.type ? "border-[#e38c82] bg-[#fcf6ea]" : "border-[#dedccf] bg-white"}`} onClick={() => { setNotice(""); setParams(selectModerationRow(params, row)); }}><span className="block text-xs text-slate-500">{kindLabel(row.type)} · {label(row.status)}</span><b className="mt-2 block text-sm text-[#233a42]">{row.title}</b><div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-slate-600">{row.vendorName}</span>
+            {row.isVendorVerified ? (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                Đã xác minh
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                Chưa duyệt giấy tờ
+              </span>
+            )}
+          </div><span className="mt-2 block text-xs text-slate-500">{row.revisionSequence ? `Phiên bản #${row.revisionSequence}` : "Nội dung hiện tại"} · {comboDate(row.changedAt)}</span></button>)}
       </div><div className="min-w-0">{!selected ? <div className="rounded-2xl border border-dashed border-[#dedccf] p-10 text-center text-slate-500"><Eye className="mx-auto mb-3" /><p>Chọn nội dung để xem đúng đề xuất, ảnh và điều khoản trước khi duyệt.</p></div> : detail.isPending ? <p role="status" className="p-8">Đang tải phiên bản được chọn...</p> : detail.isError ? <div role="alert" className="rounded-xl bg-red-50 p-4"><p>{apiError(detail.error)}</p><button className={button + " mt-3"} onClick={refreshDetail}>Tải lại đúng phiên bản</button></div> : detail.data && <ReviewDetail key={`${detail.data.type}:${detail.data.id}:${version}`} detail={detail.data} onRefresh={refreshDetail} onDone={done} />}</div></div>
       {query.data && <Pagination page={query.data.page} pageSize={query.data.pageSize} totalCount={query.data.totalCount} isLoading={query.isFetching} onPageChange={page => update({ page })} label="Phân trang hàng chờ kiểm duyệt" />}
     </>}

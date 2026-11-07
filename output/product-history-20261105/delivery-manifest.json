@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-05",
+  "historical_originals": 98,
+  "new_originals": 167,
+  "total_originals": 265,
+  "current_screen_states": 35,
+  "milestones": 14,
+  "pdf_pages": 79,
+  "historical_source_date_range": [
+    "2026-10-16",
+    "2026-11-05"
+  ],
+  "pdf": "WeddingMatch_HanhTrinhSanPham_20261105.pdf",
+  "pdf_sha256": "8b60353f9832f5912511d581cbf412dec7024bfc2c7d9be2f9e42cb49ca49c41",
+  "validation": {
+    "original_hashes": "265/265 match",
+    "original_images": "265/265 decodable",
+    "pdf": "79 pages rendered; Vietnamese glyph coverage checked; visual review complete",
+    "application_tests": "Not run - screenshot/document task; no application source changes"
+  },
+  "limitations": [
+    "Historical dates mainly use file timestamps; exact capture dates may differ.",
+    "Current internal screens captured with SuperAdmin; other actor sessions not re-captured.",
+    "Long pages are original scroll-sequence frames with overlap, not a single full-page capture."
+  ]
+}

@@ -17,6 +17,9 @@ export default function CategoryBar({ categories, selectedId, onSelect }: Props)
       <Grid2X2 size={23} aria-hidden="true" /><span>Tất cả dịch vụ</span>
       {hasCounts && <small>{categories.reduce((sum, category) => sum + category.listingCount, 0)}</small>}
     </button>
+    <button type="button" onClick={() => onSelect("combo")} className={selectedId === "combo" ? "is-selected" : ""} aria-pressed={selectedId === "combo"} title="Các gói Combo trọn gói do Nhà cung cấp tự tạo">
+      <Sparkles size={23} aria-hidden="true" /><span>Gói Combo (NCC)</span>
+    </button>
     {categories.map(category => {
       const Icon = icons[category.icon ?? ""] ?? icons[fallbackBySlug[category.slug]] ?? Heart;
       const selected = selectedId === category.id;

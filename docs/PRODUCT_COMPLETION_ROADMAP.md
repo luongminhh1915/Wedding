@@ -2,6 +2,8 @@
 
 Ngày **22/10/2026**. Đọc [đặc tả](PRODUCT_FUNCTIONAL_SPEC.md), [kiến trúc](ARCHITECTURE_AND_OPERATIONS.md), [handoff](AGENT_HANDOFF.md) và [master checklist](master-upgrade-checklist.md). Đây là backlog có dependencies/acceptance, **không phải yêu cầu tự động làm hết**. Yêu cầu cuối phiên hiện tại là tài liệu rồi dừng.
 
+**Delta01/11/2026 — các câu “cuối phiên docs-only/hosting tạm gác/chưa có UI staff mới” dưới đây là lịch sử:** owner hiện giao cập nhật bàn giao và deploy. Core/Studio/CMS/auth đã có release; draft/submit, batch/session auto-moderation và private verification documents là module mới cần nghiệm thu. Phase5 có scope candidate resolver và UI quản lý hồ sơ, nhưng effective activation/basis/signed link chưa đủ; giữ legacy transaction behavior. Phase6 đã có entity/CQRS/client chưa hoàn chỉnh, cần feature gate/schema/SQL/permissions/counteroffer workflow/UI/notifications trước mở dùng. Phase7 vẫn là dependency; không chuyển Approved negotiation thành policy Active. Tiếp theo sau release là các gap được owner giao cụ thể, không dựng lại module hoặc tự thay tài chính. Rounding đã được user28/10 làm rõ giữ nguyên hiện trạng, không tự làm tròn/cắt số; đọc decision28/10 thay vì hỏi lại mục precision cũ.
+
 ## 1. Đánh giá sản phẩm hiện tại
 
 | Phân hệ | Code hiện có | Còn thiếu để nghiệm thu |

@@ -265,15 +265,12 @@ export function CustomerLeads() {
                         )}
                         <div className="customer-order-actions">
                           <button
-                            className="co-button primary"
-                            disabled={
-                              !["Accepted", "Contacted", "Contracted"].includes(
-                                lead.status,
-                              )
-                            }
+                            className="co-button primary !bg-rose-600 hover:!bg-rose-700 !text-white flex items-center gap-1.5 font-medium shadow-xs"
+                            disabled={["Cancelled", "Expired"].includes(lead.status)}
                             onClick={() => setChatLead(lead)}
+                            title="Mở hộp chat trao đổi trực tiếp với nhà cung cấp"
                           >
-                            <MessageCircle size={14} /> Trò chuyện
+                            <MessageCircle size={15} /> Trò chuyện (Chat NCC)
                           </button>
                           {!lead.isPhoneUnlocked &&
                             !["Cancelled", "Expired"].includes(lead.status) && (

@@ -9,7 +9,6 @@ import {
 import {
   ArrowUpRight,
   BookOpen,
-  BriefcaseBusiness,
   ChevronDown,
   Heart,
   House,
@@ -29,11 +28,13 @@ import { useAuthStore } from "../store/authStore";
 import { safeAnchorId } from "../utils/anchorNavigation";
 import NotificationBell from "./NotificationBell";
 import ComboCartLink from "./ComboCartLink";
+import NavbarMusicPlayer from "./NavbarMusicPlayer";
 import "../styles/combo-builder.css";
 import { useIntentStore } from "../store/intentStore";
 import { CustomerNavigationGroups } from "../features/customer/CustomerToolNavigation";
-import { customerMobileSection, isCustomerWorkspace } from "../features/customer/customerNavigationModel";
+import { customerMobileSection, customerTab, isCustomerWorkspace } from "../features/customer/customerNavigationModel";
 import { actorWorkspaceNavigation, usesCustomerNavigation } from "./actorNavigationModel";
+import "../styles/mobile-bottom-navigation.css";
 
 const actorNavigationIcons = {
   overview: PanelsTopLeft, listings: Star, combos: Package, leads: MessageSquare,
@@ -90,7 +91,7 @@ export function WeddingMatchHeader() {
         <NavLink to="/" end>
           Trang chủ
         </NavLink>
-        <NavLink to="/combo">Combo cưới</NavLink>
+        <NavLink to="/browse">Dịch vụ</NavLink>
         <details
           className="wm-nav-menu"
           data-active={isCustomerWorkspace(location.pathname)}
@@ -102,7 +103,8 @@ export function WeddingMatchHeader() {
             <CustomerNavigationGroups pathname={location.pathname} search={location.search} compact />
           </div>
         </details>
-        <NavLink to="/cam-nang">Cẩm nang</NavLink>
+        <NavLink to="/cam-nang">Blog</NavLink>
+        <NavLink to="/anniversary">Kỷ niệm cưới</NavLink>
         <Link className="wm-about-nav" to="/#cong-cu">
           Về Wedding Match
         </Link>
@@ -142,6 +144,7 @@ export function WeddingMatchHeader() {
             Đăng nhập
           </button>
         )}
+        <NavbarMusicPlayer />
       </div>
     </header>
   );
@@ -204,28 +207,29 @@ export function WeddingMatchFooter() {
 
 export function MobileNavigation() {
   const { user } = useAuthStore();
-  const { pathname, search, hash } = useLocation();
+  const { pathname, search } = useLocation();
   if (!usesCustomerNavigation(user?.role)) return (
     <nav className="wm-mobile-nav" aria-label="Điều hướng chính">
       <ActorWorkspaceLinks role={user?.role} pathname={pathname} search={search} />
     </nav>
   );
   const customerActive = customerMobileSection(pathname);
+  const invitationActive = pathname === "/invitation"
+    || (isCustomerWorkspace(pathname) && customerTab(pathname, search) === "invitations");
   const items = [
-    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" && !hash },
-    { to: "/combo", label: "Combo cưới", icon: Star, active: customerActive === "combo" },
+    { to: "/", label: "Trang chủ", icon: House, active: pathname === "/" },
     {
       to: "/customer/dashboard",
-      label: "Wedding Planner",
+      label: "Kế hoạch",
       icon: PanelsTopLeft,
-      active: customerActive === "planner",
+      active: customerActive === "planner" && !invitationActive,
     },
-    { to: "/cam-nang", label: "Cẩm nang", icon: BookOpen, active: pathname === "/cam-nang" || pathname.startsWith("/cam-nang/") },
-    { to: "/#cong-cu", label: "Về Wedding Match", icon: Heart, active: pathname === "/" && hash === "#cong-cu" },
-    { to: "/register?role=vendor", label: "Dành cho NCC", icon: BriefcaseBusiness, active: pathname === "/register" && search.includes("role=vendor") },
+    { to: "/customer/dashboard?tab=invitations", label: "Thiệp", icon: Heart, active: invitationActive },
+    { to: "/browse", label: "Dịch vụ", icon: Star, active: customerActive === "services" || customerActive === "combo" },
+    { to: "/cam-nang", label: "Blog", icon: BookOpen, active: ["/cam-nang", "/wiki"].some(route => pathname === route || pathname.startsWith(route + "/")) },
   ];
   return (
-    <nav className="wm-mobile-nav" aria-label="Điều hướng chính">
+    <nav className="wm-mobile-nav wm-mobile-bottom-nav" aria-label="Điều hướng nhanh">
       {items.map(({ to, label, icon: Icon, active }) => (
         <Link
           key={label}
@@ -233,7 +237,7 @@ export function MobileNavigation() {
           className={active ? "active" : ""}
           aria-current={active ? "page" : undefined}
         >
-          <Icon size={17} aria-hidden="true" />
+          <Icon size={22} fill={active && Icon === House ? "currentColor" : "none"} aria-hidden="true" />
           <span>{label}</span>
         </Link>
       ))}
@@ -243,6 +247,7 @@ export function MobileNavigation() {
 
 export default function WeddingMatchLayout() {
   const { pathname, hash } = useLocation();
+  const role = useAuthStore(state => state.user?.role);
   useEffect(() => {
     const anchorId = safeAnchorId(hash);
     if (anchorId)
@@ -252,7 +257,7 @@ export default function WeddingMatchLayout() {
     else if (!hash) window.scrollTo(0, 0);
   }, [pathname, hash]);
   return (
-    <div className="wm-theme">
+    <div className={`wm-theme${usesCustomerNavigation(role) ? " has-mobile-bottom-nav" : ""}`} /* className="wm-theme" */>
       <a href="#main-content" className="skip-link">
         Đến nội dung chính
       </a>

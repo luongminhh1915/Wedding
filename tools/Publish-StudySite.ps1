@@ -133,7 +133,8 @@ GO
         Database = @{ Provider = 'SqlServer'; ApplyMigrations = $false; SeedDemoData = $false }
         ConnectionStrings = @{ DefaultConnection = '' }
         JwtSettings = @{ Secret = ''; Issuer = 'WeddingPlatform'; Audience = 'WeddingPlatformClient'; ExpiryMinutes = 1440 }
-        Uploads = @{ InvitationRoot = '../private/uploads/invitations'; InvitationAudioRoot = '../private/uploads/invitation-audio'; ListingRoot = '../private/uploads/listings' }
+        Uploads = @{ InvitationRoot = '../private/uploads/invitations'; InvitationAudioRoot = '../private/uploads/invitation-audio'; ListingRoot = '../private/uploads/listings'; VerificationRoot = '../private/uploads/verification-documents' }
+        Features = @{ CommissionNegotiationsEnabled = $false }
         Logging = @{ LogLevel = @{ Default = 'Information'; 'Microsoft.AspNetCore' = 'Warning'; 'Microsoft.EntityFrameworkCore.Database.Command' = 'Warning' } }
         AllowedHosts = '*'
     }

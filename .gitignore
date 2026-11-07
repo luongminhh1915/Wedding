@@ -5,6 +5,7 @@
 advance_payments.json
 **/App_Data/invitation-uploads/
 **/App_Data/invitation-audio/
+**/App_Data/verification-documents/
 
 # Build output
 **/[Bb]in/

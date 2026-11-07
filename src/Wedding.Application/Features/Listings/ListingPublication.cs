@@ -60,7 +60,7 @@ public static class ListingPublication
             : ListingImageReferences.NormalizeRequired(update.ImageUrls),
         update?.ServiceDetails == null ? previous != null ? previous.ServiceDetailsJson : listing.ServiceDetailsJson : ListingServiceDetails.NormalizeAndSerialize(update.ServiceDetails),
         previous?.Pricing);
-    public static async Task<ListingRevision> Append(IApplicationDbContext db, Listing listing, Guid actor, ListingRevisionContent content, bool submit, CancellationToken ct)
+    public static async Task<ListingRevision> Append(IApplicationDbContext db, Listing listing, Guid actor, ListingRevisionContent content, bool submit, CancellationToken ct, string actorRole = "VendorOwner")
     {
         var previous = await db.ListingRevisions.Where(x => x.ListingId == listing.Id).OrderByDescending(x => x.Sequence).ToListAsync(ct);
         if (previous.Count == 0 && listing.Status is ListingStatus.Active or ListingStatus.Hidden)
@@ -73,7 +73,7 @@ public static class ListingPublication
         var revision = ListingRevision.Create(listing.Id, previous.Count == 0 ? 1 : previous[0].Sequence + 1,
             JsonSerializer.Serialize(content, JsonOptions), actor, submit);
         db.ListingRevisions.Add(revision);
-        db.AuditLogs.Add(AuditLog.Create(actor, "VendorOwner", submit ? "ListingRevision.Submit" : "ListingRevision.SaveDraft", nameof(ListingRevision), revision.Id.ToString(),
+        db.AuditLogs.Add(AuditLog.Create(actor, actorRole, submit ? "ListingRevision.Submit" : "ListingRevision.SaveDraft", nameof(ListingRevision), revision.Id.ToString(),
             JsonSerializer.Serialize(new { listing.Id, revision.Sequence })));
         return revision;
     }
@@ -116,9 +116,8 @@ public static class ListingPublication
     {
         await ListingCategoryAccess.RequireForExistingAsync(db, listing.VendorId, listing.CategoryId, ct);
         var vendor = await db.Vendors.SingleAsync(x => x.Id == listing.VendorId, ct);
-        if (!vendor.IsActive || !await db.Users.AnyAsync(x => x.Id == vendor.UserId && x.IsActive && x.Role == UserRole.VendorOwner, ct) ||
-            !vendor.IsVerified || !await db.VendorTaxProfiles.AnyAsync(x => x.VendorId == vendor.Id && x.Status == VerificationStatus.Approved, ct))
-            throw new DomainException("Hoàn thiện hồ sơ pháp lý/ngân hàng và được xác minh trước khi nộp/duyệt bài đăng.");
+        if (!vendor.IsActive || !await db.Users.AnyAsync(x => x.Id == vendor.UserId && x.IsActive && x.Role == UserRole.VendorOwner, ct))
+            throw new DomainException("Nhà cung cấp không còn hoạt động.");
         if (!await db.Categories.AnyAsync(x => x.Id == listing.CategoryId && x.IsActive, ct)) throw new DomainException("Ngành dịch vụ không còn hoạt động.");
     }
 }

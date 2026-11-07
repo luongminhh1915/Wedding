@@ -20,6 +20,8 @@ public interface IApplicationDbContext
     DbSet<CommissionPolicyRule> CommissionPolicyRules { get; }
     DbSet<CommissionComponentBasisApproval> CommissionComponentBasisApprovals { get; }
     DbSet<CommissionAdjustmentRequest> CommissionAdjustmentRequests { get; }
+    DbSet<CommissionNegotiationRequest> CommissionNegotiationRequests { get; }
+    DbSet<CommissionNegotiationMessage> CommissionNegotiationMessages { get; }
     DbSet<Review> Reviews { get; }
     DbSet<ReviewEditRequest> ReviewEditRequests { get; }
     DbSet<Article> Articles { get; }

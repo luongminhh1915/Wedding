@@ -1,9 +1,11 @@
 import { isServiceStudioImage } from "../../listings/serviceDetailsModel.ts";
 
-export type ListingStudioActor = { id?: string; token: string | null; revision: number };
+export type ListingStudioActor = { id?: string; role?: string; token: string | null; revision: number };
 type StudioSession = { user: { id: string; role: string } | null; token: string | null; sessionRevision: number };
-export function listingStudioActorIsCurrent(actor: ListingStudioActor, session: StudioSession): boolean {
-  return !!actor.id && !!actor.token && actor.id === session.user?.id && session.user.role === "VendorOwner" &&
+export function listingStudioActorIsCurrent(actor: ListingStudioActor, session: StudioSession, allowStaff = false): boolean {
+  const role = actor.role ?? "VendorOwner";
+  return !!actor.id && !!actor.token && actor.id === session.user?.id && session.user.role === role &&
+    (role === "VendorOwner" || allowStaff && ["Moderator", "SuperAdmin"].includes(role)) &&
     actor.token === session.token && actor.revision === session.sessionRevision;
 }
 export function validateStudioUploadFiles(files: readonly { name: string; type: string; size: number }[]): void {

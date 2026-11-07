@@ -11,21 +11,31 @@ public class SubmitForApprovalCommandHandler(IApplicationDbContext db, ICurrentU
 {
     public Task Handle(SubmitForApprovalCommand request, CancellationToken ct) => db.ExecuteSerializableAsync(async token =>
     {
-        var vendor = await ListingPublication.RequireOwner(db, actor, token);
-        var listing = await db.Listings.Include(x => x.Media).SingleOrDefaultAsync(x => x.Id == request.ListingId && x.VendorId == vendor.Id, token)
-            ?? throw new NotFoundException("Dịch vụ không tồn tại.");
+        Wedding.Domain.Entities.Listing listing;
+        if (actor.Role is "Moderator" or "SuperAdmin")
+        {
+            await ListingPublication.RequireStaff(db, actor, token);
+            listing = await db.Listings.Include(x => x.Media).SingleOrDefaultAsync(x => x.Id == request.ListingId, token)
+                ?? throw new NotFoundException("Dịch vụ không tồn tại.");
+        }
+        else
+        {
+            var vendor = await ListingPublication.RequireOwner(db, actor, token);
+            listing = await db.Listings.Include(x => x.Media).SingleOrDefaultAsync(x => x.Id == request.ListingId && x.VendorId == vendor.Id, token)
+                ?? throw new NotFoundException("Dịch vụ không tồn tại.");
+        }
         await ListingPublication.CheckSubmission(db, listing, token);
         var latest = await db.ListingRevisions.Where(x => x.ListingId == listing.Id).OrderByDescending(x => x.Sequence).FirstOrDefaultAsync(token);
         if (listing.Status is ListingStatus.Active or ListingStatus.Hidden)
         {
             if (latest?.Status is not ("Draft" or "Rejected")) throw new DomainException("Chỉ gửi duyệt bản sửa nháp hoặc bị từ chối. Bản đang công khai được giữ nguyên.");
-            await ListingPublication.Append(db, listing, actor.UserId!.Value, ListingPublication.Read(latest), true, token);
+            await ListingPublication.Append(db, listing, actor.UserId!.Value, ListingPublication.Read(latest), true, token, actor.Role!);
         }
         else
         {
             if (listing.Status is not (ListingStatus.Draft or ListingStatus.Rejected)) throw new DomainException("Dịch vụ đã được gửi duyệt.");
             var content = ListingPublication.Capture(listing) with { Pricing = await ListingServicePricing.Current(db, listing, token) };
-            await ListingPublication.Append(db, listing, actor.UserId!.Value, content, true, token);
+            await ListingPublication.Append(db, listing, actor.UserId!.Value, content, true, token, actor.Role!);
             listing.SubmitForApproval();
             await ListingServicePricing.Synchronize(db, listing, "Pending", token);
         }

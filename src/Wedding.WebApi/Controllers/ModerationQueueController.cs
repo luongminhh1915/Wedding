@@ -17,4 +17,8 @@ public class ModerationQueueController(IMediator mediator) : ControllerBase
     [HttpGet("{type}/{id:guid}")]
     public async Task<ActionResult<ModerationQueueDetail>> Detail(string type, Guid id, [FromQuery] Guid? revisionId, CancellationToken ct)
         => Ok(await mediator.Send(new GetModerationQueueDetailQuery(type, id, revisionId), ct));
+
+    [HttpPost("auto-approve-all")]
+    public async Task<ActionResult<AutoApproveModerationQueueResult>> AutoApproveAll([FromQuery] string type = "all", [FromQuery] int batchSize = 20, CancellationToken ct = default)
+        => Ok(await mediator.Send(new AutoApproveModerationQueueCommand(type, batchSize), ct));
 }

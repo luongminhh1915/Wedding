@@ -19,6 +19,8 @@ const BrowsePage = lazy(() => import("../features/customer/BrowsePage"));
 const ListingDetailPage = lazy(
   () => import("../features/customer/ListingDetailPage"),
 );
+const ComparePage = lazy(() => import("../features/customer/ComparePage"));
+const CartPage = lazy(() => import("../features/customer/CartPage"));
 const VendorDashboard = lazy(
   () => import("../features/vendor-portal/VendorDashboard"),
 );
@@ -33,6 +35,7 @@ const ArticlesPage = lazy(() => import("../features/journey/ArticlesPage"));
 const ArticlePage = lazy(() => import("../features/journey/admin/OperationsPanels").then((m) => ({ default: m.ArticlePage })));
 const TemplateGallery = lazy(() => import("../features/journey/invitations/TemplateGallery"));
 const InvitationManage = lazy(() => import("../features/journey/invitations/InvitationManage"));
+const AnniversaryPage = lazy(() => import("../features/customer/AnniversaryPage"));
 const PublicInvitationPage = lazy(
   () =>
     import("../features/customer/components/invitation/PublicInvitationPage"),
@@ -63,6 +66,9 @@ export default function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/browse" element={<BrowsePage />} />
           <Route path="/vendors" element={<BrowsePage />} />
+          <Route path="/compare" element={<ComparePage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/anniversary" element={<AnniversaryPage />} />
           <Route path="/listings/:id" element={<ListingDetailPage />} />
           <Route element={<PublicAuthRoute />}>
             <Route path="/login" element={<LoginForm />} />
@@ -70,7 +76,10 @@ export default function AppRoutes() {
           </Route>
           <Route path="/combo" element={<ComboBuilderPage />} />
           <Route path="/combo/:templateId" element={<ComboDetailPage />} />
+          <Route path="/blog" element={<ArticlesPage />} />
+          <Route path="/blog/:slug" element={<ArticlePage />} />
           <Route path="/cam-nang" element={<ArticlesPage />} />
+          <Route path="/cam-nang/:slug" element={<ArticlePage />} />
           <Route path="/wiki" element={<ArticlesPage />} />
           <Route path="/wiki/:slug" element={<ArticlePage />} />
           <Route path="/invitation" element={<TemplateGallery />} />

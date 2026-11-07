@@ -184,7 +184,34 @@ export function usePaySettlement() {
 export interface Verification { id: string; vendorId: string; vendorName: string; businessLicenseNumber: string; documentUrls: string[]; note?: string; status: string; reviewNote?: string; createdAt: string; reviewedAt?: string | null }
 export interface Dispute { id: string; code: string; contractId: string; contractCode: string; openedByRole: string; reason: string; evidenceUrl?: string; status: string; resolution?: string; slaDeadline: string; createdAt: string; resolvedAt?: string | null; slaBreached: boolean }
 export interface AdminKpi { customers: number; vendors: number; verifiedVendors: number; pendingVerifications: number; leadsThisMonth: number; leadsSlaBreached: number; contractsConfirmed: number; gmv: number; commissionPending: number; commissionPaid: number; openDisputes: number; comboOrders: number; upcomingAppointments: number; leadToContractRate: number }
-export interface AuditLog { id: string; createdAt: string; actorId?: string; actorRole?: string; action: string; entityType: string; entityId?: string; dataJson?: string }
+export interface AuditAccountInfo {
+  userId: string;
+  fullName: string;
+  email?: string | null;
+  phoneNumber?: string | null;
+  role: string;
+  loginName?: string | null;
+  brandName?: string | null;
+  isActive: boolean;
+  createdAt?: string | null;
+  lastLoginAt?: string | null;
+  city?: string | null;
+  address?: string | null;
+}
+
+export interface AuditLog {
+  id: string;
+  createdAt: string;
+  actorId?: string;
+  actorRole?: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  dataJson?: string;
+  entityTitle?: string | null;
+  targetAccount?: AuditAccountInfo | null;
+  actorAccount?: AuditAccountInfo | null;
+}
 export interface Article { id: string; title: string; slug: string; excerpt: string; content: string; thumbnailUrl?: string; category: string; isPublished: boolean; publishedAt?: string; viewCount: number; listingIds?: string[] }
 
 export const useMyVerifications = () => useQuery({ queryKey: ["my-verifications"], queryFn: () => get<Verification[]>("/api/verifications/my") });

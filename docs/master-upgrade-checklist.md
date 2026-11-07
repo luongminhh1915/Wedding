@@ -1,5 +1,25 @@
 # Master upgrade — audit và checklist theo phase
 
+**BatchCMS05/11 — DEPLOYED:** frontend same-origin, assets/index giải nén Success sau backup. Owner bỏ tests; buildPASS, public GET/hash19/19PASS, browser Blog7bài/ảnh hiển thị;64dịch vụ/APIconfig giữ nguyên. Chỉ xác nhận bundle có batchCMS mới; chưa chạy thao tác nhập/xuất bản24bài trên host. Evidence `artifacts/release-batchcms-20261105/after-live.json`.
+
+**Sync05/11 — DEPLOYED:** giao diện Blog/CMS/wizard mới, public Blog khớp API1bài thay fallback24. Build PASS, owner bỏ tests; live58/58 và browser Blog verified. Backend/SQL/config giữ nguyên; authenticated CMS CRUD UNVERIFIED. Evidence `artifacts/release-sync-20261105/live-delta-2026-11-04T18-16-53-555Z.json`.
+
+**Marketplace04/11 — DEPLOYED:** same-origin frontend548scope,145filehash/coreGET verified; desktop/mobile browse + emptycart viewed. Owner skippedtests; buildPASS. Backend/SQL/config untouched; cartmutation/auth E2E UNVERIFIED. Evidence artifacts/release-marketplace-20261104-1842/combined-live-evidence.json.
+
+**Blog04/11 — DEPLOYED:** FA4F fullBE+FE; live39/39 + public24curatedcards/reader/10images verified. Tests skipped by owner; noSQL/migration/seed. APIarticlesprod0; Admin publishing/curatedhide behavior remains UNVERIFIED. CompareWIP excluded from isolatedbundle, worktree preserved.
+
+**Article Publishing & 24 Articles 04/11 — IMPLEMENTED & VERIFIED:** owner requested "t thấy có xuất bản đc đâu". Root causes: (1) DB initially had 0 articles, seeded all 24 curated articles into SQL Server with `IsPublished = 1`; (2) React state race condition on submit button resolved via `pendingPublishRef` so `publish: true` is synchronously dispatched on clicking "Xuất bản ngay"; (3) local image fallback handling for `/blog/` paths added; (4) TOC anchors aligned with `<h2>` tags. FE tests 543/543 PASS, client build clean in 1.16s, API returns 24 published articles. Package updated in `artifacts/ui-patch-20261103/Frontend-Romantic-Appearance-Music.zip`.
+
+**Update03/11 10:33VN — DEPLOYED:** same-origin full BE+FE ADEF (music hidden/audit DTO/customer UI). Public checks32/32PASS, baseline64services/2tracks and privateconfig unchanged; no SQL/migration. Authenticated audit/music/chat E2E remains UNVERIFIED; Browse Combo keyword filter is not proven template aggregation. [Release](reports/update-release-2026-11-03.md).
+
+**AuditLog & Account Details 03/11 — IMPLEMENTED & VERIFIED:** owner requested "phần đối tượng trong ảnh phần audit log, giúp t hiển thị tên tài khoản và chi tiết thông tin tài khoản đó". Backend `GovernanceFeature.cs` enriched with target account & entity title lookups (Listing, Revision, User, Vendor, Verification, Contract). Frontend `AdminJourneyPanels.tsx` enriched with dedicated account column & comprehensive Account Details modal dialog. FE unit tests 543/543 PASS, client build clean in 884ms, production package updated in `artifacts/ui-patch-20261103/Frontend-Romantic-Appearance-Music.zip`.
+
+**Appearance03/11 — DEPLOYED:** full BE+FE D399, public checks19/19PASS (exactassets/settings200/readiness/catalog63), privateconfig unchanged; no SQL/migration. Desktop/mobile guest UI + Blog/menu nhạc checked; authenticated settings/MP3upload still UNVERIFIED. FE18/18 +BE28/28targetchecks/build/packagePASS before deployment. [Release note](reports/appearance-release-2026-11-03.md).
+
+**UI patch02/11 22:32VN — DEPLOYED:** phân trang admin10/20/50 và mobile bottomnav5mục/Blog đã có trên host;5entryassets +AdminDashboard SHAkhớp gói, home/readiness200/catalog63. Owner giải nén vào `/site1`; không migration/config/backend changes. Authenticated/mobile browser QA chưa chạy.
+
+**Release 02/11/2026 — DEPLOYED:** bản moderation/documents/music mới đã lên weddingmatch.website; homepage/readiness200,63dịch vụ,5entryassets khớp package. Owner duyệt migration22; đã áp2bảng mới, giữ số dòng/cột62bảng cũ. Negotiation vẫn tắt, không kích hoạt công thức/rate mới. Không chạy lại suite theo yêu cầu owner; browser actor workflows sau deploy UNVERIFIED. [Báo cáo ngắn](reports/deployment-2026-11-02.md).
+
 Ngày bắt đầu: 18/10/2026. Baseline: branch `weddy-journey`, commit `468e507`.
 Nguồn yêu cầu: Master Prompt người dùng gửi (1.482 dòng, phần A–L, 47 acceptance criteria); hai ảnh đính kèm về điều hướng planner và dropdown hoa hồng.
 

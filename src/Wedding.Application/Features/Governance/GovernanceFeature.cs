@@ -28,19 +28,25 @@ public class SubmitVerificationCommandHandler : IRequestHandler<SubmitVerificati
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _user;
-    public SubmitVerificationCommandHandler(IApplicationDbContext context, ICurrentUserService user) { _context = context; _user = user; }
+    private readonly IVerificationDocumentStore _documents;
+    public SubmitVerificationCommandHandler(IApplicationDbContext context, ICurrentUserService user, IVerificationDocumentStore documents)
+    { _context = context; _user = user; _documents = documents; }
 
     public async Task<VerificationDto> Handle(SubmitVerificationCommand r, CancellationToken ct)
     {
-        var vendor = await _context.Vendors.FirstOrDefaultAsync(v => v.UserId == _user.UserId, ct) ?? throw new DomainException("Tài khoản chưa gắn với nhà cung cấp.");
+        var vendor = await VerificationDocumentAccess.RequireVendorAsync(_context, _user, ct);
         if (vendor.IsVerified) throw new DomainException("Nhà cung cấp đã được xác minh.");
         if (await _context.VendorVerifications.AnyAsync(v => v.VendorId == vendor.Id && v.Status == VerificationStatus.Submitted, ct))
             throw new DomainException("Hồ sơ đang chờ duyệt.");
-        if (r.DocumentUrls == null || r.DocumentUrls.Count < 3 || r.DocumentUrls.Count > 10 || r.DocumentUrls.Any(url => !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https"))
-            throw new DomainException("Cần 3–10 link HTTPS: giấy phép, giấy tờ đại diện và ảnh cơ sở.");
-        var taxProfile = await _context.VendorTaxProfiles.FirstOrDefaultAsync(p => p.VendorId == vendor.Id, ct) ?? throw new DomainException("Vui lòng hoàn thiện hồ sơ pháp nhân, MST, ngân hàng trước.");
+        if (r.DocumentUrls == null || r.DocumentUrls.Count < 1 || r.DocumentUrls.Count > 10)
+            throw new DomainException("Cần cung cấp từ 1 đến 10 tài liệu đính kèm (giấy phép, giấy tờ đại diện, ảnh cơ sở).");
+        var documents = r.DocumentUrls.Select(url => VerificationDocumentAccess.NormalizeReference(url, vendor.Id, _documents)).ToList();
+        if (documents.Distinct(StringComparer.Ordinal).Count() != documents.Count)
+            throw new DomainException("Không đính kèm tài liệu trùng lặp.");
+        var taxProfile = await _context.VendorTaxProfiles.FirstOrDefaultAsync(p => p.VendorId == vendor.Id, ct)
+            ?? throw new DomainException("Vui lòng hoàn thiện hồ sơ pháp nhân, MST, ngân hàng và xác nhận thỏa thuận trước khi nộp giấy tờ.");
         taxProfile.Submit();
-        var v = VendorVerification.Create(vendor.Id, r.BusinessLicenseNumber, JsonSerializer.Serialize(r.DocumentUrls), r.Note);
+        var v = VendorVerification.Create(vendor.Id, r.BusinessLicenseNumber, JsonSerializer.Serialize(documents), r.Note);
         _context.VendorVerifications.Add(v);
         await _context.SaveChangesAsync(ct);
         return GovMap.ToDto(v) with { VendorName = vendor.BrandName };
@@ -220,7 +226,34 @@ public class SaveArticleCommandHandler : IRequestHandler<SaveArticleCommand, Art
 }
 
 // ---------- Audit + Dashboard ----------
-public record AuditLogDto(Guid Id, DateTime CreatedAt, Guid? ActorId, string? ActorRole, string Action, string EntityType, string? EntityId, string? DataJson);
+public record AuditAccountInfoDto(
+    Guid UserId,
+    string FullName,
+    string? Email,
+    string? PhoneNumber,
+    string Role,
+    string? LoginName = null,
+    string? BrandName = null,
+    bool IsActive = true,
+    DateTime? CreatedAt = null,
+    DateTime? LastLoginAt = null,
+    string? City = null,
+    string? Address = null
+);
+
+public record AuditLogDto(
+    Guid Id,
+    DateTime CreatedAt,
+    Guid? ActorId,
+    string? ActorRole,
+    string Action,
+    string EntityType,
+    string? EntityId,
+    string? DataJson,
+    string? EntityTitle = null,
+    AuditAccountInfoDto? TargetAccount = null,
+    AuditAccountInfoDto? ActorAccount = null
+);
 public record GetAuditLogsQuery(int Take) : IRequest<List<AuditLogDto>>;
 
 public class GetAuditLogsQueryHandler : IRequestHandler<GetAuditLogsQuery, List<AuditLogDto>>
@@ -229,8 +262,230 @@ public class GetAuditLogsQueryHandler : IRequestHandler<GetAuditLogsQuery, List<
     public GetAuditLogsQueryHandler(IApplicationDbContext context) => _context = context;
 
     public async Task<List<AuditLogDto>> Handle(GetAuditLogsQuery r, CancellationToken ct)
-        => (await _context.AuditLogs.AsNoTracking().OrderByDescending(a => a.CreatedAt).Take(Math.Clamp(r.Take, 1, 500)).ToListAsync(ct))
-            .Select(a => new AuditLogDto(a.Id, a.CreatedAt, a.ActorId, a.ActorRole, a.Action, a.EntityType, a.EntityId, a.DataJson)).ToList();
+    {
+        var rawLogs = await _context.AuditLogs.AsNoTracking()
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(Math.Clamp(r.Take, 1, 500))
+            .ToListAsync(ct);
+
+        var actorIds = rawLogs.Where(l => l.ActorId.HasValue).Select(l => l.ActorId!.Value).Distinct().ToList();
+
+        var userEntityIds = rawLogs.Where(l => l.EntityType == "User" && Guid.TryParse(l.EntityId, out _))
+            .Select(l => Guid.Parse(l.EntityId!)).Distinct().ToList();
+
+        var listingEntityIds = rawLogs.Where(l => l.EntityType == "Listing" && Guid.TryParse(l.EntityId, out _))
+            .Select(l => Guid.Parse(l.EntityId!)).Distinct().ToList();
+
+        var revisionEntityIds = rawLogs.Where(l => l.EntityType == "ListingRevision" && Guid.TryParse(l.EntityId, out _))
+            .Select(l => Guid.Parse(l.EntityId!)).Distinct().ToList();
+
+        var vendorEntityIds = rawLogs.Where(l => l.EntityType == "Vendor" && Guid.TryParse(l.EntityId, out _))
+            .Select(l => Guid.Parse(l.EntityId!)).Distinct().ToList();
+
+        var verificationEntityIds = rawLogs.Where(l => l.EntityType == "VendorVerification" && Guid.TryParse(l.EntityId, out _))
+            .Select(l => Guid.Parse(l.EntityId!)).Distinct().ToList();
+
+        var contractEntityIds = rawLogs.Where(l => (l.EntityType == "BookingContract" || l.EntityType == "Contract") && Guid.TryParse(l.EntityId, out _))
+            .Select(l => Guid.Parse(l.EntityId!)).Distinct().ToList();
+
+        var allUserIds = actorIds.Concat(userEntityIds).Distinct().ToList();
+        var usersMap = allUserIds.Count > 0
+            ? await _context.Users.AsNoTracking()
+                .Include(u => u.Vendor)
+                .Where(u => allUserIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, ct)
+            : new Dictionary<Guid, User>();
+
+        var listingsMap = listingEntityIds.Count > 0
+            ? await _context.Listings.AsNoTracking()
+                .Include(l => l.Vendor).ThenInclude(v => v.User)
+                .Where(l => listingEntityIds.Contains(l.Id))
+                .ToDictionaryAsync(l => l.Id, ct)
+            : new Dictionary<Guid, Listing>();
+
+        var revisionsMap = revisionEntityIds.Count > 0
+            ? await _context.ListingRevisions.AsNoTracking()
+                .Include(r => r.Listing).ThenInclude(l => l.Vendor).ThenInclude(v => v.User)
+                .Where(r => revisionEntityIds.Contains(r.Id))
+                .ToDictionaryAsync(r => r.Id, ct)
+            : new Dictionary<Guid, ListingRevision>();
+
+        var vendorsMap = vendorEntityIds.Count > 0
+            ? await _context.Vendors.AsNoTracking()
+                .Include(v => v.User)
+                .Where(v => vendorEntityIds.Contains(v.Id))
+                .ToDictionaryAsync(v => v.Id, ct)
+            : new Dictionary<Guid, Vendor>();
+
+        var verificationsMap = verificationEntityIds.Count > 0
+            ? await _context.VendorVerifications.AsNoTracking()
+                .Include(v => v.Vendor).ThenInclude(vnd => vnd.User)
+                .Where(v => verificationEntityIds.Contains(v.Id))
+                .ToDictionaryAsync(v => v.Id, ct)
+            : new Dictionary<Guid, VendorVerification>();
+
+        var contractsMap = contractEntityIds.Count > 0
+            ? await _context.BookingContracts.AsNoTracking()
+                .Include(c => c.Vendor).ThenInclude(v => v.User)
+                .Include(c => c.Customer)
+                .Where(c => contractEntityIds.Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id, ct)
+            : new Dictionary<Guid, BookingContract>();
+
+        AuditAccountInfoDto ToAccountInfo(User u, Vendor? vendor = null)
+        {
+            var v = vendor ?? u.Vendor;
+            return new(
+                u.Id,
+                u.FullName,
+                string.IsNullOrWhiteSpace(u.Email) ? null : u.Email,
+                string.IsNullOrWhiteSpace(u.PhoneNumber) ? null : u.PhoneNumber,
+                u.Role.ToString(),
+                u.LoginName,
+                v?.BrandName,
+                u.IsActive,
+                u.CreatedAt,
+                u.LastLoginAt,
+                v?.City,
+                v?.Address
+            );
+        }
+
+        return rawLogs.Select(log =>
+        {
+            AuditAccountInfoDto? actorAccount = null;
+            if (log.ActorId.HasValue && usersMap.TryGetValue(log.ActorId.Value, out var actorUser))
+            {
+                actorAccount = ToAccountInfo(actorUser);
+            }
+
+            string? entityTitle = null;
+            AuditAccountInfoDto? targetAccount = null;
+
+            if (Guid.TryParse(log.EntityId, out var entityGuid))
+            {
+                if (log.EntityType == "User" && usersMap.TryGetValue(entityGuid, out var userTarget))
+                {
+                    entityTitle = userTarget.FullName;
+                    targetAccount = ToAccountInfo(userTarget);
+                }
+                else if (log.EntityType == "Listing" && listingsMap.TryGetValue(entityGuid, out var listingTarget))
+                {
+                    entityTitle = listingTarget.Title;
+                    if (listingTarget.Vendor?.User != null)
+                    {
+                        targetAccount = ToAccountInfo(listingTarget.Vendor.User, listingTarget.Vendor);
+                    }
+                    else if (listingTarget.Vendor != null)
+                    {
+                        targetAccount = new AuditAccountInfoDto(
+                            listingTarget.Vendor.UserId,
+                            string.IsNullOrWhiteSpace(listingTarget.Vendor.ContactPerson) ? listingTarget.Vendor.BrandName : listingTarget.Vendor.ContactPerson,
+                            null,
+                            listingTarget.Vendor.Hotline,
+                            "VendorOwner",
+                            null,
+                            listingTarget.Vendor.BrandName,
+                            listingTarget.Vendor.IsActive,
+                            null,
+                            null,
+                            listingTarget.Vendor.City,
+                            listingTarget.Vendor.Address
+                        );
+                    }
+                }
+                else if (log.EntityType == "ListingRevision" && revisionsMap.TryGetValue(entityGuid, out var revTarget))
+                {
+                    entityTitle = revTarget.Listing?.Title ?? $"Phiên bản #{revTarget.Sequence}";
+                    if (revTarget.Listing?.Vendor?.User != null)
+                    {
+                        targetAccount = ToAccountInfo(revTarget.Listing.Vendor.User, revTarget.Listing.Vendor);
+                    }
+                }
+                else if (log.EntityType == "Vendor" && vendorsMap.TryGetValue(entityGuid, out var vendorTarget))
+                {
+                    entityTitle = vendorTarget.BrandName;
+                    if (vendorTarget.User != null)
+                    {
+                        targetAccount = ToAccountInfo(vendorTarget.User, vendorTarget);
+                    }
+                    else
+                    {
+                        targetAccount = new AuditAccountInfoDto(
+                            vendorTarget.UserId,
+                            string.IsNullOrWhiteSpace(vendorTarget.ContactPerson) ? vendorTarget.BrandName : vendorTarget.ContactPerson,
+                            null,
+                            vendorTarget.Hotline,
+                            "VendorOwner",
+                            null,
+                            vendorTarget.BrandName,
+                            vendorTarget.IsActive,
+                            null,
+                            null,
+                            vendorTarget.City,
+                            vendorTarget.Address
+                        );
+                    }
+                }
+                else if (log.EntityType == "VendorVerification" && verificationsMap.TryGetValue(entityGuid, out var verifTarget))
+                {
+                    entityTitle = $"Xác minh GPKD {verifTarget.BusinessLicenseNumber}";
+                    if (verifTarget.Vendor?.User != null)
+                    {
+                        targetAccount = ToAccountInfo(verifTarget.Vendor.User, verifTarget.Vendor);
+                    }
+                    else if (verifTarget.Vendor != null)
+                    {
+                        targetAccount = new AuditAccountInfoDto(
+                            verifTarget.Vendor.UserId,
+                            string.IsNullOrWhiteSpace(verifTarget.Vendor.ContactPerson) ? verifTarget.Vendor.BrandName : verifTarget.Vendor.ContactPerson,
+                            null,
+                            verifTarget.Vendor.Hotline,
+                            "VendorOwner",
+                            null,
+                            verifTarget.Vendor.BrandName,
+                            verifTarget.Vendor.IsActive,
+                            null,
+                            null,
+                            verifTarget.Vendor.City,
+                            verifTarget.Vendor.Address
+                        );
+                    }
+                }
+                else if ((log.EntityType == "BookingContract" || log.EntityType == "Contract") && contractsMap.TryGetValue(entityGuid, out var contractTarget))
+                {
+                    entityTitle = $"Hợp đồng {contractTarget.ContractCode}";
+                    if (contractTarget.Vendor?.User != null)
+                    {
+                        targetAccount = ToAccountInfo(contractTarget.Vendor.User, contractTarget.Vendor);
+                    }
+                    else if (contractTarget.Customer != null)
+                    {
+                        targetAccount = ToAccountInfo(contractTarget.Customer);
+                    }
+                }
+            }
+
+            if (targetAccount == null && actorAccount != null && (log.ActorRole is "VendorOwner" or "Customer"))
+            {
+                targetAccount = actorAccount;
+            }
+
+            return new AuditLogDto(
+                log.Id,
+                log.CreatedAt,
+                log.ActorId,
+                log.ActorRole,
+                log.Action,
+                log.EntityType,
+                log.EntityId,
+                log.DataJson,
+                entityTitle,
+                targetAccount,
+                actorAccount
+            );
+        }).ToList();
+    }
 }
 
 public record AdminDashboardDto(int Customers, int Vendors, int VerifiedVendors, int PendingVerifications, int LeadsThisMonth,

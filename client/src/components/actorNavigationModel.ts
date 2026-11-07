@@ -32,7 +32,7 @@ const labels: Record<string, readonly [string, string]> = {
   disputes: ["Tranh chấp", "Tranh chấp"],
   emergency: ["Hỗ trợ khẩn cấp", "Hỗ trợ"],
   users: ["Người dùng & đối tác", "Tài khoản"],
-  cms: ["Cẩm nang CMS", "Cẩm nang"],
+  cms: ["Quản lý Blog", "Blog"],
 };
 
 // Keep overview fallback consistent with AdminDashboard's visibleTabs, including

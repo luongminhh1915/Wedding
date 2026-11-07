@@ -2,6 +2,8 @@
 
 Cập nhật **22/10/2026**. Đây là hướng dẫn cho source hiện tại; không chứa credentials và không cấp quyền chạy DB ứng dụng. Đọc [START_HERE](START_HERE.md) trước.
 
+**Operational delta01/11/2026:** current branch là `main`; website hiện hữu ở SmarterASP, same-origin React/.NET + SQL Server, private config/uploads nằm ngoài `/site1/wwwroot`. Packaging bằng `tools/Publish-StudySite.ps1` chỉ tạo artifact/offline SQL, không tự deploy. Full migration script trong artifact không phải giấy phép apply DB thật. Phase6 negotiation có model mới: đọc migration/feature gate mới nhất; API disabled phải dừng trước truy vấn bảng chưa rollout. Production startup vẫn `ApplyMigrations=false`, `SeedDemoData=false`. Verification documents cần private durable owner-scoped storage và authenticated download; không thêm public static mapping hoặc đưa JWT vào URL. Policy candidate/rule approval tách khỏi effective transaction rate đến khi signed/basis activation đủ điều kiện. Xem report/checkpoint01/11 để biết exact source, SQL21/22, flags và rollout status; các con số17migrations/old QA manifests bên dưới là lịch sử, không chạy lại helper cũ mà chưa chứng minh ownership.
+
 ## 1. Stack và ranh giới kiến trúc
 
 - Backend .NET 10 / EF Core 10, SQL Server, MediatR/CQRS, JWT/BCrypt, SignalR. `global.json` và `.csproj` là nguồn phiên bản chính thức; không theo README/ảnh cũ .NET8/SQLite.

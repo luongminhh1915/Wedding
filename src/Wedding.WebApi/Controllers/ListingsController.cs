@@ -44,10 +44,10 @@ public class ListingsController : ControllerBase
     }
 
     /// <summary>
-    /// [VendorOwner] Cập nhật nội dung bài đăng (chỉ cho phép khi ở Draft hoặc Rejected).
+    /// [VendorOwner/Moderator/SuperAdmin] Lưu bản sửa nháp. Nội dung đã public giữ nguyên tới lượt kiểm duyệt riêng.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "VendorOwner")]
+    [Authorize(Roles = "VendorOwner,Moderator,SuperAdmin")]
     public async Task<IActionResult> UpdateListing(Guid id, [FromBody] UpdateListingRequest request)
     {
         var command = new UpdateListingCommand(id, request.Title, request.MinPrice, request.MaxPrice, request.Description, request.Location, request.ImageUrls, request.ServiceDetails, request.Pricing);
@@ -70,11 +70,11 @@ public class ListingsController : ControllerBase
     }
 
     /// <summary>
-    /// [VendorOwner] Nộp bài đăng lên hàng chờ kiểm duyệt (PendingApproval).
+    /// [VendorOwner/Moderator/SuperAdmin] Nộp bản sửa lên hàng chờ; không trực tiếp xuất bản.
     /// BR-008: Moderator phải xử lý trong SLA 24h.
     /// </summary>
     [HttpPost("{id:guid}/submit")]
-    [Authorize(Roles = "VendorOwner")]
+    [Authorize(Roles = "VendorOwner,Moderator,SuperAdmin")]
     public async Task<IActionResult> SubmitForApproval(Guid id)
     {
         await _mediator.Send(new SubmitForApprovalCommand(id));

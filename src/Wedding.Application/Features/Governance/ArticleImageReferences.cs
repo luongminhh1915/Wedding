@@ -11,6 +11,7 @@ public static class ArticleImageReferences
         var value = reference.Trim();
         if (value.Length > 500 || value.Any(char.IsControl) || value.Contains('\\')) throw Invalid();
         if (Regex.IsMatch(value, @"^/uploads/articles/[0-9a-fA-F]{32}\.(jpg|png|webp)$", RegexOptions.CultureInvariant)) return value;
+        if (Regex.IsMatch(value, @"^/blog/[a-zA-Z0-9_\-\.]+\.(jpg|png|webp)$", RegexOptions.CultureInvariant)) return value;
         if (!value.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
             !Uri.TryCreate(value, UriKind.Absolute, out var uri) || string.IsNullOrWhiteSpace(uri.Host) || !string.IsNullOrEmpty(uri.UserInfo)) throw Invalid();
         return value;

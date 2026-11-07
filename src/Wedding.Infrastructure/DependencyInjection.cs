@@ -77,6 +77,8 @@ public static class DependencyInjection
         // Đăng ký CurrentUserService — đọc UserId từ JWT claims
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddSingleton<IVerificationDocumentStore>(_ => new VerificationDocumentStorage(
+            hostEnvironment.ContentRootPath, configuration["Uploads:VerificationRoot"], configuration["Uploads:ListingRoot"]));
 
         // Đăng ký Background Worker kiểm tra SLA Lead định kỳ (BR-003)
         services.AddHostedService<LeadSlaBackgroundService>();

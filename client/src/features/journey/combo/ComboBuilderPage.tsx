@@ -72,8 +72,16 @@ const categoryLabels: Record<string, string> = {
 
 export default function ComboBuilderPage() {
   const userId = useAuthStore((s) => s.user?.id ?? "guest");
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate("/browse?keyword=combo", { replace: true });
+  }, [navigate]);
   // URL filter changes must not remount the cart/editor or replay a consumed draft intent.
-  return <ComboBuilder key={userId} />;
+  return (
+    <div style={{ display: "none" }}>
+      <ComboBuilder key={userId} />
+    </div>
+  );
 }
 function ComboBuilder() {
   const user = useAuthStore((s) => s.user);
@@ -304,22 +312,20 @@ function ComboBuilder() {
     ) ?? [];
   const ready =
     !!cart.region.trim() &&
-    !!cart.weddingDate &&
     Number.isInteger(cart.guestCount) &&
     cart.guestCount > 0;
   const missingInfo = !cart.region.trim()
     ? "Nhập khu vực tổ chức ở phần Thông tin cưới để tiếp tục."
-    : !cart.weddingDate
-      ? "Chọn ngày cưới ở phần Thông tin cưới để NCC kiểm tra còn lịch."
-      : cart.guestCount <= 0
-        ? "Nhập số khách ở phần Thông tin cưới để tính giá."
-        : "";
+    : cart.guestCount <= 0
+      ? "Nhập số khách ở phần Thông tin cưới để tính giá."
+      : "";
+  const effectiveWeddingDate = cart.weddingDate || new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10);
   const price = useServerPrice(
     {
       templateId: cart.templateId,
       revisionOfId: cart.revisionOfId,
       region: cart.region,
-      weddingDate: cart.weddingDate,
+      weddingDate: effectiveWeddingDate,
       guestCount: cart.guestCount,
       selections: cart.selections.map(
         ({ serviceItemId, variantIds, addOnIds, hours }) => ({
@@ -702,7 +708,7 @@ function ComboBuilder() {
               />
             </label>
             <label>
-              Ngày cưới
+              Ngày cưới (không bắt buộc)
               <input
                 className="input"
                 type="date"
@@ -1051,28 +1057,40 @@ function ComboBuilder() {
                           </> : estimate!.savings > 0 && <p>Tiết kiệm {vnd(estimate!.savings)} so với dịch vụ có sẵn</p>}
                           {estimate?.shopRating != null && <span>Đánh giá shop: {estimate.shopRating.toLocaleString("vi-VN")} / 5</span>}
                         </div>}
-                        <ul>
-                          {template.items.slice(0, 4).map((item) => (
-                            <li key={item.serviceItemId ?? item.categoryId}>
-                              <ComboPhoto
-                                sources={[
-                                  item.serviceItemId
-                                    ? templateOptions.find(option => option.serviceItemId === item.serviceItemId)?.imageUrl
-                                    : undefined,
-                                ]}
-                                alt=""
-                                placeholder={<LayoutGrid size={13} />}
-                              />
-                              <span>
-                                {templateOptions.find(option => option.serviceItemId === item.serviceItemId)?.title ?? categories
-                                  .find((c) => c.categoryId === item.categoryId)
-                                  ?.name.split("(")[0]
-                                  .trim() ?? "Dịch vụ cưới"}
-                                {item.isOptional && " (tùy chọn)"}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="combo-subservices-box mt-3 pt-3 border-t border-slate-100">
+                          <p className="text-[11px] font-bold text-slate-700 mb-2 flex items-center justify-between">
+                            <span>📦 Gói bao gồm {template.items.length} dịch vụ con:</span>
+                            <span className="text-[10px] text-slate-400 font-normal">Chính thức từ NCC</span>
+                          </p>
+                          <ul className="space-y-1.5">
+                            {template.items.map((item) => {
+                              const found = templateOptions.find(option => option.serviceItemId === item.serviceItemId);
+                              const catName = categories.find((c) => c.categoryId === item.categoryId)?.name.split("(")[0].trim() ?? "Dịch vụ cưới";
+                              const title = found?.title ?? catName;
+                              return (
+                                <li key={item.serviceItemId ?? item.categoryId} className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
+                                  <ComboPhoto
+                                    sources={[found?.imageUrl]}
+                                    alt={title}
+                                    placeholder={<LayoutGrid size={12} className="text-slate-400" />}
+                                    className="w-7 h-7 rounded-md object-cover shrink-0"
+                                  />
+                                  <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
+                                    <span className="truncate font-medium text-slate-800" title={title}>
+                                      {title}
+                                      {item.isOptional && <span className="text-slate-400 text-[10px]"> (tùy chọn)</span>}
+                                    </span>
+                                    {found?.price ? (
+                                      <span className="text-[11px] font-semibold text-rose-600 shrink-0">
+                                        {vnd(found.price)}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
                         <Link
                           className="combo-secondary"
                           to={`/combo/${template.id}`}
@@ -1162,12 +1180,16 @@ function ComboBuilder() {
                     Tiếp theo: kiểm tra combo và điền thông tin để xin báo giá.
                     Chưa thanh toán.
                   </p>
-                  {missingInfo && (
+                  {missingInfo ? (
                     <p role="status">
                       {missingInfo}{" "}
                       <a href="#combo-event-info">Bổ sung thông tin ↑</a>
                     </p>
-                  )}
+                  ) : !cart.weddingDate ? (
+                    <p className="text-xs text-slate-500">
+                      💬 Ngày cưới &amp; chi tiết có thể bàn bạc trực tiếp với NCC trong box chat.
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   className="combo-primary"
@@ -1313,8 +1335,8 @@ function ComboBuilder() {
           }}
         >
           <p className="combo-preview-copy">
-            {cart.guestCount} khách · {cart.region} ·{" "}
-            {cart.weddingDate.split("-").reverse().join("/")}
+            {cart.guestCount} khách · {cart.region}
+            {cart.weddingDate ? ` · ${cart.weddingDate.split("-").reverse().join("/")}` : " · Ngày cưới: Trao đổi trong chat"}
             <br />
             NCC: {selectedVendor?.name ?? "Nhà cung cấp đã chọn"}
           </p>

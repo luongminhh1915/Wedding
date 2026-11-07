@@ -43,7 +43,7 @@ export function ContractWorkspace() {
         onChange={setSection}
         label="Loại hồ sơ"
         options={[
-          { id: "consultation", label: "Tư vấn" },
+          { id: "consultation", label: "💬 Chat & Tư vấn NCC" },
           { id: "quotes", label: "Báo giá" },
           { id: "contracts", label: "Hợp đồng" },
           { id: "support", label: "Hỗ trợ" },

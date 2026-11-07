@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import { ComboDialog } from "../journey/combo/ComboDialog";
 
 export interface ApprovalConfirmationDetails {
@@ -5,6 +6,7 @@ export interface ApprovalConfirmationDetails {
   title: string;
   vendorName?: string | null;
   versionLabel?: string;
+  isVendorVerified?: boolean;
 }
 
 export function ApprovalConfirmationDialog({
@@ -49,6 +51,19 @@ export function ApprovalConfirmationDialog({
             </div>
           )}
         </dl>
+        {details.isVendorVerified === false && (
+          <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-amber-900 text-xs">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={17} />
+              <div>
+                <p className="font-semibold text-amber-950 text-sm">Nhà cung cấp chưa được duyệt giấy tờ / chưa xác minh</p>
+                <p className="mt-1 text-amber-800 leading-relaxed">
+                  Nhà cung cấp này hiện chưa hoàn tất hoặc chưa được phê duyệt hồ sơ giấy phép kinh doanh / xác minh đối tác. Bạn có chắc chắn muốn duyệt dịch vụ này không?
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <p className="text-xs leading-relaxed text-slate-500">
           Chỉ duyệt đúng nội dung đang xem, không thay đổi hoa hồng, hợp đồng
           hoặc giao dịch đã chốt và không tự bật lại trạng thái kinh doanh.

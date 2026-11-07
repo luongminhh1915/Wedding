@@ -3,6 +3,7 @@ import { ArrowUpDown, MapPin, SlidersHorizontal } from "lucide-react";
 import { MoneyInput } from "../../../components/MoneyInput";
 import type { PublicListingsFilter } from "../../../types/category.types";
 import { SERVICE_PRICE_LIMIT } from "../serviceFilterModel";
+import { VIETNAM_PROVINCES } from "../../../data/vietnamProvinces";
 
 interface Props {
   filter: PublicListingsFilter;
@@ -27,7 +28,9 @@ const priceRanges = [
 
 export default function BrowseFilterSidebar({ filter, onChange, onReset }: Props) {
   const [draft, setDraft] = useState<PublicListingsFilter>(filter);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : true
+  );
   const [error, setError] = useState("");
   const activeCount = [filter.location?.trim(), filter.minPrice != null, filter.maxPrice != null, filter.minRating != null]
     .filter(Boolean).length;
@@ -67,8 +70,21 @@ export default function BrowseFilterSidebar({ filter, onChange, onReset }: Props
       </div>
 
       <div id="browse-filter-content" className="browse-filter-content">
-        <label className="browse-filter-field browse-filter-location"><span><MapPin size={14} aria-hidden="true" /> Địa điểm / khu vực</span>
-          <input type="text" maxLength={100} value={draft.location ?? ""} onChange={event => setDraft({ ...draft, location: event.target.value })} placeholder="Ví dụ: Hà Nội, TP.HCM" />
+        <label className="browse-filter-field browse-filter-location">
+          <span><MapPin size={14} aria-hidden="true" /> Địa điểm / khu vực</span>
+          <select
+            aria-label="Chọn tỉnh thành phố"
+            value={draft.location ?? ""}
+            onChange={event => setDraft({ ...draft, location: event.target.value || undefined })}
+          >
+            <option value="">Tất cả tỉnh thành</option>
+            {VIETNAM_PROVINCES.map(province => (
+              <option key={province} value={province}>{province}</option>
+            ))}
+            {draft.location && !VIETNAM_PROVINCES.includes(draft.location as (typeof VIETNAM_PROVINCES)[number]) && (
+              <option value={draft.location}>{draft.location}</option>
+            )}
+          </select>
         </label>
         <div className="browse-filter-price-grid">
           <label className="browse-filter-field"><span>Giá từ (đ)</span><MoneyInput aria-label="Giá dịch vụ tối thiểu" value={draft.minPrice ?? null} min={0} max={SERVICE_PRICE_LIMIT} fractionDigits={0} placeholder="Không giới hạn" onValueChange={value => setDraft({ ...draft, minPrice: value ?? undefined })} /></label>

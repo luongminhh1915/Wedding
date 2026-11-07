@@ -2,6 +2,8 @@
 
 Baseline đọc: **22/10/2026**. Đọc cùng [START_HERE](START_HERE.md), [checkpoint](AGENT_HANDOFF.md), [roadmap](PRODUCT_COMPLETION_ROADMAP.md). Đây là mô tả **hành vi đã có và đích đã xác nhận**, không tuyên bố toàn sản phẩm hoàn tất.
 
+**Cập nhật01/11/2026:** baseline chức năng dưới đây giữ lịch sử; source hiện tại đã thêm Studio lưu album/cập nhật, CMS upload ảnh, SuperAdmin tạo đủ actor và NCC thiếu contact với alias, recovery Gmail/Google/Facebook. Draft lưu riêng, submit vào queue; owner đã [duyệt cơ chế batch/auto](decisions/2026-11-01-batch-and-session-auto-moderation.md) có xác nhận, bao gồm NCC chưa xác minh. Giấy tờ xác minh là nội dung riêng, phải kiểm chủ sở hữu/staff và không được tự tạo dữ liệu ngân hàng/consent. Phase5 có UI/API hồ sơ policy; phê duyệt không tự kích hoạt rate. Phase6 mới có foundation/CQRS/client; chưa có UI hoàn chỉnh hay signed activation. Trạng thái IMPLEMENTED/VERIFIED/DEPLOYED và giới hạn cụ thể lấy từ Living Checkpoint/report mới, không suy từ bảng baseline.
+
 ## 1. Mục tiêu, từ vựng và mức chứng minh
 
 Khách cần tổ chức đám cưới dễ hiểu, tìm đúng dịch vụ, nhìn rõ gói mình chọn, trao đổi với shop và theo dõi giao dịch. Shop cần quản lý nội dung/bán hàng; nền tảng cần kiểm duyệt, bảo vệ dữ liệu, quản lý hoa hồng minh bạch.
